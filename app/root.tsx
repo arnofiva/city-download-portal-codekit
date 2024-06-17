@@ -1,13 +1,81 @@
 import {
   Links,
   Meta,
+  MetaFunction,
   Outlet,
   Scripts,
   ScrollRestoration,
 } from "@remix-run/react";
-import "./tailwind.css";
 
-export function Layout({ children }: { children: React.ReactNode }) {
+import { setAssetPath } from "@esri/calcite-components/dist/components";
+
+import tailwindStyles from "./tailwind.css?url";
+import calciteStyles from "@esri/calcite-components/dist/calcite/calcite.css?url";
+import arcgisStyles from '@arcgis/core/assets/esri/themes/light/main.css?url'
+import globalStyles from "./global.css?url";
+
+import { defineCustomElements } from "@esri/calcite-components/dist/loader";
+import config from "@arcgis/core/config";
+import { CalciteShell } from "@esri/calcite-components-react";
+import { PropsWithChildren, useEffect } from "react";
+import SceneListModal from "./scene-list-modal/scene-list-modal";
+import { SceneListModalProvider } from "./scene-list-modal/scene-list-modal-context";
+import SCENES from "data/scenes";
+
+import { LinksFunction } from "@remix-run/node";
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "City download portal" },
+  ];
+};
+
+const styles = [
+  tailwindStyles,
+  calciteStyles,
+  arcgisStyles,
+  globalStyles,
+]
+
+export const links: LinksFunction = () => [
+  ...styles.map(stylesheet => ({ rel: 'stylesheet', href: stylesheet }))
+]
+
+export async function clientLoader() {
+  const scenes = await Promise.all(
+    Array.from(SCENES.values())
+      .map(async scene => {
+        await scene.item.load();
+        return scene.item;
+      })
+  );
+
+  const maps = await Promise.all(scenes.map(async scene => {
+    const WebScene = await import('@arcgis/core/WebScene').then(mod => mod.default);
+
+    const ws = new WebScene({
+      portalItem: scene
+    });
+
+    await ws.load();
+
+    return ws;
+  }));
+
+  return { scenes, maps };
+}
+
+
+interface LayoutProps { }
+
+export function Layout({ children }: PropsWithChildren<LayoutProps>) {
+
+  useEffect(() => {
+    setAssetPath(import.meta.url);
+    defineCustomElements(window);
+    config.portalUrl = "https://zurich.maps.arcgis.com/";
+  }, []);
+
   return (
     <html lang="en">
       <head>
@@ -17,7 +85,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        <CalciteShell>
+          <SceneListModalProvider>
+            {children}
+            <SceneListModal />
+          </SceneListModalProvider>
+        </CalciteShell>
         <ScrollRestoration />
         <Scripts />
       </body>
