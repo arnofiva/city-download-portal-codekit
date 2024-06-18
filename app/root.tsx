@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useParams,
 } from "@remix-run/react";
 
 import { setAssetPath } from "@esri/calcite-components/dist/components";
@@ -16,13 +17,14 @@ import globalStyles from "./global.css?url";
 
 import { defineCustomElements } from "@esri/calcite-components/dist/loader";
 import config from "@arcgis/core/config";
-import { CalciteShell } from "@esri/calcite-components-react";
+import { CalciteScrim, CalciteShell } from "@esri/calcite-components-react";
 import { PropsWithChildren, useEffect } from "react";
 import SceneListModal from "./scene-list-modal/scene-list-modal";
 import { SceneListModalProvider } from "./scene-list-modal/scene-list-modal-context";
 import SCENES from "data/scenes";
 
 import { LinksFunction } from "@remix-run/node";
+import { SelectionContext } from "./routes/$scene/selection/selection-context";
 
 export const meta: MetaFunction = () => {
   return [
@@ -65,16 +67,16 @@ export async function clientLoader() {
   return { scenes, maps };
 }
 
-
 interface LayoutProps { }
 
 export function Layout({ children }: PropsWithChildren<LayoutProps>) {
-
   useEffect(() => {
     setAssetPath(import.meta.url);
     defineCustomElements(window);
     config.portalUrl = "https://zurich.maps.arcgis.com/";
   }, []);
+
+  const params = useParams();
 
   return (
     <html lang="en">
@@ -85,12 +87,14 @@ export function Layout({ children }: PropsWithChildren<LayoutProps>) {
         <Links />
       </head>
       <body>
-        <CalciteShell>
-          <SceneListModalProvider>
-            {children}
-            <SceneListModal />
-          </SceneListModalProvider>
-        </CalciteShell>
+        <SelectionContext key={params.scene}>
+          <CalciteShell>
+            <SceneListModalProvider>
+              {children}
+              <SceneListModal />
+            </SceneListModalProvider>
+          </CalciteShell>
+        </SelectionContext>
         <ScrollRestoration />
         <Scripts />
       </body>
@@ -103,5 +107,9 @@ export default function App() {
 }
 
 export function HydrateFallback() {
-  return <p>Loading...</p>;
+  return (
+    <CalciteShell>
+      <CalciteScrim loading />
+    </CalciteShell>
+  );
 }

@@ -17,7 +17,9 @@ export default function GraphicsLayer({ children, elevationMode = 'on-the-ground
 
   useEffect(() => {
     scene.add(layer);
-    return () => { scene.remove(layer) };
+    return () => {
+      scene.remove(layer)
+    };
   }, [layer, scene]);
 
   useEffect(() => {

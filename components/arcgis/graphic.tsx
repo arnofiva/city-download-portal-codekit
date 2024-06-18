@@ -10,12 +10,9 @@ interface GraphicProps {
 }
 export default function Graphic({
   geometry,
-  symbol
+  symbol,
 }: GraphicProps) {
-  const [graphic] = useState(() => new CoreGraphic({
-    // geometry,
-    // symbol
-  }));
+  const [graphic] = useState(() => new CoreGraphic());
 
   const layer = useGraphicsLayer();
 

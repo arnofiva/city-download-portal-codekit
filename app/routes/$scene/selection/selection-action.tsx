@@ -7,10 +7,13 @@ import { useSelectionActorRef, useSelectionStateSelector } from "./selection-con
 import Point from "@arcgis/core/geometry/Point";
 import { watch } from "@arcgis/core/core/reactiveUtils";
 import { Polygon } from "@arcgis/core/geometry";
+import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
+import { contains } from '@arcgis/core/geometry/geometryEngine';
 
 export function SelectionAction() {
   const origin = useSelectionStateSelector(state => state.context.origin);
   const terminal = useSelectionStateSelector(state => state.context.terminal);
+  const selection = useSelectionStateSelector(state => state.context.selection);
   const selectionActor = useSelectionActorRef();
   const hasSelected = useSelectionStateSelector(state => state.matches('selected'));
 
@@ -74,7 +77,23 @@ export function SelectionAction() {
         createGraphicHandle.remove();
       }
     } else {
-      const handle = sketch.on("update", (event) => {
+      const createHandle = sketch.on("create", (event) => {
+        if (event.graphic.geometry.type !== 'point') return;
+
+        if (event.state === "start") {
+          selectionActor.send({ type: 'create.start', point: event.graphic.geometry as Point });
+        }
+
+        if (event.state === "complete") {
+          (event.graphic.layer as GraphicsLayer).remove(event.graphic);
+          selectionActor.send({ type: 'create.commit', point: event.graphic.geometry as Point });
+        }
+
+        if (event.state === "cancel") {
+          selectionActor.send({ type: 'create.cancel' })
+        }
+      });
+      const updateHandle = sketch.on("update", (event) => {
         const [graphic] = event.graphics;
         const polygon = graphic.geometry as Polygon;
 
@@ -124,7 +143,10 @@ export function SelectionAction() {
         selectionActor.send({ type: 'update.update', origin: nextOrigin, terminal: nextTerminal });
       })
 
-      return handle.remove;
+      return () => {
+        updateHandle.remove();
+        createHandle.remove();
+      }
     }
   }, [hasSelected, selectionActor, sketch]);
 
@@ -134,17 +156,28 @@ export function SelectionAction() {
     }
   }, [origin, sketch, terminal]);
 
+  useEffect(() => {
+    if (selection != null) {
+      const handle = view.on("click", async (event) => {
+        if (contains(selection, event.mapPoint)) {
+          event.stopPropagation();
+          sketch.update(graphics.graphics.find(graphic => graphic.geometry.type === "polygon"))
+        }
+      })
+      return handle.remove
+    }
+  }, [graphics.graphics, selection, sketch, view])
+
+
   return (
-    <>
-      <CalciteAction
-        scale="l"
-        text="Select area"
-        icon="rectangle-plus"
-        onClick={() => {
-          sketch.create('point');
-        }}
-      />
-    </>
+    <CalciteAction
+      scale="l"
+      text="Select area"
+      icon="rectangle-plus"
+      onClick={() => {
+        sketch.create('point');
+      }}
+    />
   )
 }
 
