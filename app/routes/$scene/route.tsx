@@ -3,15 +3,15 @@ import { Suspense, lazy } from "react";
 import { redirect, useLoaderData, useRouteError } from "@remix-run/react";
 import Sidebar from "~/sidebar";
 import invariant from "tiny-invariant";
-import SCENES from "data/scenes";
-import { ViewUI } from "./view/view-ui";
+import SCENES from "~/data/scenes";
+import { ViewUI } from "../../components/arcgis/views/scene-view/scene-view-ui";
 import { CalciteAction, CalciteActionBar, CalciteScrim } from "@esri/calcite-components-react";
-import { SelectionAction } from "./selection/selection-action";
-import GraphicsLayer from "components/arcgis/graphics-layer";
-import SelectionExtent from "./selection/selection-extent";
+import { SelectionAction } from "../../components/selection/selection-action";
+import GraphicsLayer from "~/components/arcgis/graphics-layer";
+import SelectionExtent from "../../components/selection/selection-extent";
 
-const View = lazy(() => import('./view/view'));
-const Scene = lazy(() => import('./scene/scene'));
+const View = lazy(() => import('../../components/arcgis/views/scene-view/scene-view'));
+const Scene = lazy(() => import('../../components/arcgis/maps/web-scene/scene'));
 
 export const meta: MetaFunction<typeof clientLoader> = ({ data }) => {
   return [
@@ -59,7 +59,7 @@ export default function SceneRoute() {
   return (
     <Suspense fallback={<CalciteScrim />}>
       <Scene portalItem={instance}>
-        <GraphicsLayer>
+        <GraphicsLayer elevationMode="absolute-height">
           <View>
             <ViewUI position="bottom-left">
               <SceneActions />

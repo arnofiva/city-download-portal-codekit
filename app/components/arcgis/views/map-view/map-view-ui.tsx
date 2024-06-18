@@ -1,5 +1,5 @@
 import { PropsWithChildren, useEffect, useState } from "react";
-import { useView } from "./view-context";
+import { useMapView } from "./map-view-context";
 import type SceneView from "@arcgis/core/views/SceneView";
 import { createPortal } from "react-dom";
 
@@ -17,7 +17,7 @@ export function ViewUI({ position, index, children }: PropsWithChildren<ViewUIPr
     div.classList.add('contents');
     return div;
   })
-  const view = useView();
+  const view = useMapView();
   useEffect(() => {
     view.ui.add(container, { position, index })
 

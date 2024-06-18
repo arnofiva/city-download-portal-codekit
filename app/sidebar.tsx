@@ -11,12 +11,16 @@ import {
   CalciteShellPanel,
   CalciteSplitButton,
 } from "@esri/calcite-components-react";
-import useIsRoot from "hooks/useIsRoot";
-import useAccessorValue from "hooks/useAccessorValue";
-import { useCallback } from "react";
+import useIsRoot from "~/hooks/useIsRoot";
+import useAccessorValue from "~/hooks/useAccessorValue";
+import { Suspense, lazy, useCallback } from "react";
 import { useSceneListModal } from "./scene-list-modal/scene-list-modal-context";
-import { useScene } from "./routes/$scene/scene/scene-context";
-import { useView } from "./routes/$scene/view/view-context";
+import { useScene } from "./components/arcgis/maps/web-scene/scene-context";
+import { useSceneView } from "./components/arcgis/views/scene-view/scene-view-context";
+import { useSelectionStateSelector } from "./components/selection/selection-context";
+import * as ge from "@arcgis/core/geometry/geometryEngine";
+import { Polyline } from "@arcgis/core/geometry";
+import Minimap from "./components/minimap";
 
 export default function Sidebar() {
   const [, setOpen] = useSceneListModal();
@@ -48,42 +52,50 @@ export default function Sidebar() {
 }
 
 function ModelOrigin() {
-  const view = useView();
+  const view = useSceneView();
+
+  const origin = useSelectionStateSelector(state => state.context.origin);
+
+  const latitude = origin?.latitude;
+  const x = origin?.x;
+
+  const longitude = origin?.longitude;
+  const y = origin?.y;
 
   return (
-    <CalciteBlock id="modelOrigin" heading="Model origin" open={false}>
+    <CalciteBlock id="modelOrigin" heading="Model origin" open>
       <CalciteIcon slot="icon" icon="pin-tear-f"></CalciteIcon>
 
       <ul className="mesurement-list">
         <li>
           <CalciteLabel scale="s">
             Spatial reference (SRID)
-            <p id="spatial-reference" className="paragraph">
+            <p>
               {view.spatialReference?.wkid ?? "--"}
             </p>
           </CalciteLabel>
         </li>
         <li>
           <CalciteLabel scale="s">
-            Latitude
-            <p id="origin-latitude" className="paragraph">
-              --
+            {latitude != null ? "Latitude" : "x"}
+            <p>
+              {latitude ?? x ?? "--"}
             </p>
           </CalciteLabel>
         </li>
         <li>
           <CalciteLabel scale="s">
-            Longitude
-            <p id="origin-longitude" className="paragraph">
-              --
+            {longitude != null ? "Longitude" : 'y'}
+            <p>
+              {longitude ?? y ?? "--"}
             </p>
           </CalciteLabel>
         </li>
         <li>
           <CalciteLabel scale="s">
             Elevation
-            <p id="origin-elevation" className="paragraph">
-              --
+            <p>
+              {origin?.z ?? "--"}
             </p>
           </CalciteLabel>
         </li>
@@ -103,32 +115,68 @@ function ModelOrigin() {
 }
 
 function Measurements() {
+  const view = useSceneView();
+
+  const origin = useSelectionStateSelector(state => state.context.origin);
+  const terminal = useSelectionStateSelector(state => state.context.terminal);
+  const selection = useSelectionStateSelector(state => state.context.selection);
+  const isGlobal = (selection?.spatialReference.isWGS84 || selection?.spatialReference.isWebMercator) ?? false;
+
+  const calculateArea = isGlobal ? ge.geodesicArea : ge.planarArea;
+  const calculateLength = isGlobal ? ge.geodesicLength : ge.planarLength;
+
+  const area = selection ? Math.abs(calculateArea(selection)) : null;
+
+  let width = null, height = null;
+  if (origin != null && terminal != null) {
+
+    const wl = new Polyline({
+      paths: [[
+        [origin.x, origin.y],
+        [origin.x, terminal.y]
+      ]],
+      spatialReference: origin.spatialReference
+    });
+    width = calculateLength(wl, 'feet');
+
+    const hl = new Polyline({
+      paths: [[
+        [origin.x, origin.y],
+        [terminal.x, origin.y]
+      ]],
+      spatialReference: origin.spatialReference
+    });
+    height = calculateLength(hl, 'feet');
+  }
   return (
-    <CalciteBlock id="measurements" heading="Measurements" collapsible open={false}>
+    <CalciteBlock id="measurements" heading="Measurements" collapsible open>
       <CalciteIcon scale="s" slot="icon" icon="cursor-marquee"></CalciteIcon>
-      <div
-        id="minimap"
-        style={{
-          paddingBottom: "var(--calcite-spacing-xs)",
-        }}
-      />
-      <ul className="mesurement-list">
+      <Minimap />
+      <ul className="h-full">
         <li>
           <CalciteLabel scale="s">
-            Width
+            North to south length
             <p id="width-measurement" className="paragraph">
-              --
+              {width ?? "--"}
             </p>
           </CalciteLabel>
         </li>
         <li>
           <CalciteLabel scale="s">
-            Height
+            East to west length
             <p id="height-measurement" className="paragraph">
-              --
+              {height ?? "--"}
             </p>
           </CalciteLabel>
         </li>
+        {area != null ? (
+          <li>
+            <CalciteLabel scale="s">
+              Area
+              <p>{area}</p>
+            </CalciteLabel>
+          </li>
+        ) : null}
         <li>
           <CalciteLabel scale="s">
             Buildings

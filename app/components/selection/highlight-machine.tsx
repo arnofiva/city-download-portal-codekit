@@ -33,7 +33,7 @@ async function queryFeatures({ input, signal }: { input: QueryFeaturesInput, sig
       const highlight = () => layerView.highlight(features);
       addHighlight.push(highlight);
     } else {
-      console.log('it failed...', result.reason)
+      // console.log('it failed...', result.reason)
     }
   }
 

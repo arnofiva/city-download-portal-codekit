@@ -1,23 +1,23 @@
 import { PropsWithChildren, Suspense, memo, useEffect, useMemo, useState } from "react";
-import WebScene from '@arcgis/core/WebScene';
+import CoreWebScene from '@arcgis/core/WebScene';
 import PortalItem from '@arcgis/core/portal/PortalItem';
 import { CalciteScrim } from "@esri/calcite-components-react";
 import { useSceneListModal } from "~/scene-list-modal/scene-list-modal-context";
-import useAccessorValue from "hooks/useAccessorValue";
+import useAccessorValue from "~/hooks/useAccessorValue";
 import { SceneContext } from "./scene-context";
 
-interface SceneProps {
+interface WebSceneProps {
   portalItem: string | PortalItem;
 }
 
-function InternalScene({ portalItem, children }: PropsWithChildren<SceneProps>) {
+function InternalScene({ portalItem, children }: PropsWithChildren<WebSceneProps>) {
   const item = useMemo(() => {
     return typeof portalItem === "string" ? new PortalItem({
       id: portalItem
     }) : portalItem
   }, [portalItem])
 
-  const [scene, setScene] = useState(() => new WebScene({
+  const [scene, setScene] = useState(() => new CoreWebScene({
     portalItem: item
   }));
 
@@ -31,7 +31,7 @@ function InternalScene({ portalItem, children }: PropsWithChildren<SceneProps>) 
       typeof portalItem === "string" ? item.id === portalItem : item.id === portalItem.id
 
     if (isSamePortalItem) {
-      setScene(new WebScene({
+      setScene(new CoreWebScene({
         portalItem: item
       }));
     }
@@ -52,6 +52,6 @@ function InternalScene({ portalItem, children }: PropsWithChildren<SceneProps>) 
   );
 }
 
-const Scene = memo(InternalScene)
+const WebScene = memo(InternalScene)
 
-export default Scene;
+export default WebScene;

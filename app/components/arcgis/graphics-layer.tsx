@@ -1,6 +1,7 @@
 import CoreGraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import { PropsWithChildren, createContext, useContext, useEffect, useState } from "react";
-import { useScene } from '~/routes/$scene/scene/scene-context';
+import { useScene } from './maps/web-scene/scene-context';
+import { useMap } from './maps/map/map-context';
 
 const GraphicsLayerContext = createContext<CoreGraphicsLayer>(null!);
 
@@ -13,14 +14,18 @@ interface GraphicsLayerProps {
 }
 export default function GraphicsLayer({ children, elevationMode = 'on-the-ground' }: PropsWithChildren<GraphicsLayerProps>) {
   const scene = useScene();
+  const map = useMap();
+
   const [layer] = useState(() => new CoreGraphicsLayer({ elevationInfo: { mode: elevationMode } }));
 
   useEffect(() => {
-    scene.add(layer);
+    if (map) map.add(layer);
+    else scene.add(layer);
     return () => {
-      scene.remove(layer)
+      if (map) map.remove(layer);
+      else scene.remove(layer)
     };
-  }, [layer, scene]);
+  }, [layer, map, scene]);
 
   useEffect(() => {
     layer.elevationInfo.mode = elevationMode;

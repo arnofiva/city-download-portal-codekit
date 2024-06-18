@@ -1,6 +1,6 @@
 import { CalciteCard, CalciteCardGroup, CalciteChip, CalciteModal } from "@esri/calcite-components-react";
 import { Link, useParams, useRouteLoaderData } from "@remix-run/react";
-import useIsRoot from "hooks/useIsRoot";
+import useIsRoot from "~/hooks/useIsRoot";
 import type PortalItem from "@arcgis/core/portal/PortalItem";
 import type WebScene from "@arcgis/core/WebScene";
 import { useId } from "react";

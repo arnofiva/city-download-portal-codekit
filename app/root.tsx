@@ -21,10 +21,10 @@ import { CalciteScrim, CalciteShell } from "@esri/calcite-components-react";
 import { PropsWithChildren, useEffect } from "react";
 import SceneListModal from "./scene-list-modal/scene-list-modal";
 import { SceneListModalProvider } from "./scene-list-modal/scene-list-modal-context";
-import SCENES from "data/scenes";
+import SCENES from "~/data/scenes";
 
 import { LinksFunction } from "@remix-run/node";
-import { SelectionContext } from "./routes/$scene/selection/selection-context";
+import { SelectionContext } from "./components/selection/selection-context";
 
 export const meta: MetaFunction = () => {
   return [

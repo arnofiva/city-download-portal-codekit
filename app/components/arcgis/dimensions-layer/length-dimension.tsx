@@ -27,13 +27,17 @@ export default function LengthDimension({
   const { analyses } = useDimensions();
 
   useEffect(() => {
+    measurement.measureType = measureType ?? null!
+  }, [measureType, measurement]);
+
+  useEffect(() => {
     measurement.offset = offset ?? null!
   }, [measurement, offset]);
 
   useEffect(() => {
     measurement.startPoint = startPoint;
     measurement.endPoint = endPoint;
-  }, [startPoint, endPoint, measurement])
+  }, [startPoint, endPoint, measurement]);
 
   useEffect(() => {
     analyses.dimensions.push(measurement);

@@ -1,8 +1,8 @@
 import { CalciteAction } from "@esri/calcite-components-react";
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
-import { useView } from "../view/view-context";
+import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import { useEffect, useState } from "react";
-import { useGraphicsLayer } from "components/arcgis/graphics-layer";
+import { useGraphicsLayer } from "~/components/arcgis/graphics-layer";
 import { useSelectionActorRef, useSelectionStateSelector } from "./selection-context";
 import Point from "@arcgis/core/geometry/Point";
 import { watch } from "@arcgis/core/core/reactiveUtils";
@@ -17,7 +17,7 @@ export function SelectionAction() {
   const selectionActor = useSelectionActorRef();
   const hasSelected = useSelectionStateSelector(state => state.matches('selected'));
 
-  const view = useView();
+  const view = useSceneView();
   const graphics = useGraphicsLayer();
 
   const [sketch] = useState(() => new SketchViewModel({
@@ -161,6 +161,7 @@ export function SelectionAction() {
       const handle = view.on("click", async (event) => {
         if (contains(selection, event.mapPoint)) {
           event.stopPropagation();
+
           sketch.update(graphics.graphics.find(graphic => graphic.geometry.type === "polygon"))
         }
       })
