@@ -33,6 +33,8 @@ function createSelectionPolygon(origin: Point, terminal: Point) {
   });
 }
 
+const HIGHLIGHTS_ACTOR_ID = 'highlights';
+
 const SelectionMachine = setup({
   types: {
     context: {} as {
@@ -67,11 +69,11 @@ const SelectionMachine = setup({
       terminal: null,
       selection: null,
     }),
-    killHighlights: stopChild("highlights"),
+    killHighlights: stopChild(HIGHLIGHTS_ACTOR_ID),
     startHighlights: assign({
-      highlights: ({ spawn, context }) => spawn('highlights', { id: 'highlights', input: { view: context.view! } })
+      highlights: ({ spawn, context }) => spawn('highlights', { id: HIGHLIGHTS_ACTOR_ID, input: { view: context.view! } })
     }),
-    updateHighlights: sendTo(({ context }) => context.highlights!, ({ context }) => ({ type: 'changeSelection', selection: context.selection }))
+    updateHighlights: sendTo(({ context }) => context.highlights!, ({ context }) => ({ type: 'changeSelection', selection: context.selection })),
   },
   actors: {
     viewWaiter: fromPromise(({ input }: { input: { view: SceneView } }) => input.view.when()),
@@ -126,7 +128,7 @@ const SelectionMachine = setup({
     },
     noSelection: {
       id: "noSelection",
-      // entry: ['killHighlights', 'startHighlights'],
+      entry: 'killHighlights',
       on: {
         "create.start": {
           target: "placingOrigin",
@@ -134,7 +136,7 @@ const SelectionMachine = setup({
       },
     },
     placingOrigin: {
-      entry: ['clearSelection', 'killHighlights', 'startHighlights', log('entered')],
+      entry: ['clearSelection', 'killHighlights', 'startHighlights'],
       on: {
         "create.commit": {
           target: "placingTerminal",
@@ -204,10 +206,7 @@ const SelectionMachine = setup({
       guard: ({ context }) => {
         return context.view != null;
       },
-      actions: [
-        'clearSelection',
-        log('resetting')
-      ]
+      actions: 'clearSelection',
     }
   }
 });
