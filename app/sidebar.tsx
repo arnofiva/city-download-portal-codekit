@@ -21,6 +21,7 @@ import { useSelectionStateSelector } from "./components/selection/selection-cont
 import * as ge from "@arcgis/core/geometry/geometryEngine";
 import { Polyline } from "@arcgis/core/geometry";
 import Minimap from "./components/minimap";
+import DownloadButton from "./components/download/download-action";
 
 export default function Sidebar() {
   const [, setOpen] = useSceneListModal();
@@ -151,7 +152,7 @@ function Measurements() {
   return (
     <CalciteBlock id="measurements" heading="Measurements" collapsible open>
       <CalciteIcon scale="s" slot="icon" icon="cursor-marquee"></CalciteIcon>
-      <Minimap />
+      {/* <Minimap /> */}
       <ul className="h-full">
         <li>
           <CalciteLabel scale="s">
@@ -191,6 +192,12 @@ function Measurements() {
 }
 
 function ExportSettings() {
+  const scene = useScene();
+  const title = useAccessorValue({
+    getValue: () => scene.portalItem.title,
+    callback: (value = "untitled") => value.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, "_"),
+  });
+
   return (
     <CalciteBlock id="exportSettings" heading="Export" collapsible>
       <CalciteIcon scale="s" slot="icon" icon="file-data"></CalciteIcon>
@@ -200,7 +207,7 @@ function ExportSettings() {
             Filename
             <CalciteInputText
               id="filename"
-              placeholder="Enter your region"
+              placeholder={title}
             ></CalciteInputText>
           </CalciteLabel>
         </li>
@@ -220,6 +227,7 @@ function ExportSettings() {
           </CalciteLabel>
         </li>
       </ul>
+      <DownloadButton />
     </CalciteBlock>
   );
 }

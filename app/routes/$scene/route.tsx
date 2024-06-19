@@ -5,7 +5,7 @@ import Sidebar from "~/sidebar";
 import invariant from "tiny-invariant";
 import SCENES from "~/data/scenes";
 import { ViewUI } from "../../components/arcgis/views/scene-view/scene-view-ui";
-import { CalciteAction, CalciteActionBar, CalciteScrim } from "@esri/calcite-components-react";
+import { CalciteActionBar, CalciteScrim } from "@esri/calcite-components-react";
 import { SelectionAction } from "../../components/selection/selection-action";
 import GraphicsLayer from "~/components/arcgis/graphics-layer";
 import SelectionExtent from "../../components/selection/selection-extent";
@@ -46,7 +46,6 @@ function SceneActions() {
   return (
     <CalciteActionBar layout="vertical" expandDisabled expanded>
       <SelectionAction />
-      <CalciteAction scale="l" icon="download" text="Export model" />
     </CalciteActionBar>
   )
 }

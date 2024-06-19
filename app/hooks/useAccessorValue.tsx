@@ -7,7 +7,7 @@ function identity<T>(value: T): T {
   return value;
 }
 
-export default function useAccessorValue<T, R = T>({
+export default function useAccessorValue<T, R = T | null>({
   getValue,
   callback = identity as (value: T, oldValue: T) => R,
   options
@@ -16,7 +16,7 @@ export default function useAccessorValue<T, R = T>({
   callback?: (value: T, oldValue: T) => R,
   options?: WatchOptions,
 }) {
-  const [value, setValue] = useState<R | null>(null);
+  const [value, setValue] = useState<R>(() => callback(getValue(), null!));
 
   useEffect(() => {
     const handle = reactiveUtils.watch(getValue, (v, o) => {
