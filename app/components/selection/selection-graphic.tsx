@@ -1,5 +1,4 @@
 import Graphic from "~/components/arcgis/graphic";
-import { useSelectionStateSelector } from "./selection-context";
 import { FillSymbol3DLayer, IconSymbol3DLayer, PointSymbol3D, PolygonSymbol3D, TextSymbol3DLayer } from "@arcgis/core/symbols";
 import LineCallout3D from "@arcgis/core/symbols/callouts/LineCallout3D.js";
 import GraphicsLayer from "~/components/arcgis/graphics-layer";
@@ -7,6 +6,11 @@ import pinTearIcon from './pin-tear-f.svg?url';
 import StylePattern3D from "@arcgis/core/symbols/patterns/StylePattern3D.js";
 import DimensionsLayer from "~/components/arcgis/dimensions-layer/dimensions-layer";
 import LengthDimension from "~/components/arcgis/dimensions-layer/length-dimension";
+import { useSelector } from "@xstate/react";
+import { ActorRefFrom } from "xstate";
+import { FeatureQueryMachine } from "./actors/feature-query-machine";
+import { memo, useEffect } from "react";
+import { useSelectionStateSelector } from "./selection-context";
 
 const TransparentSymbol = new PolygonSymbol3D({
   symbolLayers: [
@@ -53,19 +57,42 @@ const Callout = new PointSymbol3D({
   })
 })
 
+interface HighlightProps {
+  queryActor: ActorRefFrom<typeof FeatureQueryMachine>;
+}
+function InternalHighlight({ queryActor }: HighlightProps) {
+  const featureMap = useSelector(queryActor, (snap) => snap.context.features);
+
+  useEffect(() => {
+    const handles: IHandle[] = [];
+    for (const [layerview, { features }] of featureMap) {
+      const handle = layerview.highlight(features);
+      handles.push(handle);
+    }
+
+    return () => {
+      for (const handle of handles) handle.remove();
+    }
+  }, [featureMap]);
+
+  return null;
+}
+const Highlight = memo(InternalHighlight);
+
 export default function SelectionExtent() {
   const origin = useSelectionStateSelector(state => state.context.origin);
   const terminal = useSelectionStateSelector(state => state.context.terminal);
-  const polygon = useSelectionStateSelector(state => state.context.selection);
+  const polygon = useSelectionStateSelector(state => state.context.polygon);
+
+  const query = useSelectionStateSelector(state => state.context.featureQuery);
 
   if (polygon == null) return;
 
-
-  const widthStart = origin!.clone();
+  const widthStart = origin!;
   const widthEnd = widthStart!.clone();
   widthEnd.y = terminal!.y;
 
-  const heightStart = origin!.clone();
+  const heightStart = origin!;
   const heightEnd = heightStart!.clone();
   heightEnd.x = terminal!.x;
 
@@ -75,6 +102,7 @@ export default function SelectionExtent() {
 
   return (
     <>
+      {query ? <Highlight queryActor={query} /> : null}
       <GraphicsLayer elevationMode="relative-to-ground">
         <Graphic
           geometry={origin!}

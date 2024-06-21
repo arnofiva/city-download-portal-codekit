@@ -6,9 +6,9 @@ import invariant from "tiny-invariant";
 import SCENES from "~/data/scenes";
 import { ViewUI } from "../../components/arcgis/views/scene-view/scene-view-ui";
 import { CalciteActionBar, CalciteScrim } from "@esri/calcite-components-react";
-import { SelectionAction } from "../../components/selection/selection-action";
+import { SelectionAction } from "../../components/selection/selection-button";
 import GraphicsLayer from "~/components/arcgis/graphics-layer";
-import SelectionExtent from "../../components/selection/selection-extent";
+import SelectionExtent from "../../components/selection/selection-graphic";
 
 const View = lazy(() => import('../../components/arcgis/views/scene-view/scene-view'));
 const Scene = lazy(() => import('../../components/arcgis/maps/web-scene/scene'));
@@ -58,7 +58,7 @@ export default function SceneRoute() {
   return (
     <Suspense fallback={<CalciteScrim />}>
       <Scene portalItem={instance}>
-        <GraphicsLayer elevationMode="absolute-height">
+        <GraphicsLayer elevationMode="on-the-ground">
           <View>
             <ViewUI position="bottom-left">
               <SceneActions />

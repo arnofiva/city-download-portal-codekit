@@ -1,5 +1,5 @@
 import { createActorContext } from "@xstate/react";
-import SelectionMachine from "./selection-machine";
+import { SelectionMachine } from "./actors/selection-machine";
 
 const context = createActorContext(SelectionMachine);
 

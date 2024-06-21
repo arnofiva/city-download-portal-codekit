@@ -12,28 +12,24 @@ import {
   CalciteSplitButton,
 } from "@esri/calcite-components-react";
 import useIsRoot from "~/hooks/useIsRoot";
-import useAccessorValue from "~/hooks/useAccessorValue";
-import { Suspense, lazy, useCallback } from "react";
 import { useSceneListModal } from "./scene-list-modal/scene-list-modal-context";
 import { useScene } from "./components/arcgis/maps/web-scene/scene-context";
 import { useSceneView } from "./components/arcgis/views/scene-view/scene-view-context";
-import { useSelectionStateSelector } from "./components/selection/selection-context";
 import * as ge from "@arcgis/core/geometry/geometryEngine";
-import { Polyline } from "@arcgis/core/geometry";
+import { Point, Polyline } from "@arcgis/core/geometry";
 import Minimap from "./components/minimap";
-import DownloadButton from "./components/download/download-action";
+import DownloadButton from "./components/download/download-button";
+import FileSize from "./components/download/file-size";
+import { useAccessorValue } from "./hooks/reactive";
+import { useDeferredValue, useMemo, useState } from "react";
+import { useSelectionStateSelector } from "./components/selection/selection-context";
 
 export default function Sidebar() {
   const [, setOpen] = useSceneListModal();
   const scene = useScene();
   const isRoot = useIsRoot();
 
-  const getTitle = useCallback(() => scene.portalItem.title, [scene]);
-
-  const title = useAccessorValue({
-    getValue: getTitle,
-    options: { initial: true }
-  });
+  const title = useAccessorValue(() => scene.portalItem.title, { initial: true });
 
   return (
     <CalciteShellPanel slot="panel-end" collapsed={isRoot}>
@@ -55,7 +51,8 @@ export default function Sidebar() {
 function ModelOrigin() {
   const view = useSceneView();
 
-  const origin = useSelectionStateSelector(state => state.context.origin);
+  const sr = useAccessorValue(() => view.spatialReference?.wkid, { initial: true });
+  const origin = useDeferredValue(useSelectionStateSelector(state => state.context.origin));
 
   const latitude = origin?.latitude;
   const x = origin?.x;
@@ -63,16 +60,17 @@ function ModelOrigin() {
   const longitude = origin?.longitude;
   const y = origin?.y;
 
-  return (
-    <CalciteBlock id="modelOrigin" heading="Model origin" open>
-      <CalciteIcon slot="icon" icon="pin-tear-f"></CalciteIcon>
+  const isOpen = origin != null;
 
+  return (
+    <CalciteBlock id="modelOrigin" heading="Model origin" collapsible open={origin != null}>
+      <CalciteIcon slot="icon" icon="pin-tear-f"></CalciteIcon>
       <ul className="mesurement-list">
         <li>
           <CalciteLabel scale="s">
             Spatial reference (SRID)
             <p>
-              {view.spatialReference?.wkid ?? "--"}
+              {sr ?? "--"}
             </p>
           </CalciteLabel>
         </li>
@@ -101,7 +99,6 @@ function ModelOrigin() {
           </CalciteLabel>
         </li>
       </ul>
-
       <CalciteSplitButton
         primaryText="Copy to clipboard"
         width="full"
@@ -115,44 +112,65 @@ function ModelOrigin() {
   );
 }
 
-function Measurements() {
-  const view = useSceneView();
+function createWidthLine(origin: Point, terminal: Point) {
+  const wl = new Polyline({
+    paths: [[
+      [origin.x, origin.y],
+      [origin.x, terminal.y]
+    ]],
+    spatialReference: origin.spatialReference
+  });
+  return wl;
+}
 
+function createHeightLine(origin: Point, terminal: Point) {
+  const hl = new Polyline({
+    paths: [[
+      [origin.x, origin.y],
+      [terminal.x, origin.y]
+    ]],
+    spatialReference: origin.spatialReference
+  });
+  return hl;
+}
+
+function Measurements() {
+  const hasSelected = useSelectionStateSelector(state => state.matches({ initialized: 'created' }));
   const origin = useSelectionStateSelector(state => state.context.origin);
   const terminal = useSelectionStateSelector(state => state.context.terminal);
-  const selection = useSelectionStateSelector(state => state.context.selection);
+  const selection = useSelectionStateSelector(state => state.context.polygon);
+
+  const deferredOrigin = useDeferredValue(origin);
+  const deferredTerminal = useDeferredValue(terminal);
+  const deferredSelection = useDeferredValue(selection)
+
   const isGlobal = (selection?.spatialReference.isWGS84 || selection?.spatialReference.isWebMercator) ?? false;
 
   const calculateArea = isGlobal ? ge.geodesicArea : ge.planarArea;
   const calculateLength = isGlobal ? ge.geodesicLength : ge.planarLength;
 
-  const area = selection ? Math.abs(calculateArea(selection)) : null;
+  const area = useMemo(() => deferredSelection ? Math.abs(calculateArea(deferredSelection)) : null, [
+    calculateArea, deferredSelection
+  ]);
 
-  let width = null, height = null;
-  if (origin != null && terminal != null) {
+  const width = useMemo(() => {
+    if (deferredOrigin == null || deferredTerminal == null) return null;
 
-    const wl = new Polyline({
-      paths: [[
-        [origin.x, origin.y],
-        [origin.x, terminal.y]
-      ]],
-      spatialReference: origin.spatialReference
-    });
-    width = calculateLength(wl, 'feet');
+    const wl = createWidthLine(deferredOrigin, deferredTerminal);
+    return calculateLength(wl, 'feet');
+  }, [calculateLength, deferredOrigin, deferredTerminal]);
 
-    const hl = new Polyline({
-      paths: [[
-        [origin.x, origin.y],
-        [terminal.x, origin.y]
-      ]],
-      spatialReference: origin.spatialReference
-    });
-    height = calculateLength(hl, 'feet');
-  }
+  const height = useMemo(() => {
+    if (deferredOrigin == null || deferredTerminal == null) return null;
+
+    const hl = createHeightLine(deferredOrigin, deferredTerminal);
+    return calculateLength(hl, 'feet');
+  }, [calculateLength, deferredOrigin, deferredTerminal]);
+
   return (
-    <CalciteBlock id="measurements" heading="Measurements" collapsible open>
+    <CalciteBlock id="measurements" heading="Measurements" collapsible open={hasSelected}>
       <CalciteIcon scale="s" slot="icon" icon="cursor-marquee"></CalciteIcon>
-      {/* <Minimap /> */}
+      <Minimap />
       <ul className="h-full">
         <li>
           <CalciteLabel scale="s">
@@ -192,14 +210,24 @@ function Measurements() {
 }
 
 function ExportSettings() {
+  const [isOpen, setIsOpen] = useState(false);
   const scene = useScene();
-  const title = useAccessorValue({
-    getValue: () => scene.portalItem.title,
-    callback: (value = "untitled") => value.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, "_"),
-  });
+
+  const title = useAccessorValue(() => {
+    const title = scene.portalItem.title;
+    return title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, "_");
+  }, { initial: true });
+
+  const selection = useSelectionStateSelector(state => state.context.polygon);
 
   return (
-    <CalciteBlock id="exportSettings" heading="Export" collapsible>
+    <CalciteBlock
+      id="exportSettings"
+      heading="Export"
+      collapsible
+      onCalciteBlockBeforeOpen={() => setIsOpen(true)}
+      onCalciteBlockClose={() => setIsOpen(false)}
+    >
       <CalciteIcon scale="s" slot="icon" icon="file-data"></CalciteIcon>
       <ul className="mesurement-list">
         <li>
@@ -223,11 +251,11 @@ function ExportSettings() {
         <li>
           <CalciteLabel scale="s">
             File size
-            <p id="file-size">2.1mb</p>
+            {selection != null ? <FileSize selection={selection} /> : "--"}
           </CalciteLabel>
         </li>
       </ul>
-      <DownloadButton />
+      {isOpen ? <DownloadButton /> : null}
     </CalciteBlock>
   );
 }

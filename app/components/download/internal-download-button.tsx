@@ -1,15 +1,15 @@
 import { CalciteAlert, CalciteButton } from "@esri/calcite-components-react";
-import { useSelectionStateSelector } from "../selection/selection-context";
 import type Mesh from "@arcgis/core/geometry/Mesh";
 import MeshLocalVertexSpace from "@arcgis/core/geometry/support/MeshLocalVertexSpace";
 import * as meshUtils from "@arcgis/core/geometry/support/meshUtils";
 import type Ground from '@arcgis/core/Ground';
-import * as projection from "@arcgis/core/geometry/projection";
 import type SceneLayer from "@arcgis/core/layers/SceneLayer";
 import { type Extent, Point } from "@arcgis/core/geometry";
 import type WebScene from "@arcgis/core/WebScene";
 import { useScene } from "../arcgis/maps/web-scene/scene-context";
 import { useState } from "react";
+import { useSelectionStateSelector } from "../selection/selection-context";
+// import convertGLBToOBJ from "./obj-conversion";
 
 async function extractElevation(ground: Ground, extent: __esri.Extent) {
   return await meshUtils.createFromElevation(ground, extent, {
@@ -50,6 +50,25 @@ async function mergeSliceMeshes(elevation: Mesh, features: Mesh[], sceneOrigin: 
   return slice;
 }
 
+async function extractSlice(scene: WebScene, extent: Extent) {
+  const ground = scene.ground;
+
+  const layers = scene.allLayers.filter(layer => layer.type === "scene").toArray() as SceneLayer[];
+  const features = (await Promise.all(layers.map(layer => extractFeatures(layer, extent)))).flat();
+  const elevation = await extractElevation(ground, extent);
+
+  const extractionOrigin = new Point({
+    x: elevation.extent.xmin,
+    y: elevation.extent.ymin,
+    z: elevation.extent.zmin,
+    spatialReference: extent.spatialReference
+  });
+
+  const slice = await mergeSliceMeshes(elevation, features, extractionOrigin);
+
+  return slice;
+}
+
 function downloadFile(buffer: ArrayBuffer) {
   const link = document.createElement("a");
   link.download = "scene.glb";
@@ -58,45 +77,11 @@ function downloadFile(buffer: ArrayBuffer) {
   link.click();
 }
 
-async function extractSlice(scene: WebScene, extent: Extent) {
-  const ground = scene.ground;
-
-  console.log(extent.toJSON());
-
-  const layers = scene.allLayers.filter(layer => layer.type === "scene").toArray() as SceneLayer[];
-  const features = (await Promise.all(layers.map(layer => extractFeatures(layer, extent)))).flat();
-  /*
-    we assume all features have the same SR
-    a more robust solution will need to project the meshes into a consistent SR
-    (ideally this is handled by the server which may very well be the case already)
-    */
-  const featureSpatialReference = features[0]?.spatialReference;
-  /* 
-    When we query the features we always get them back in the same SR,
-    regardless of what the SR of the querying geometry is.
-    However, the elevation is returned with the SR of the extent used to query for it.
-
-    To merge the meshes they must all be in the same SR.
-  */
-  const projectedExtent = projection.project(extent, featureSpatialReference) as __esri.Extent;
-  const elevation = await extractElevation(ground, projectedExtent);
-  const extractionOrigin = new Point({
-    x: projectedExtent.xmin,
-    y: projectedExtent.ymin,
-    z: elevation.extent.zmin,
-    spatialReference: projectedExtent.spatialReference
-  });
-
-  const slice = await mergeSliceMeshes(elevation, features, extractionOrigin);
-
-  return slice.offset(0, 0, -projectedExtent.zmin);
-}
-
 export default function DownloadButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [showError, setShowError] = useState(false)
   const scene = useScene();
-  const extent = useSelectionStateSelector(state => state.context.selection?.extent);
+  const extent = useSelectionStateSelector(state => state.context.polygon?.extent);
 
   const download = async () => {
     if (scene != null && extent != null) {
@@ -104,10 +89,14 @@ export default function DownloadButton() {
       try {
         const mesh = await extractSlice(scene, extent);
         const file = await mesh.toBinaryGLTF();
+        const blob = new Blob([file], { type: 'model/gltf-binary' })
+        blob.size
+        // const obj = await convertGLBToOBJ(file);
+
         downloadFile(file);
       } catch (error) {
         setShowError(true);
-        console.log('error')
+        console.log(error)
       } finally {
         setIsLoading(false);
       }
