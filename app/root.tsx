@@ -19,8 +19,8 @@ import { defineCustomElements } from "@esri/calcite-components/dist/loader";
 import config from "@arcgis/core/config";
 import { CalciteScrim, CalciteShell } from "@esri/calcite-components-react";
 import { PropsWithChildren, useEffect } from "react";
-import SceneListModal from "./scene-list-modal/scene-list-modal";
-import { SceneListModalProvider } from "./scene-list-modal/scene-list-modal-context";
+import SceneListModal from "./components/scene-list-modal/scene-list-modal";
+import { SceneListModalProvider } from "./components/scene-list-modal/scene-list-modal-context";
 import SCENES from "~/data/scenes";
 
 import { LinksFunction } from "@remix-run/node";

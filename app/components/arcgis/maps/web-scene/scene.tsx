@@ -2,7 +2,7 @@ import { PropsWithChildren, Suspense, memo, useEffect, useMemo, useState } from 
 import CoreWebScene from '@arcgis/core/WebScene';
 import PortalItem from '@arcgis/core/portal/PortalItem';
 import { CalciteScrim } from "@esri/calcite-components-react";
-import { useSceneListModal } from "~/scene-list-modal/scene-list-modal-context";
+import { useSceneListModal } from "~/components/scene-list-modal/scene-list-modal-context";
 import useAccessorValue from "~/hooks/useAccessorValue";
 import { SceneContext } from "./scene-context";
 

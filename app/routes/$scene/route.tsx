@@ -1,14 +1,15 @@
 import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { Suspense, lazy } from "react";
 import { redirect, useLoaderData, useRouteError } from "@remix-run/react";
-import Sidebar from "~/sidebar";
+import Sidebar from "~/components/sidebar/sidebar";
 import invariant from "tiny-invariant";
 import SCENES from "~/data/scenes";
 import { ViewUI } from "../../components/arcgis/views/scene-view/scene-view-ui";
-import { CalciteActionBar, CalciteScrim } from "@esri/calcite-components-react";
+import { CalciteScrim } from "@esri/calcite-components-react";
 import { SelectionAction } from "../../components/selection/selection-button";
 import GraphicsLayer from "~/components/arcgis/graphics-layer";
 import SelectionExtent from "../../components/selection/selection-graphic";
+import WalkthroughPopover from "~/components/walk-through/walk-through-popover";
 
 const View = lazy(() => import('../../components/arcgis/views/scene-view/scene-view'));
 const Scene = lazy(() => import('../../components/arcgis/maps/web-scene/scene'));
@@ -44,9 +45,9 @@ export async function clientLoader({ params }: LoaderFunctionArgs) {
 function SceneActions() {
 
   return (
-    <CalciteActionBar layout="vertical" expandDisabled expanded>
+    <span id="select-action">
       <SelectionAction />
-    </CalciteActionBar>
+    </span>
   )
 }
 
@@ -64,6 +65,7 @@ export default function SceneRoute() {
               <SceneActions />
             </ViewUI>
             <Sidebar />
+            <WalkthroughPopover />
             <SelectionExtent />
           </View>
         </GraphicsLayer>

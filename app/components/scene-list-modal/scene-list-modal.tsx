@@ -4,7 +4,7 @@ import useIsRoot from "~/hooks/useIsRoot";
 import type PortalItem from "@arcgis/core/portal/PortalItem";
 import type WebScene from "@arcgis/core/WebScene";
 import { useId } from "react";
-import { clientLoader as RootClientLoader } from "../root";
+import { clientLoader as RootClientLoader } from "../../root";
 import { useSceneListModal } from "./scene-list-modal-context";
 
 interface SceneCardProps {
