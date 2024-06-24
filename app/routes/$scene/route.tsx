@@ -10,9 +10,11 @@ import { SelectionAction } from "../../components/selection/selection-button";
 import GraphicsLayer from "~/components/arcgis/graphics-layer";
 import SelectionExtent from "../../components/selection/selection-graphic";
 import WalkthroughPopover from "~/components/walk-through/walk-through-popover";
+import { load as loadProjectionEngine } from "@arcgis/core/geometry/projection";
 
 const View = lazy(() => import('../../components/arcgis/views/scene-view/scene-view'));
 const Scene = lazy(() => import('../../components/arcgis/maps/web-scene/scene'));
+const Search = lazy(() => import('../../components/arcgis/search/search'));
 
 export const meta: MetaFunction<typeof clientLoader> = ({ data }) => {
   return [
@@ -31,8 +33,8 @@ export async function clientLoader({ params }: LoaderFunctionArgs) {
   }
 
   const instance = scene.item;
-
   await scene.item.load();
+  await loadProjectionEngine();
 
   return {
     instance,
@@ -61,6 +63,7 @@ export default function SceneRoute() {
       <Scene portalItem={instance}>
         <GraphicsLayer elevationMode="on-the-ground">
           <View>
+            <Search />
             <ViewUI position="bottom-left">
               <SceneActions />
             </ViewUI>
