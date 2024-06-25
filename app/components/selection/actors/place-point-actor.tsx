@@ -1,3 +1,4 @@
+import Graphic from "@arcgis/core/Graphic";
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
 import { Point } from "@arcgis/core/geometry";
 import SketchViewModel from "@arcgis/core/widgets/Sketch/SketchViewModel";
@@ -12,7 +13,7 @@ export const PlacePointActor = fromPromise<CreateOutput, CreateInput>(async func
   const sketch = input.sketch;
 
   sketch.create("point")
-  const graphic = await reactiveUtils.whenOnce(() => sketch.createGraphic?.geometry.type === "point" && sketch.createGraphic)
+  const graphic = (await reactiveUtils.whenOnce(() => sketch.createGraphic?.geometry.type === "point" && sketch.createGraphic)) as Graphic;
 
   let state = 'void'
   let geometry = graphic.geometry as Point;

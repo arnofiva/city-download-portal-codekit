@@ -3,7 +3,7 @@ import { contains } from "@arcgis/core/geometry/geometryEngine";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import SceneView from "@arcgis/core/views/SceneView";
 import SketchViewModel from "@arcgis/core/widgets/Sketch/SketchViewModel";
-import { ActorRefFrom, assign, enqueueActions, fromCallback, log, sendTo, setup, stopChild } from "xstate";
+import { ActorRefFrom, assign, enqueueActions, fromCallback, sendTo, setup, stopChild } from "xstate";
 import { FeatureQueryMachine } from "./feature-query-machine";
 import { PlacePointActor } from "./place-point-actor";
 import { editPolygonActor } from "./update-polygon-actor";
@@ -23,6 +23,14 @@ const updateOnClickCallback = fromCallback<any, { sketch: SketchViewModel, polyg
   })
 
   return handle.remove;
+});
+
+const watchForUpdates = fromCallback<any, SketchViewModel>(({ input, sendBack }) => {
+  const handle = input.on("update", (event) => {
+    if (event.state === 'start') sendBack({ type: `update.${event.state}` })
+  })
+
+  return handle.remove
 });
 
 type SketchEvent =
@@ -135,6 +143,7 @@ export const SelectionMachine = setup({
   },
   actors: {
     updateOnClickCallback,
+    watchForUpdates,
     featureQueryMachine: FeatureQueryMachine,
     placePoint: PlacePointActor,
     updatePolygon: editPolygonActor
@@ -159,13 +168,17 @@ export const SelectionMachine = setup({
               sketch: ({ context, event }) => {
                 const layer = event.layer;
                 const view = event.view;
-                console.log('wtf?')
+
                 if (context.sketch) context.sketch.destroy();
 
                 return new SketchViewModel({
                   view,
                   layer,
-                  defaultUpdateOptions: updateOptions
+                  defaultUpdateOptions: updateOptions,
+                  tooltipOptions: {
+                    enabled: true,
+                    inputEnabled: true,
+                  }
                 })
               }
             })
@@ -175,18 +188,12 @@ export const SelectionMachine = setup({
       initialized: {
         initial: 'nonExistent',
         invoke: {
-          src: fromCallback<any, SketchViewModel>(({ input, sendBack }) => {
-            const handle = input.on("update", (event) => {
-              if (event.state === 'start') sendBack({ type: `update.${event.state}` })
-            })
-
-            return handle.remove
-          }),
+          src: 'watchForUpdates',
           input: ({ context }) => context.sketch
         },
         states: {
           nonExistent: {
-            entry: ['stopFeatureQuery'],
+            entry: 'stopFeatureQuery',
             on: {
               "create.start": {
                 target: 'creating'
@@ -260,7 +267,7 @@ export const SelectionMachine = setup({
                   ],
                   onError: {
                     target: "#(machine).initialized.nonExistent",
-                    actions: ['cancel', log(({ event }) => event)],
+                    actions: 'cancel',
                   },
                 },
                 on: {
@@ -281,8 +288,6 @@ export const SelectionMachine = setup({
             initial: 'idle',
             states: {
               idle: {
-                entry: log('entering idle'),
-                exit: log('leaving leaving'),
                 invoke: {
                   src: "updateOnClickCallback",
                   input: ({ context }) => ({ sketch: context.sketch, polygon: context.polygon! })
@@ -297,8 +302,6 @@ export const SelectionMachine = setup({
                 }
               },
               maybeCreating: {
-                entry: log('maybeCreating entry'),
-                exit: log('maybeCreating exit'),
                 invoke: {
                   src: 'placePoint',
                   input: ({ context }) => ({ sketch: context.sketch }),
@@ -317,8 +320,6 @@ export const SelectionMachine = setup({
                 },
               },
               updating: {
-                entry: log('entering updating'),
-                exit: log('leaving updating'),
                 invoke: {
                   input: ({ context, self }) => ({
                     sketch: context.sketch,
@@ -349,59 +350,3 @@ export const SelectionMachine = setup({
       },
     }
   })
-
-
-// function updateNeighboringVertices(ring: Ring, index: number, vertical: number, horizontal: number) {
-//   const path = ring.slice(0, -1);
-
-//   const [x, y] = path[index];
-
-//   path[vertical][0] = x;
-//   path[horizontal][1] = y;
-
-//   path.push(path[0]);
-
-//   return path
-// }
-
-// type Ring = Polygon['rings'][number];
-
-// function alignPolygonAfterChange(nextPolygon: Polygon, previousPolygon: Polygon) {
-//   const previous: Ring = previousPolygon.rings[0];
-//   const next: Ring = nextPolygon.rings[0];
-
-//   console.log(
-//     {
-//       previous,
-//       next
-//     }
-//   )
-
-//   const corner = next.findIndex(([x, y], index) => x !== previous[index][0] || y !== previous[index][1]);
-
-//   console.log({ corner })
-
-//   let alignedRing: Ring;
-//   switch (corner) {
-//     case 0:
-//       alignedRing = updateNeighboringVertices(next, corner, 1, 3)
-//       break;
-//     case 1:
-//       alignedRing = updateNeighboringVertices(next, corner, 0, 2)
-//       break;
-//     case 2:
-//       alignedRing = updateNeighboringVertices(next, corner, 3, 1)
-//       break;
-//     case 3:
-//       alignedRing = updateNeighboringVertices(next, corner, 2, 0)
-//       break;
-//     default:
-//       alignedRing = next;
-//   }
-
-//   const alignedPolygon = nextPolygon.clone();
-//   alignedPolygon.rings = [alignedRing];
-
-//   return alignedPolygon;
-// }
-
