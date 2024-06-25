@@ -14,6 +14,7 @@ import { useSelectionStateSelector } from "../selection/selection-context";
 import { DownloadMachine } from "../download/download-machine";
 import { useActor } from "@xstate/react";
 import useEffectOnce from "~/hooks/useEffectOnce";
+import { completeWalkthrough } from "../walk-through/walk-through-popover";
 
 interface ExportSettingsProps {
   blockElementRef: RefObject<HTMLCalciteBlockElement>;
@@ -105,6 +106,8 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
             if (canDownload) {
               const name = filename || title || 'model';
               downloadFile(name, actor.context.file!);
+
+              completeWalkthrough();
             }
           }}
         >
