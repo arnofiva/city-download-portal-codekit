@@ -3,7 +3,7 @@ import { contains } from "@arcgis/core/geometry/geometryEngine";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import SceneView from "@arcgis/core/views/SceneView";
 import SketchViewModel from "@arcgis/core/widgets/Sketch/SketchViewModel";
-import { ActorRefFrom, assign, enqueueActions, fromCallback, sendTo, setup, stopChild } from "xstate";
+import { ActorRefFrom, assign, enqueueActions, fromCallback, sendTo, setup } from "xstate";
 import { FeatureQueryMachine } from "./feature-query-machine";
 import { PlacePointActor } from "./place-point-actor";
 import { editPolygonActor } from "./update-polygon-actor";
@@ -130,16 +130,7 @@ export const SelectionMachine = setup({
       enqueue(({ context }) => context.sketch.layer.removeAll())
       enqueue.assign({ origin: null, terminal: null, polygon: null });
     }),
-    stopFeatureQuery: stopChild(FEATURE_QUERY_ACTOR_ID),
-    startFeatureQuery: assign({
-      featureQuery: ({ spawn }, view: SceneView) => spawn(
-        "featureQueryMachine",
-        {
-          input: { view },
-          id: FEATURE_QUERY_ACTOR_ID
-        })
-    }),
-    updateFeatureQueryGeometry: sendTo(({ context }) => context.featureQuery!, ({ context }) => ({ type: 'changeSelection', selection: context.polygon })),
+    updateFeatureQueryGeometry: sendTo(FEATURE_QUERY_ACTOR_ID, ({ context }) => ({ type: 'changeSelection', selection: context.polygon })),
   },
   actors: {
     updateOnClickCallback,
@@ -187,13 +178,19 @@ export const SelectionMachine = setup({
       },
       initialized: {
         initial: 'nonExistent',
-        invoke: {
-          src: 'watchForUpdates',
-          input: ({ context }) => context.sketch
-        },
+        invoke: [
+          {
+            src: 'watchForUpdates',
+            input: ({ context }) => context.sketch
+          },
+          {
+            id: FEATURE_QUERY_ACTOR_ID,
+            src: 'featureQueryMachine',
+            input: ({ context }) => ({ view: context.sketch.view as SceneView }),
+          }
+        ],
         states: {
           nonExistent: {
-            entry: 'stopFeatureQuery',
             on: {
               "create.start": {
                 target: 'creating'
@@ -202,13 +199,6 @@ export const SelectionMachine = setup({
           },
           creating: {
             initial: "origin",
-            entry: [
-              'stopFeatureQuery',
-              {
-                type: 'startFeatureQuery',
-                params: ({ context }) => context.sketch.view as SceneView,
-              }
-            ],
             states: {
               origin: {
                 invoke: {

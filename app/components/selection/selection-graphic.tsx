@@ -6,11 +6,10 @@ import pinTearIcon from './pin-tear-f.svg?url';
 import StylePattern3D from "@arcgis/core/symbols/patterns/StylePattern3D.js";
 import DimensionsLayer from "~/components/arcgis/dimensions-layer/dimensions-layer";
 import LengthDimension from "~/components/arcgis/dimensions-layer/length-dimension";
-import { useSelector } from "@xstate/react";
 import { ActorRefFrom } from "xstate";
 import { FeatureQueryMachine } from "./actors/feature-query-machine";
 import { memo, useEffect } from "react";
-import { useSelectionStateSelector } from "./selection-context";
+import { useFeatureQuerySelector, useSelectionStateSelector } from "./selection-context";
 
 const TransparentSymbol = new PolygonSymbol3D({
   symbolLayers: [
@@ -57,21 +56,20 @@ const Callout = new PointSymbol3D({
   })
 })
 
-interface HighlightProps {
-  queryActor: ActorRefFrom<typeof FeatureQueryMachine>;
-}
-function InternalHighlight({ queryActor }: HighlightProps) {
-  const featureMap = useSelector(queryActor, (snap) => snap.context.features);
+function InternalHighlight() {
+  const featureMap = useFeatureQuerySelector(state => state?.context.features);
 
   useEffect(() => {
-    const handles: IHandle[] = [];
-    for (const [layerview, { features }] of featureMap) {
-      const handle = layerview.highlight(features);
-      handles.push(handle);
-    }
+    if (featureMap) {
+      const handles: IHandle[] = [];
+      for (const [layerview, { features }] of featureMap) {
+        const handle = layerview.highlight(features);
+        handles.push(handle);
+      }
 
-    return () => {
-      for (const handle of handles) handle.remove();
+      return () => {
+        for (const handle of handles) handle.remove();
+      }
     }
   }, [featureMap]);
 
@@ -84,7 +82,7 @@ export default function SelectionExtent() {
   const terminal = useSelectionStateSelector(state => state.context.terminal);
   const polygon = useSelectionStateSelector(state => state.context.polygon);
 
-  const query = useSelectionStateSelector(state => state.context.featureQuery);
+  const query = useSelectionStateSelector(state => state.children['feature-query'] as ActorRefFrom<typeof FeatureQueryMachine>);
 
   if (polygon == null) return;
 
@@ -102,7 +100,7 @@ export default function SelectionExtent() {
 
   return (
     <>
-      {query ? <Highlight queryActor={query} /> : null}
+      {query ? <Highlight /> : null}
       <GraphicsLayer elevationMode="relative-to-ground">
         <Graphic
           geometry={origin!}

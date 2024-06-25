@@ -31,8 +31,11 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
   const selection = useSelectionStateSelector(state => state.context.polygon);
   const [actor, send] = useActor(DownloadMachine, { input: { scene } });
   const deferredSelection = useDeferredValue(selection);
+
   useEffect(() => {
-    if (deferredSelection) send({ type: 'change', selection: deferredSelection });
+    if (deferredSelection) {
+      send({ type: 'change', selection: deferredSelection });
+    }
     else send({ type: 'clear' })
   }, [deferredSelection, send])
 

@@ -2,7 +2,7 @@ import { Polygon } from "@arcgis/core/geometry";
 import SceneView from "@arcgis/core/views/SceneView";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
 import { InvokeCallback } from "node_modules/xstate/dist/declarations/src/actors/callback";
-import { ActorRefFrom, type EventObject, assign, fromCallback, fromPromise, setup, stopChild } from "xstate";
+import { ActorRefFrom, type EventObject, assign, fromCallback, fromPromise, setup, stopChild, log } from "xstate";
 
 interface QueryFeaturesInput {
   view: SceneView;
@@ -117,13 +117,14 @@ export const FeatureQueryMachine = setup({
       {
         target: '.querying',
         guard: 'hasSelection',
-        actions: [{
+        actions: [log('wowie'), {
           type: "updateSelection",
           params: ({ event }) => event.selection!
         }],
       },
       {
         target: '.idle',
+        actions: log('wowie')
       }
     ],
     layersChanged: {

@@ -7,7 +7,7 @@ import * as ge from "@arcgis/core/geometry/geometryEngine";
 import { Point, Polyline } from "@arcgis/core/geometry";
 import Minimap from "../minimap";
 import { RefObject, useDeferredValue, useMemo } from "react";
-import { useSelectionStateSelector } from "../selection/selection-context";
+import { useFeatureQuerySelector, useSelectionStateSelector } from "../selection/selection-context";
 import useEffectOnce from "~/hooks/useEffectOnce";
 
 function createWidthLine(origin: Point, terminal: Point) {
@@ -67,6 +67,17 @@ export default function Measurements({ blockElementRef }: MeasurementsProps) {
     return calculateLength(hl, 'feet');
   }, [calculateLength, deferredOrigin, deferredTerminal]);
 
+  const featureCount = useFeatureQuerySelector(state => {
+    console.log({ state })
+    if (state == null) return 0;
+
+    const featureResultMap = state.context.features;
+    const count = Array.from(featureResultMap.values())
+      .reduce((total, { features }) => features.length + total, 0);
+
+    return count;
+  });
+
 
   const hasSelected = useSelectionStateSelector(state => state.matches({ initialized: 'created' }));
   useEffectOnce(() => {
@@ -89,7 +100,7 @@ export default function Measurements({ blockElementRef }: MeasurementsProps) {
         <li>
           <CalciteLabel scale="s">
             North to south length
-            <p id="width-measurement" className="paragraph">
+            <p>
               {width ?? "--"}
             </p>
           </CalciteLabel>
@@ -97,7 +108,7 @@ export default function Measurements({ blockElementRef }: MeasurementsProps) {
         <li>
           <CalciteLabel scale="s">
             East to west length
-            <p id="height-measurement" className="paragraph">
+            <p>
               {height ?? "--"}
             </p>
           </CalciteLabel>
@@ -112,9 +123,9 @@ export default function Measurements({ blockElementRef }: MeasurementsProps) {
         ) : null}
         <li>
           <CalciteLabel scale="s">
-            Buildings
-            <p id="number-of-buildings" className="paragraph">
-              --
+            Selected features
+            <p>
+              {featureCount}
             </p>
           </CalciteLabel>
         </li>
