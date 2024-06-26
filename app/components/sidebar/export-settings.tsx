@@ -1,4 +1,5 @@
 import {
+  CalciteAlert,
   CalciteBlock,
   CalciteButton,
   CalciteIcon,
@@ -15,6 +16,17 @@ import { DownloadMachine } from "../download/download-machine";
 import { useActor } from "@xstate/react";
 import useEffectOnce from "~/hooks/useEffectOnce";
 import { completeWalkthrough } from "../walk-through/walk-through-popover";
+import { RootShellPortal } from "../root-shell";
+import ErrorAlertQueue from "../error-alert-queue";
+
+function ExportErrorAlert({ onClose }: { type: string; onClose: () => void }) {
+  return (
+    <CalciteAlert icon kind="danger" label="Export error" open autoClose onCalciteAlertClose={onClose}>
+      <p slot='title'>Failed to export</p>
+      <p slot="message">An error occurred during export.</p>
+    </CalciteAlert>
+  )
+}
 
 interface ExportSettingsProps {
   blockElementRef: RefObject<HTMLCalciteBlockElement>;
@@ -29,7 +41,7 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
   const [filename, setFilename] = useState("")
 
   const selection = useSelectionStateSelector(state => state.context.polygon);
-  const [actor, send] = useActor(DownloadMachine, { input: { scene } });
+  const [actor, send, actorRef] = useActor(DownloadMachine, { input: { scene } });
   const deferredSelection = useDeferredValue(selection);
 
   useEffect(() => {
@@ -38,6 +50,12 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
     }
     else send({ type: 'clear' })
   }, [deferredSelection, send])
+
+  useEffect(() => {
+    const subscription = actorRef.on("error", console.log);
+
+    return subscription.unsubscribe
+  }, [actorRef])
 
   const isLoading = actor.context.loading;
   const canDownload = actor.context.file != null && !actor.context.loading;
@@ -117,6 +135,12 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
           Export model
         </CalciteButton>
       </span>
+      <RootShellPortal>
+        <ErrorAlertQueue
+          alertComponent={ExportErrorAlert}
+          captureError={capture => actorRef.on("error", capture).unsubscribe}
+        />
+      </RootShellPortal>
     </CalciteBlock>
   );
 }

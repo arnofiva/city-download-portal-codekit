@@ -15,7 +15,6 @@ export function SelectionAction() {
 
   const isSketchMachineUninitialized = useSelectionStateSelector(state => state.matches("uninitialized"));
   useEffect(() => {
-    console.log('wth?')
     actor.send({ type: 'initialize', view, layer: graphics });
   }, [actor, graphics, isSketchMachineUninitialized, view])
 

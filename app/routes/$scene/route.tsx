@@ -11,6 +11,7 @@ import GraphicsLayer from "~/components/arcgis/graphics-layer";
 import SelectionExtent from "../../components/selection/selection-graphic";
 import WalkthroughPopover from "~/components/walk-through/walk-through-popover";
 import { load as loadProjectionEngine } from "@arcgis/core/geometry/projection";
+import SelectionErrorAlert from "~/components/selection/selection-error-alert";
 
 const View = lazy(() => import('../../components/arcgis/views/scene-view/scene-view'));
 const Scene = lazy(() => import('../../components/arcgis/maps/web-scene/scene'));
@@ -69,6 +70,7 @@ export default function SceneRoute() {
             </ViewUI>
             <Sidebar />
             <WalkthroughPopover />
+            <SelectionErrorAlert />
             <SelectionExtent />
           </View>
         </GraphicsLayer>

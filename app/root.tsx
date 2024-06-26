@@ -17,7 +17,7 @@ import globalStyles from "./global.css?url";
 
 import { defineCustomElements } from "@esri/calcite-components/dist/loader";
 import config from "@arcgis/core/config";
-import { CalciteScrim, CalciteShell } from "@esri/calcite-components-react";
+import { CalciteScrim } from "@esri/calcite-components-react";
 import { PropsWithChildren, useEffect } from "react";
 import SceneListModal from "./components/scene-list-modal/scene-list-modal";
 import { SceneListModalProvider } from "./components/scene-list-modal/scene-list-modal-context";
@@ -25,6 +25,7 @@ import SCENES from "~/data/scenes";
 
 import { LinksFunction } from "@remix-run/node";
 import { SelectionContext } from "./components/selection/selection-context";
+import RootShell from "./components/root-shell";
 
 export const meta: MetaFunction = () => {
   return [
@@ -88,12 +89,12 @@ export function Layout({ children }: PropsWithChildren<LayoutProps>) {
       </head>
       <body>
         <SelectionContext key={params.scene}>
-          <CalciteShell>
+          <RootShell>
             <SceneListModalProvider>
               {children}
               <SceneListModal />
             </SceneListModalProvider>
-          </CalciteShell>
+          </RootShell>
         </SelectionContext>
         <ScrollRestoration />
         <Scripts />
@@ -108,8 +109,8 @@ export default function App() {
 
 export function HydrateFallback() {
   return (
-    <CalciteShell>
+    <RootShell>
       <CalciteScrim loading />
-    </CalciteShell>
+    </RootShell>
   );
 }

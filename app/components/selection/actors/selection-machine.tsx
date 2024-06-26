@@ -3,7 +3,7 @@ import { contains } from "@arcgis/core/geometry/geometryEngine";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import SceneView from "@arcgis/core/views/SceneView";
 import SketchViewModel from "@arcgis/core/widgets/Sketch/SketchViewModel";
-import { ActorRefFrom, assign, enqueueActions, fromCallback, sendTo, setup } from "xstate";
+import { ActorRefFrom, assign, emit, enqueueActions, fromCallback, sendTo, setup } from "xstate";
 import { FeatureQueryMachine } from "./feature-query-machine";
 import { PlacePointActor } from "./place-point-actor";
 import { editPolygonActor } from "./update-polygon-actor";
@@ -43,6 +43,11 @@ type SketchEvent =
   | { type: 'update.complete', polygon?: Polygon }
   | { type: 'initialize', view: SceneView, layer: GraphicsLayer }
 
+export type EmittedSelectionErrorEvents =
+  | { type: 'error', message?: string }
+  | { type: 'create.error', message?: string }
+  | { type: 'update.error', message?: string }
+
 type SketchMachineContext = {
   sketch: SketchViewModel;
   origin: Point | null;
@@ -76,6 +81,7 @@ export const SelectionMachine = setup({
   types: {
     context: {} as SketchMachineContext,
     events: {} as SketchEvent,
+    emitted: {} as EmittedSelectionErrorEvents,
     input: {} as SketchMachineInput
   },
   actions: {
@@ -219,7 +225,7 @@ export const SelectionMachine = setup({
                   ],
                   onError: {
                     target: "#(machine).initialized.nonExistent",
-                    actions: 'cancel',
+                    actions: ['cancel', emit({ type: 'create.error' })],
                   },
                 },
               },
@@ -257,7 +263,7 @@ export const SelectionMachine = setup({
                   ],
                   onError: {
                     target: "#(machine).initialized.nonExistent",
-                    actions: 'cancel',
+                    actions: ['cancel', emit({ type: 'create.error' })],
                   },
                 },
                 on: {
@@ -306,6 +312,7 @@ export const SelectionMachine = setup({
                   ],
                   onError: {
                     target: "idle",
+                    actions: emit({ type: 'create.error' })
                   },
                 },
               },
@@ -316,7 +323,7 @@ export const SelectionMachine = setup({
                     onUpdate: (polygon) => self.send({ type: "update.active", polygon })
                   }),
                   onDone: { target: "idle" },
-                  onError: { target: "idle" },
+                  onError: { target: "idle", actions: emit({ type: 'update.error' }) },
                   src: "updatePolygon",
                 },
                 on: {

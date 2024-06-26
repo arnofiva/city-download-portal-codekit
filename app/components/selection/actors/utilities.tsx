@@ -19,16 +19,7 @@ export function alignPolygonAfterChange(nextPolygon: Polygon, previousPolygon: P
   const previous: Ring = previousPolygon.rings[0];
   const next: Ring = nextPolygon.rings[0];
 
-  console.log(
-    {
-      previous,
-      next
-    }
-  )
-
   const corner = next.findIndex(([x, y], index) => x !== previous[index][0] || y !== previous[index][1]);
-
-  console.log({ corner })
 
   let alignedRing: Ring;
   switch (corner) {

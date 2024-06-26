@@ -12,16 +12,19 @@ type CreateOutput = Point;
 export const PlacePointActor = fromPromise<CreateOutput, CreateInput>(async function place({ input }) {
   const sketch = input.sketch;
 
-  sketch.create("point")
-  const graphic = (await reactiveUtils.whenOnce(() => sketch.createGraphic?.geometry.type === "point" && sketch.createGraphic)) as Graphic;
+  sketch.create("point");
 
-  let state = 'void'
+  const graphic = await reactiveUtils.whenOnce(
+    () => sketch.createGraphic?.geometry.type === "point" &&
+      sketch.createGraphic
+  ) as Graphic;
+
   let geometry = graphic.geometry as Point;
 
+  let state = 'void'
   const stateWatcher = sketch.on("create", (event) => {
-    console.log('new state');
     state = event.state;
-  })
+  });
 
   const watcher = reactiveUtils.watch(() => graphic.geometry as Point, (geom) => {
     geometry = geom;
@@ -33,5 +36,5 @@ export const PlacePointActor = fromPromise<CreateOutput, CreateInput>(async func
   await reactiveUtils.whenOnce(() => sketch.createGraphic == null);
 
   if (state === "complete" && geometry != null) return geometry
-  else throw new Error('cancelled...');
+  else throw new Error('The point placement was cancelled');
 });

@@ -28,21 +28,21 @@ export const editPolygonActor = fromPromise<Polygon, UpdateInput>(async function
     const [graphic] = event.graphics;
     const polygon = graphic.geometry as Polygon;
 
+    input.onUpdate(polygon);
     if (event.state === "complete" && !event.aborted) {
       return resolve(polygon);
     }
     if (event.state === "complete" && event.aborted) {
       return reject()
     }
-
-    if (event.state === "active") {
-      return input.onUpdate(polygon);
-    }
   })
 
-  const result = await promise;
-
-  handle.remove();
-
-  return result;
+  try {
+    return await promise;
+  } catch (error) {
+    sketch.cancel();
+    throw new Error('the update was cancelled')
+  } finally {
+    handle.remove();
+  }
 });

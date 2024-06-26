@@ -68,7 +68,6 @@ export default function Measurements({ blockElementRef }: MeasurementsProps) {
   }, [calculateLength, deferredOrigin, deferredTerminal]);
 
   const featureCount = useFeatureQuerySelector(state => {
-    console.log({ state })
     if (state == null) return 0;
 
     const featureResultMap = state.context.features;

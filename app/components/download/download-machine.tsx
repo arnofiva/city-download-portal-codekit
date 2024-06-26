@@ -1,4 +1,4 @@
-import { AnyActorRef, assign, fromPromise, log, setup, spawnChild, stopChild } from "xstate";
+import { AnyActorRef, assign, emit, fromPromise, setup, spawnChild, stopChild } from "xstate";
 import createMesh from "./create-mesh";
 import WebScene from "@arcgis/core/WebScene";
 import { Mesh, Polygon } from "@arcgis/core/geometry";
@@ -19,7 +19,7 @@ const logic = fromPromise<void, Input>(async ({ input, signal }) => {
       return;
     } else {
       console.log(error);
-      input.parent.send({ type: 'error' });
+      input.parent.send({ type: 'error', message: error });
     }
   }
 });
@@ -39,7 +39,10 @@ export const DownloadMachine = setup({
     events: {} as
       | { type: 'change', selection: Polygon }
       | { type: 'done', size: number | null, mesh: Mesh, file: Blob }
-      | { type: 'clear' }
+      | { type: 'error', message: unknown }
+      | { type: 'clear' },
+    emitted: {} as
+      | { type: 'error', message: unknown }
   },
   actors: {
     logic
@@ -84,7 +87,7 @@ export const DownloadMachine = setup({
       })
     },
     error: {
-      actions: log('there was an error')
+      actions: emit(({ event }) => ({ type: 'error', message: event }))
     },
     clear: {
       actions: 'clear',

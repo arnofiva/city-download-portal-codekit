@@ -16,7 +16,10 @@ type ActorSnapshot<Actor> = Actor extends {
   getSnapshot(): infer TSnapshot;
 } ? TSnapshot : undefined;
 
-export function useFeatureQuerySelector<T>(selector: (state: ActorSnapshot<FeatureQueryActorRef> | undefined) => T, compare?: (a: T, b: T) => boolean) {
+export function useFeatureQuerySelector<T>(
+  selector: (state: ActorSnapshot<FeatureQueryActorRef> | undefined) => T,
+  compare?: (a: T, b: T) => boolean
+) {
   const featureQueryActor = useSelectionStateSelector(state => state.children['feature-query'] as ActorRefFrom<typeof FeatureQueryMachine>);
   return useSelector(featureQueryActor, selector, compare)
 }
