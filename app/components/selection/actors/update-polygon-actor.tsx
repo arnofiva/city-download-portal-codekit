@@ -48,6 +48,27 @@ export const editPolygonActor = fromPromise<Polygon, UpdateInput>(async function
       graphic.geometry = polygon;
     }
 
+    if (event.toolEventInfo?.type === "vertex-add") {
+      polygon = graphic.geometry.clone() as Polygon;
+
+      const [ring] = polygon.rings;
+
+      const vertices = event.toolEventInfo.vertices;
+
+      for (const vertex of vertices) {
+        ring.splice(vertex.vertexIndex, 1);
+
+        // polygon rings are always closed, so the first vertex' coordinates appear .at(0) and .at(-1)
+        // so in this case, we must also replace the last element in the ring array
+        if (vertex.vertexIndex === 0) {
+          ring.pop();
+          ring.push(ring[0]);
+        }
+      }
+
+      graphic.geometry = polygon;
+    }
+
     input.onUpdate(polygon);
 
     if (event.state === "complete" && !event.aborted) {
