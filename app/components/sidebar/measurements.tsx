@@ -3,115 +3,51 @@ import {
   CalciteIcon,
   CalciteLabel,
 } from "@esri/calcite-components-react";
-// import * as ge from "@arcgis/core/geometry/geometryEngine";
-// import { Point, Polyline } from "@arcgis/core/geometry";
 import Minimap from "../minimap";
 import {
-  // ReactNode,
   RefObject,
   useDeferredValue,
   useEffect,
-  // useMemo,
   useState
 } from "react";
 import { useFeatureQuerySelector, useSelectionStateSelector } from "../selection/selection-context";
 import useEffectOnce from "~/hooks/useEffectOnce";
-import DirectLineMeasurement3DViewModel from "@arcgis/core/widgets/DirectLineMeasurement3D/DirectLineMeasurement3DViewModel.js";
 import { useAccessorValue } from "~/hooks/reactive";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import AreaMeasurement3DViewModel from "@arcgis/core/widgets/AreaMeasurement3D/AreaMeasurement3DViewModel.js";
-
-// function createWidthLine(origin: Point, terminal: Point) {
-//   const wl = new Polyline({
-//     paths: [[
-//       [origin.x, origin.y],
-//       [origin.x, terminal.y]
-//     ]],
-//     spatialReference: origin.spatialReference
-//   });
-//   return wl;
-// }
-
-// function createHeightLine(origin: Point, terminal: Point) {
-//   const hl = new Polyline({
-//     paths: [[
-//       [origin.x, origin.y],
-//       [terminal.x, origin.y]
-//     ]],
-//     spatialReference: origin.spatialReference
-//   });
-//   return hl;
-// }
+import DimensionsLayer from "../arcgis/dimensions-layer/dimensions-layer";
+import LengthDimension from "../arcgis/dimensions-layer/length-dimension";
 
 interface MeasurementsProps {
   blockElementRef: RefObject<HTMLCalciteBlockElement>;
 }
 export default function Measurements({ blockElementRef }: MeasurementsProps) {
   const view = useSceneView();
-  const [northToSouth] = useState(() => new DirectLineMeasurement3DViewModel({ view }));
-  const [eastToWest] = useState(() => new DirectLineMeasurement3DViewModel({ view }));
   const [areaVm] = useState(() => new AreaMeasurement3DViewModel({ view }))
 
-  const origin = useSelectionStateSelector(state => state.context.origin);
-  const terminal = useSelectionStateSelector(state => state.context.terminal);
+  const [northToSouth, setNorthToSouth] = useState<__esri.Length | undefined>();
+  const [eastToWest, setEastToWest] = useState<__esri.Length | undefined>();
+
   const selection = useSelectionStateSelector(state => state.context.polygon);
 
-  const deferredOrigin = useDeferredValue(origin);
-  const deferredTerminal = useDeferredValue(terminal);
   const deferredSelection = useDeferredValue(selection);
 
   useEffect(() => {
-    if (deferredOrigin == null || deferredTerminal == null || deferredSelection == null) {
-      northToSouth.analysis.startPoint = null!;
-      northToSouth.analysis.endPoint = null!;
-      eastToWest.analysis.startPoint = null!;
-      eastToWest.analysis.endPoint = null!;
+    if (deferredSelection == null) {
       areaVm.analysis.geometry = deferredSelection!;
     } else {
-      view.whenAnalysisView(northToSouth.analysis).then(analysisView => { analysisView.visible = false });
-      view.whenAnalysisView(eastToWest.analysis).then(analysisView => { analysisView.visible = false });
       view.whenAnalysisView(areaVm.analysis).then(analysisView => { analysisView.visible = false });
-
-      const nsEnd = deferredOrigin?.clone();
-      nsEnd.y = deferredTerminal.y;
-      northToSouth.analysis.startPoint = deferredOrigin!;
-      northToSouth.analysis.endPoint = nsEnd!;
-
-      const ewEnd = deferredOrigin.clone();
-      ewEnd.x = deferredTerminal.x;
-      eastToWest.analysis.startPoint = deferredOrigin!;
-      eastToWest.analysis.endPoint = ewEnd!;
-
       areaVm.analysis.geometry = deferredSelection!;
     }
-  }, [areaVm.analysis, deferredOrigin, deferredSelection, deferredTerminal, eastToWest.analysis, northToSouth.analysis, view]);
+  }, [areaVm.analysis, deferredSelection, view]);
 
-  const northToSouthLength = useAccessorValue(() => northToSouth.measurement?.directDistance.text);
-  const eastToWestLength = useAccessorValue(() => eastToWest.measurement?.directDistance.text);
   const area = useAccessorValue(() => areaVm.measurement?.area.text);
 
-  // const isGlobal = (selection?.spatialReference.isWGS84 || selection?.spatialReference.isWebMercator) ?? false;
+  const nsUnit = shortUnit(northToSouth?.unit);
+  const ewUnit = shortUnit(eastToWest?.unit);
 
-  // const calculateArea = isGlobal ? ge.geodesicArea : ge.planarArea;
-  // const calculateLength = isGlobal ? ge.geodesicLength : ge.planarLength;
-
-  // const area = useMemo(() => deferredSelection ? Math.abs(calculateArea(deferredSelection)) : null, [
-  //   calculateArea, deferredSelection
-  // ]);
-
-  // const northToSouthLength = useMemo(() => {
-  //   if (deferredOrigin == null || deferredTerminal == null) return null;
-
-  //   const wl = createWidthLine(deferredOrigin, deferredTerminal);
-  //   return calculateLength(wl, 'feet');
-  // }, [calculateLength, deferredOrigin, deferredTerminal]);
-
-  // const eastToWestLength = useMemo(() => {
-  //   if (deferredOrigin == null || deferredTerminal == null) return null;
-
-  //   const hl = createHeightLine(deferredOrigin, deferredTerminal);
-  //   return calculateLength(hl, 'feet');
-  // }, [calculateLength, deferredOrigin, deferredTerminal]);
+  const northToSouthLength = northToSouth ? `${northToSouth.value.toFixed(2)} ${nsUnit}` : '--';
+  const eastToWestLength = eastToWest ? `${eastToWest.value.toFixed(2)} ${ewUnit}` : '--';
 
   const featureCount = useFeatureQuerySelector(state => {
     if (state == null) return 0;
@@ -123,7 +59,6 @@ export default function Measurements({ blockElementRef }: MeasurementsProps) {
     return count;
   });
 
-
   const hasSelected = useSelectionStateSelector(state => state.matches({ initialized: 'created' }));
   useEffectOnce(() => {
     if (hasSelected && blockElementRef.current) {
@@ -133,30 +68,83 @@ export default function Measurements({ blockElementRef }: MeasurementsProps) {
   })
 
   return (
-    <CalciteBlock
-      id="measurements"
-      heading="Measurements"
-      collapsible
-      ref={blockElementRef}
-    >
-      <CalciteIcon scale="s" slot="icon" icon="cursor-marquee"></CalciteIcon>
-      <Minimap />
-      <ul className="h-full">
-        <li>
-          <MeasurementValue icon="arrow-up" label="North to south length" value={northToSouthLength} />
-        </li>
-        <li>
-          <MeasurementValue icon="arrow-right" label="East to west length" value={eastToWestLength} />
-        </li>
-        <li>
-          <MeasurementValue icon="grid-diamond" label="Area" value={area} />
-        </li>
-        <li>
-          <MeasurementValue icon="urban-model" label="Selected features" value={featureCount} />
-        </li>
-      </ul>
-    </CalciteBlock>
+    <>
+      <CalciteBlock
+        id="measurements"
+        heading="Measurements"
+        collapsible
+        ref={blockElementRef}
+      >
+        <CalciteIcon scale="s" slot="icon" icon="cursor-marquee"></CalciteIcon>
+        <div className="flex flex-col gap-2">
+          <Minimap />
+          <ul className="h-full">
+            <li>
+              <MeasurementValue icon="arrow-up" label="North to south length" value={northToSouthLength} />
+            </li>
+            <li>
+              <MeasurementValue icon="arrow-right" label="East to west length" value={eastToWestLength} />
+            </li>
+            <li>
+              <MeasurementValue icon="grid-diamond" label="Area" value={area} />
+            </li>
+            <li>
+              <MeasurementValue icon="urban-model" label="Selected features" value={featureCount} />
+            </li>
+          </ul>
+        </div>
+      </CalciteBlock>
+      <Dimensions onEasetToWestResult={setEastToWest} onNorthToSouthResult={setNorthToSouth} />
+    </>
   );
+}
+
+interface DimensionsProps {
+  onNorthToSouthResult: (result?: __esri.Length) => void
+  onEasetToWestResult: (result?: __esri.Length) => void
+}
+function Dimensions({ onEasetToWestResult, onNorthToSouthResult }: DimensionsProps) {
+  const origin = useSelectionStateSelector(state => state.context.origin);
+  const terminal = useSelectionStateSelector(state => state.context.terminal);
+
+  if (origin == null || terminal == null) return null;
+
+  const widthStart = origin;
+  const widthEnd = widthStart.clone();
+  widthEnd.y = terminal?.y;
+
+  const heightStart = origin;
+  const heightEnd = heightStart.clone();
+  heightEnd.x = terminal?.x;
+
+  const borderStart = origin.clone();
+  borderStart.x = terminal.x;
+  borderStart.y = terminal.y;
+
+  return (
+    <>
+      <DimensionsLayer fontSize={12}>
+        <LengthDimension
+          measureType="horizontal"
+          startPoint={widthStart}
+          endPoint={widthEnd}
+          offset={150}
+          onMeasurementResult={onEasetToWestResult}
+        />
+        <LengthDimension
+          measureType="horizontal"
+          startPoint={heightStart}
+          endPoint={heightEnd}
+          offset={150}
+          onMeasurementResult={onNorthToSouthResult}
+        />
+      </DimensionsLayer>
+      <DimensionsLayer>
+        <LengthDimension measureType="horizontal" startPoint={borderStart} endPoint={widthEnd} offset={150} />
+        <LengthDimension measureType="horizontal" startPoint={borderStart} endPoint={heightEnd} offset={150} />
+      </DimensionsLayer>
+    </>
+  )
 }
 
 interface MeasurementValueProps {
@@ -174,4 +162,22 @@ function MeasurementValue({ icon, label, value }: MeasurementValueProps) {
       </span>
     </CalciteLabel>
   )
+}
+
+function shortUnit(unit?: __esri.LengthUnit) {
+  let short = 'm';
+  if (unit === "millimeters") short = "mm";
+  if (unit === "centimeters") short = "cm";
+  if (unit === "decimeters") short = "dm";
+  if (unit === "meters") short = "m";
+  if (unit === "kilometers") short = "km";
+
+  if (unit === "inches") short = "in";
+  if (unit === "feet") short = "ft";
+  if (unit === "us-feet") short = "ft";
+  if (unit === "yards") short = "yr";
+  if (unit === "miles") short = "mi";
+  if (unit === "nautical-miles") short = "mi";
+
+  return short;
 }

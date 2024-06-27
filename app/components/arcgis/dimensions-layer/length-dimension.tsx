@@ -1,7 +1,9 @@
 import CoreLengthDimension from "@arcgis/core/analysis/LengthDimension.js";
 import { useDimensions } from "./dimensions-context";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Point } from "@arcgis/core/geometry";
+import { useSceneView } from "../views/scene-view/scene-view-context";
+import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
 
 interface LengthDimensionProps {
   startPoint: Point;
@@ -9,14 +11,18 @@ interface LengthDimensionProps {
   measureType?: 'horizontal' | 'vertical' | 'direct'
   orientation?: number;
   offset?: number;
+  onMeasurementResult?: (result?: __esri.Length) => void;
 }
-export default function LengthDimension({
+
+function InternalLengthDimension({
   startPoint,
   endPoint,
   measureType,
   orientation,
-  offset
+  offset,
+  onMeasurementResult
 }: LengthDimensionProps) {
+  const view = useSceneView();
   const [measurement] = useState(() => new CoreLengthDimension({
     startPoint,
     endPoint,
@@ -24,7 +30,7 @@ export default function LengthDimension({
     orientation,
     offset
   }));
-  const { analyses } = useDimensions();
+  const { layer, analyses } = useDimensions();
 
   useEffect(() => {
     measurement.measureType = measureType ?? null!
@@ -37,7 +43,15 @@ export default function LengthDimension({
   useEffect(() => {
     measurement.startPoint = startPoint;
     measurement.endPoint = endPoint;
-  }, [startPoint, endPoint, measurement]);
+
+    view.whenAnalysisView(analyses)
+      .then(av => onMeasurementResult?.(av.results.find(r => r.dimension === measurement)?.length))
+      .catch(() => console.log('ignored...'));
+
+    view.whenLayerView(layer)
+      .then(lv => onMeasurementResult?.(lv.results.find(r => r.dimension === measurement)?.length))
+      .catch(() => console.log('ignored...'));
+  }, [startPoint, endPoint, measurement, view, layer, analyses, onMeasurementResult]);
 
   useEffect(() => {
     analyses.dimensions.push(measurement);
@@ -46,3 +60,16 @@ export default function LengthDimension({
 
   return null;
 }
+
+const LengthDimension = memo(InternalLengthDimension, (prev, next) => {
+  return (
+    geometryEngine.equals(prev.endPoint, next.endPoint) &&
+    geometryEngine.equals(prev.startPoint, next.startPoint) &&
+    prev.offset === next.offset &&
+    prev.measureType === next.measureType &&
+    prev.orientation === next.orientation &&
+    prev.onMeasurementResult === next.onMeasurementResult
+  )
+});
+
+export default LengthDimension;

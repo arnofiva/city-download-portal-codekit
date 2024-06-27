@@ -1,4 +1,4 @@
-import { Suspense, lazy, useDeferredValue } from "react";
+import { Suspense, lazy, memo, useDeferredValue } from "react";
 import { CalciteScrim } from "@esri/calcite-components-react";
 import GraphicsLayer from "./arcgis/graphics-layer";
 import Graphic from "./arcgis/graphic";
@@ -33,7 +33,7 @@ function SelectionGraphic() {
   )
 }
 
-export default function Minimap() {
+function InternalMinimap() {
   const sceneView = useSceneView();
   const extent = useAccessorValue(() => sceneView.extent, { initial: true });
   const sr = useAccessorValue(() => sceneView.spatialReference?.wkid, { initial: true });
@@ -55,3 +55,7 @@ export default function Minimap() {
     </div>
   )
 }
+
+const Minimap = memo(InternalMinimap);
+
+export default Minimap;

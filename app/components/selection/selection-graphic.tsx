@@ -4,8 +4,6 @@ import LineCallout3D from "@arcgis/core/symbols/callouts/LineCallout3D.js";
 import GraphicsLayer from "~/components/arcgis/graphics-layer";
 import pinTearIcon from './pin-tear-f.svg?url';
 import StylePattern3D from "@arcgis/core/symbols/patterns/StylePattern3D.js";
-import DimensionsLayer from "~/components/arcgis/dimensions-layer/dimensions-layer";
-import LengthDimension from "~/components/arcgis/dimensions-layer/length-dimension";
 import { ActorRefFrom } from "xstate";
 import { FeatureQueryMachine } from "./actors/feature-query-machine";
 import { memo, useEffect } from "react";
@@ -79,24 +77,11 @@ const Highlight = memo(InternalHighlight);
 
 export default function SelectionExtent() {
   const origin = useSelectionStateSelector(state => state.context.origin);
-  const terminal = useSelectionStateSelector(state => state.context.terminal);
   const polygon = useSelectionStateSelector(state => state.context.polygon);
 
   const query = useSelectionStateSelector(state => state.children['feature-query'] as ActorRefFrom<typeof FeatureQueryMachine>);
 
   if (polygon == null) return;
-
-  const widthStart = origin!;
-  const widthEnd = widthStart!.clone();
-  widthEnd.y = terminal!.y;
-
-  const heightStart = origin!;
-  const heightEnd = heightStart!.clone();
-  heightEnd.x = terminal!.x;
-
-  const borderStart = origin!.clone();
-  borderStart.x = terminal!.x;
-  borderStart.y = terminal!.y;
 
   return (
     <>
@@ -107,14 +92,6 @@ export default function SelectionExtent() {
           symbol={Callout}
         />
       </GraphicsLayer>
-      <DimensionsLayer fontSize={12}>
-        <LengthDimension measureType="horizontal" startPoint={widthStart} endPoint={widthEnd} offset={150} />
-        <LengthDimension measureType="horizontal" startPoint={heightStart} endPoint={heightEnd} offset={150} />
-      </DimensionsLayer>
-      <DimensionsLayer>
-        <LengthDimension measureType="horizontal" startPoint={borderStart} endPoint={widthEnd} offset={150} />
-        <LengthDimension measureType="horizontal" startPoint={borderStart} endPoint={heightEnd} offset={150} />
-      </DimensionsLayer>
       <GraphicsLayer>
         <Graphic
           geometry={polygon}
