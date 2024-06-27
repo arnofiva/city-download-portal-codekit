@@ -78,7 +78,7 @@ export default function Measurements({ blockElementRef }: MeasurementsProps) {
         <CalciteIcon scale="s" slot="icon" icon="cursor-marquee"></CalciteIcon>
         <div className="flex flex-col gap-2">
           <Minimap />
-          <ul className="h-full">
+          <ul className="h-full grid grid-cols-2 grid-rows-2 gap-2">
             <li>
               <MeasurementValue icon="arrow-up" label="North to south length" value={northToSouthLength} />
             </li>

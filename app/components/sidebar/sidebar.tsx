@@ -60,7 +60,9 @@ export default function Sidebar() {
   }, [exportSettingsShouldOpen, measuremntsShouldOpen, modelOriginShouldOpen, state])
 
   return (
-    <CalciteShellPanel slot="panel-end" collapsed={isRoot}>
+    <CalciteShellPanel slot="panel-end" collapsed={isRoot} style={{
+      '--calcite-shell-panel-width': '30vw'
+    }}>
       <CalcitePanel>
         <ModelOrigin blockElementRef={modelOriginRef} />
         <Measurements blockElementRef={measurementsRef} />

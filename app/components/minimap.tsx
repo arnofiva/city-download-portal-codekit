@@ -41,7 +41,7 @@ function InternalMinimap() {
   const deferredExtent = useDeferredValue(extent);
 
   return (
-    <div className="w-full aspect-square">
+    <div className="w-full aspect-[1.5/1]">
       {sr != null ? (
         <Suspense fallback={<CalciteScrim loading />}>
           <Map>
