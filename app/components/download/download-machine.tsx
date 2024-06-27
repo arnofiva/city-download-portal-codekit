@@ -37,7 +37,7 @@ export const DownloadMachine = setup({
       scene: WebScene
     },
     events: {} as
-      | { type: 'change', selection: Polygon }
+      | { type: 'change', selection: Polygon | null }
       | { type: 'done', size: number | null, mesh: Mesh, file: Blob }
       | { type: 'error', message: unknown }
       | { type: 'clear' },
@@ -54,7 +54,7 @@ export const DownloadMachine = setup({
       {
         id: 'calculator',
         input: ({ context, event, self }) => {
-          invariant(event.type === "change");
+          invariant(event.type === "change" && event.selection);
 
           return ({ scene: context.scene, selection: event.selection, parent: self })
         }
@@ -64,6 +64,7 @@ export const DownloadMachine = setup({
       loading: false,
       size: null,
       mesh: null,
+      file: null,
     })
   }
 }).createMachine({
@@ -75,9 +76,7 @@ export const DownloadMachine = setup({
     file: null,
   }),
   on: {
-    change: {
-      actions: ['cancel', 'calculateMesh', assign({ loading: true, size: null })],
-    },
+    change: { actions: ['cancel', 'calculateMesh', assign({ loading: true, size: null })] },
     done: {
       actions: assign({
         size: ({ event }) => event.size,

@@ -57,16 +57,15 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
     return subscription.unsubscribe
   }, [actorRef])
 
-  const isLoading = actor.context.loading;
+  const isLoadingWithoutFile = actor.context.file == null && actor.context.loading;
   const canDownload = actor.context.file != null && !actor.context.loading;
 
   const fileSize = actor.context.file?.size;
 
-  const fileSizeString = fileSize != null
-    ? `${(fileSize * 1e-6).toFixed(2)} mb`
-    : actor.context.loading
-      ? 'loading'
-      : 'unknown'
+  let fileSizeString = 'unknown'
+  if (deferredSelection == null) fileSizeString = 'no selection';
+  if (fileSize != null) fileSizeString = `${(fileSize * 1e-6).toFixed(2)} mb`;
+  if (actor.context.loading && fileSize == null) fileSizeString = 'loading';
 
   const hasFinished = useSelectionStateSelector(state => state.matches({ initialized: { created: 'idle' } }));
   useEffectOnce(
@@ -113,7 +112,7 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
         <li>
           <CalciteLabel scale="s">
             File size
-            <p className={isLoading ? "opacity-50" : ""}>{fileSizeString}</p>
+            <p className={!canDownload ? "opacity-50" : ""}>{fileSizeString}</p>
           </CalciteLabel>
         </li>
       </ul>
@@ -123,7 +122,7 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
           width="full"
           iconStart="download"
           disabled={!canDownload}
-          loading={isLoading}
+          loading={isLoadingWithoutFile}
           onClick={() => {
             if (canDownload) {
               const name = filename || title || 'model';
