@@ -1,12 +1,8 @@
 import {
-  CalciteAction,
   CalcitePanel,
   CalciteShellPanel,
 } from "@esri/calcite-components-react";
 import useIsRoot from "~/hooks/useIsRoot";
-import { useSceneListModal } from "../scene-list-modal/scene-list-modal-context";
-import { useScene } from "../arcgis/maps/web-scene/scene-context";
-import { useAccessorValue } from "../../hooks/reactive";
 import ModelOrigin from "./model-origin";
 import Measurements from "./measurements";
 import ExportSettings from "./export-settings";
@@ -14,11 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSelectionStateSelector } from "../selection/selection-context";
 
 export default function Sidebar() {
-  const [, setOpen] = useSceneListModal();
-  const scene = useScene();
   const isRoot = useIsRoot();
-
-  const title = useAccessorValue(() => scene.portalItem.title, { initial: true });
 
   const modelOriginRef = useRef<HTMLCalciteBlockElement>(null);
   const [modelOriginShouldOpen, setModelOriginShouldOpen] = useState(true);
@@ -69,13 +61,7 @@ export default function Sidebar() {
 
   return (
     <CalciteShellPanel slot="panel-end" collapsed={isRoot}>
-      <CalcitePanel heading={title ?? ""}>
-        <CalciteAction
-          icon="hamburger"
-          text="Cities"
-          slot="header-actions-end"
-          onClick={() => setOpen(true)}
-        />
+      <CalcitePanel>
         <ModelOrigin blockElementRef={modelOriginRef} />
         <Measurements blockElementRef={measurementsRef} />
         <ExportSettings blockElementRef={exportSettingsRef} />

@@ -5,13 +5,15 @@ import Sidebar from "~/components/sidebar/sidebar";
 import invariant from "tiny-invariant";
 import SCENES from "~/data/scenes";
 import { ViewUI } from "../../components/arcgis/views/scene-view/scene-view-ui";
-import { CalciteScrim } from "@esri/calcite-components-react";
+import { CalciteAction, CalciteNavigation, CalciteNavigationLogo, CalciteNavigationUser, CalciteScrim } from "@esri/calcite-components-react";
 import { SelectionAction } from "../../components/selection/selection-button";
 import GraphicsLayer from "~/components/arcgis/graphics-layer";
 import SelectionExtent from "../../components/selection/selection-graphic";
 import WalkthroughPopover from "~/components/walk-through/walk-through-popover";
 import { load as loadProjectionEngine } from "@arcgis/core/geometry/projection";
 import SelectionErrorAlert from "~/components/selection/selection-error-alert";
+import { useSceneListModal } from "~/components/scene-list-modal/scene-list-modal-context";
+import { useAccessorValue } from "~/hooks/reactive";
 
 const View = lazy(() => import('../../components/arcgis/views/scene-view/scene-view'));
 const Scene = lazy(() => import('../../components/arcgis/maps/web-scene/scene'));
@@ -57,11 +59,23 @@ function SceneActions() {
 export default function SceneRoute() {
   const {
     instance
-  } = useLoaderData<typeof clientLoader>();
+  } = useLoaderData() as Awaited<ReturnType<typeof clientLoader>>;
+  const [, setOpen] = useSceneListModal();
+
+  const fullName = useAccessorValue(() => instance.portal.user.fullName, { initial: true });
+  const username = useAccessorValue(() => instance.portal.user.username, { initial: true });
+
+  const title = useAccessorValue(() => instance.title, { initial: true });
+  const description = useAccessorValue(() => instance.description, { initial: true });
 
   return (
     <Suspense fallback={<CalciteScrim />}>
       <Scene portalItem={instance}>
+        <CalciteNavigation slot="header">
+          <CalciteNavigationLogo slot="logo" heading={title} description={description} />
+          <CalciteNavigationUser slot="user" full-name={fullName} username={username} />
+          <CalciteAction slot="navigation-action" text={""} icon="hamburger" onClick={() => setOpen(true)} />
+        </CalciteNavigation>
         <GraphicsLayer elevationMode="on-the-ground">
           <View>
             <Search />
