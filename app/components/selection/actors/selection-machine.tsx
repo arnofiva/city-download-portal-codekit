@@ -25,12 +25,20 @@ const updateOnClickCallback = fromCallback<any, { sketch: SketchViewModel, polyg
   return handle.remove;
 });
 
-const watchForUpdates = fromCallback<any, SketchViewModel>(({ input, sendBack }) => {
-  const handle = input.on("update", (event) => {
+const watchForUpdates = fromCallback<any, SketchViewModel>(({ input: sketch, sendBack }) => {
+  const deleteHandle = sketch.on("delete", () => {
+    sendBack({ type: `delete` });
+  });
+  const handle = sketch.on("update", (event) => {
+    if (event.toolEventInfo?.type === "vertex-remove") sendBack({ type: 'delete' });
+
     if (event.state === 'start') sendBack({ type: `update.${event.state}` })
   })
 
-  return handle.remove
+  return () => {
+    handle.remove()
+    deleteHandle.remove()
+  }
 });
 
 type SketchEvent =
@@ -41,6 +49,7 @@ type SketchEvent =
   | { type: 'update.start', polygon?: Polygon }
   | { type: 'update.active', polygon: Polygon }
   | { type: 'update.complete', polygon?: Polygon }
+  | { type: 'delete' }
   | { type: 'initialize', view: SceneView, layer: GraphicsLayer }
 
 export type EmittedSelectionErrorEvents =
@@ -137,6 +146,11 @@ export const SelectionMachine = setup({
       enqueue.assign({ origin: null, terminal: null, polygon: null });
     }),
     updateFeatureQueryGeometry: sendTo(FEATURE_QUERY_ACTOR_ID, ({ context }) => ({ type: 'changeSelection', selection: context.polygon })),
+    clearSelection: assign({
+      origin: null,
+      polygon: null,
+      terminal: null,
+    })
   },
   actors: {
     updateOnClickCallback,
@@ -197,6 +211,7 @@ export const SelectionMachine = setup({
         ],
         states: {
           nonExistent: {
+            entry: 'clearSelection',
             on: {
               "create.start": {
                 target: 'creating'
@@ -343,6 +358,11 @@ export const SelectionMachine = setup({
               },
             }
           },
+        },
+        on: {
+          delete: {
+            target: '.nonExistent'
+          }
         }
       },
     }
