@@ -5,8 +5,8 @@ import {
   CalciteIcon,
   CalciteInputText,
   CalciteLabel,
-  CalciteOption,
-  CalciteSelect,
+  // CalciteOption,
+  // CalciteSelect,
 } from "@esri/calcite-components-react";
 import { useScene } from "../arcgis/maps/web-scene/scene-context";
 import { useAccessorValue } from "../../hooks/reactive";
@@ -97,10 +97,11 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
               onCalciteInputTextInput={(event) => {
                 setFilename(event.target.value)
               }}
+              suffixText=".glb"
             ></CalciteInputText>
           </CalciteLabel>
         </li>
-        <li>
+        {/* <li>
           <CalciteLabel scale="s">
             File type
             <CalciteSelect label="File type">
@@ -108,7 +109,7 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
               <CalciteOption value="obj">OBJ</CalciteOption>
             </CalciteSelect>
           </CalciteLabel>
-        </li>
+        </li> */}
         <li>
           <CalciteLabel scale="s">
             File size
