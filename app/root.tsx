@@ -7,7 +7,6 @@ import {
   ScrollRestoration,
   useParams,
 } from "@remix-run/react";
-
 import { setAssetPath } from "@esri/calcite-components/dist/components";
 
 import tailwindStyles from "./tailwind.css?url";
@@ -44,7 +43,39 @@ export const links: LinksFunction = () => [
   ...styles.map(stylesheet => ({ rel: 'stylesheet', href: stylesheet }))
 ]
 
+async function loadModules() {
+  const [IdentityManager, OAuthInfo] = await Promise.all([
+    import("@arcgis/core/identity/IdentityManager").then(module => module.default),
+    import("@arcgis/core/identity/OAuthInfo").then(module => module.default)
+  ]);
+
+  return {
+    IdentityManager,
+    OAuthInfo,
+  }
+}
+
 export async function clientLoader() {
+  /* this should be removed eventually */
+  const { OAuthInfo, IdentityManager } = await loadModules();
+
+  config.portalUrl = "https://zurich.maps.arcgis.com/";
+
+  const info = new OAuthInfo({
+    appId: "KojZjH6glligLidj",
+    popup: false,
+    popupCallbackUrl: `${document.location.origin}${import.meta.env.BASE_URL}oauth-callback-api.html`,
+  });
+
+  IdentityManager.registerOAuthInfos([info]);
+
+  try {
+    await IdentityManager.checkSignInStatus("https://zurich.maps.arcgis.com/");
+  } catch (error) {
+    await IdentityManager.getCredential(info.portalUrl + "/sharing");
+  }
+  /* this should be removed eventually */
+
   const scenes = await Promise.all(
     Array.from(SCENES.values())
       .map(async scene => {
@@ -65,19 +96,19 @@ export async function clientLoader() {
     return ws;
   }));
 
-  return { scenes, maps };
+  return { scenes, maps, };
 }
 
 interface LayoutProps { }
 
+
 export function Layout({ children }: PropsWithChildren<LayoutProps>) {
+  const params = useParams();
+
   useEffect(() => {
     setAssetPath(import.meta.url);
     defineCustomElements(window);
-    config.portalUrl = "https://zurich.maps.arcgis.com/";
   }, []);
-
-  const params = useParams();
 
   return (
     <html lang="en">
