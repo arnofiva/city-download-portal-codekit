@@ -1,5 +1,6 @@
 import type Mesh from "@arcgis/core/geometry/Mesh";
 import MeshLocalVertexSpace from "@arcgis/core/geometry/support/MeshLocalVertexSpace";
+import MeshGeoreferencedVertexSpace from "@arcgis/core/geometry/support/MeshGeoreferencedVertexSpace";
 import * as meshUtils from "@arcgis/core/geometry/support/meshUtils";
 import type Ground from '@arcgis/core/Ground';
 import type SceneLayer from "@arcgis/core/layers/SceneLayer";
@@ -29,7 +30,11 @@ async function extractFeatures(sceneLayer: SceneLayer, extent: __esri.Geometry, 
 }
 
 async function mergeSliceMeshes(elevation: Mesh, features: Mesh[], sceneOrigin: Point, signal?: AbortSignal) {
-  const vertexSpace = new MeshLocalVertexSpace({
+  const VertexSpace = sceneOrigin.spatialReference.isWGS84 || sceneOrigin.spatialReference.isWebMercator
+    ? MeshLocalVertexSpace
+    : MeshGeoreferencedVertexSpace
+
+  const vertexSpace = new VertexSpace({
     origin: [sceneOrigin.x, sceneOrigin.y, sceneOrigin.z],
   });
 
