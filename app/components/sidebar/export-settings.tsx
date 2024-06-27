@@ -88,7 +88,7 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
       <ul className="mesurement-list">
         <li>
           <CalciteLabel scale="s">
-            Filename
+            <p className="font-medium">Filename</p>
             <CalciteInputText
               id="filename"
               placeholder={title}
@@ -111,7 +111,7 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
         </li> */}
         <li>
           <CalciteLabel scale="s">
-            File size
+            <p className="font-medium">File size</p>
             <p className={!canDownload ? "opacity-50" : ""}>{fileSizeString}</p>
           </CalciteLabel>
         </li>

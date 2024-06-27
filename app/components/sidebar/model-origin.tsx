@@ -27,6 +27,14 @@ export default function ModelOrigin({
   const longitude = origin?.longitude;
   const y = origin?.y;
 
+  const latitudeString = latitude != null
+    ? `${latitude.toFixed(2)}°`
+    : null;
+
+  const longitudeString = longitude != null
+    ? `${longitude.toFixed(2)}°`
+    : null;
+
   useEffectOnce(() => {
     if (blockElementRef.current && origin) {
       blockElementRef.current.open = true;
@@ -37,10 +45,10 @@ export default function ModelOrigin({
   return (
     <CalciteBlock ref={blockElementRef} id="modelOrigin" heading="Model origin" collapsible>
       <CalciteIcon slot="icon" icon="pin-tear-f"></CalciteIcon>
-      <ul className="mesurement-list">
+      <ul>
         <li>
           <CalciteLabel scale="s">
-            Spatial reference (SRID)
+            <p className="font-medium">Spatial reference (WKID)</p>
             <p>
               {sr ?? "--"}
             </p>
@@ -48,25 +56,25 @@ export default function ModelOrigin({
         </li>
         <li>
           <CalciteLabel scale="s">
-            {latitude != null ? "Latitude" : "x"}
+            <p className="font-medium">{latitude != null ? "Latitude" : "x"}</p>
             <p>
-              {latitude ?? x ?? "--"}
+              {latitudeString ?? x?.toFixed(2) ?? "--"}
             </p>
           </CalciteLabel>
         </li>
         <li>
           <CalciteLabel scale="s">
-            {longitude != null ? "Longitude" : 'y'}
+            <p className="font-medium">{longitude != null ? "Longitude" : 'y'}</p>
             <p>
-              {longitude ?? y ?? "--"}
+              {longitudeString ?? y?.toFixed(2) ?? "--"}
             </p>
           </CalciteLabel>
         </li>
         <li>
           <CalciteLabel scale="s">
-            Elevation
+            <p className="font-medium">Elevation</p>
             <p>
-              {origin?.z ?? "--"}
+              {origin?.z?.toFixed(2) ?? "--"}
             </p>
           </CalciteLabel>
         </li>
@@ -77,9 +85,49 @@ export default function ModelOrigin({
         width="full"
         primaryIconStart="copy-to-clipboard"
         appearance="outline-fill"
+        onCalciteSplitButtonPrimaryClick={() => {
+          if (origin) {
+            const { x, y, latitude, longitude, z } = origin;
+
+            let text = z == null ? `${x},${y}` : `${x},${y},${z}`;
+            if (latitude != null && longitude != null)
+              text = z == null ? `${latitude},${longitude}` : `${latitude},${longitude},${z}`;
+
+            navigator.clipboard.writeText(text);
+          }
+        }}
       >
-        <CalciteDropdownItem>Copy as lat,lng</CalciteDropdownItem>
-        <CalciteDropdownItem>Copy as WKT</CalciteDropdownItem>
+        <CalciteDropdownItem
+          onClick={() => {
+            if (origin) {
+              const { x, y, latitude, longitude, z } = origin;
+
+              let text = z == null ? `${x},${y}` : `${x},${y},${z}`;
+              if (latitude != null && longitude != null)
+                text = z == null ? `${latitude},${longitude}` : `${latitude},${longitude},${z}`;
+
+              navigator.clipboard.writeText(text);
+            }
+          }}
+        >
+          Copy as lat,lng
+        </CalciteDropdownItem>
+        <CalciteDropdownItem
+          onClick={() => {
+            if (origin) {
+              const { x, y, latitude, longitude, z } = origin;
+
+              let wkt = z == null ? `POINT(${x} ${y})` : `POINTZ(${x} ${y} ${z})`;
+
+              if (latitude != null && longitude != null)
+                wkt = z == null ? `POINT(${latitude} ${longitude})` : `POINTZ(${latitude} ${longitude} ${z})`;
+
+              navigator.clipboard.writeText(wkt);
+            }
+          }}
+        >
+          Copy as WKT
+        </CalciteDropdownItem>
       </CalciteSplitButton>
     </CalciteBlock>
   );
