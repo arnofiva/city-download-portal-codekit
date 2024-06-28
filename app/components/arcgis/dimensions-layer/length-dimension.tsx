@@ -46,11 +46,12 @@ function InternalLengthDimension({
 
     view.whenAnalysisView(analyses)
       .then(av => onMeasurementResult?.(av.results.find(r => r.dimension === measurement)?.length))
-      .catch(() => console.log('ignored...'));
+      .catch(() => { });
 
     view.whenLayerView(layer)
       .then(lv => onMeasurementResult?.(lv.results.find(r => r.dimension === measurement)?.length))
-      .catch(() => console.log('ignored...'));
+      .catch(() => { });
+
   }, [startPoint, endPoint, measurement, view, layer, analyses, onMeasurementResult]);
 
   useEffect(() => {
