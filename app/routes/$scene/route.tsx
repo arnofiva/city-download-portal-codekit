@@ -14,6 +14,7 @@ import { load as loadProjectionEngine } from "@arcgis/core/geometry/projection";
 import SelectionErrorAlert from "~/components/selection/selection-error-alert";
 import { useSceneListModal } from "~/components/scene-list-modal/scene-list-modal-context";
 import { useAccessorValue } from "~/hooks/reactive";
+import PortalItem from "@arcgis/core/portal/PortalItem";
 
 const View = lazy(() => import('../../components/arcgis/views/scene-view/scene-view'));
 const Scene = lazy(() => import('../../components/arcgis/maps/web-scene/scene'));
@@ -29,21 +30,22 @@ export const meta: MetaFunction<typeof clientLoader> = ({ data }) => {
 export async function clientLoader({ params }: LoaderFunctionArgs) {
   invariant(params.scene, "Expected params.scene");
 
-  const scene = SCENES.get(params.scene);
+  const scene = new PortalItem({
+    id: params.scene,
+  });
+
 
   if (scene == null) {
     throw redirect("/");
   }
 
-  const instance = scene.item;
-  await scene.item.load();
-  await loadProjectionEngine();
+  await scene.load();
 
   return {
-    instance,
-    title: instance.title,
-    description: instance.description,
-    thumbnailUrl: instance.thumbnailUrl,
+    instance: scene,
+    title: scene.title,
+    description: scene.description,
+    thumbnailUrl: scene.thumbnailUrl,
   };
 }
 
