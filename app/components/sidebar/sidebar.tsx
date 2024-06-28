@@ -6,20 +6,18 @@ import useIsRoot from "~/hooks/useIsRoot";
 import ModelOrigin from "./model-origin";
 import Measurements from "./measurements";
 import ExportSettings from "./export-settings";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer } from "react";
 import { useSelectionStateSelector } from "../selection/selection-context";
+import { BlockStateReducer, SidebarState } from "./sidebar-state";
+
+const initialState = {
+  modelOrigin: { mode: 'managed', state: 'closed' },
+  measurements: { mode: 'managed', state: 'closed' },
+  exportSettings: { mode: 'managed', state: 'closed' },
+} satisfies SidebarState;
 
 export default function Sidebar() {
   const isRoot = useIsRoot();
-
-  const modelOriginRef = useRef<HTMLCalciteBlockElement>(null);
-  const [modelOriginShouldOpen, setModelOriginShouldOpen] = useState(true);
-
-  const measurementsRef = useRef<HTMLCalciteBlockElement>(null);
-  const [measuremntsShouldOpen, setMeasuremntsShouldOpen] = useState(true);
-
-  const exportSettingsRef = useRef<HTMLCalciteBlockElement>(null);
-  const [exportSettingsShouldOpen, setExportSettingsShouldOpen] = useState(true);
 
   const state = useSelectionStateSelector(state => {
     if (state.matches({ initialized: { creating: 'terminal' } })) return 'terminal';
@@ -29,44 +27,41 @@ export default function Sidebar() {
     return 'waiting';
   })
 
+  const [blockState, dispatch] = useReducer(
+    BlockStateReducer,
+    initialState
+  );
+
   useEffect(() => {
     switch (state) {
       case 'waiting': break;
       case 'terminal': {
-        if (modelOriginRef.current && modelOriginShouldOpen) {
-          modelOriginRef.current.open = true;
-          setModelOriginShouldOpen(false);
-        }
+        dispatch([{ block: 'modelOrigin', type: 'open' }]);
         break;
       }
       case 'confirming': {
-        if (measurementsRef.current && measuremntsShouldOpen) {
-          measurementsRef.current.open = true;
-          setMeasuremntsShouldOpen(false);
-        }
+        dispatch([{ block: 'measurements', type: 'open' }]);
         break;
       }
       case 'finished': {
-        if (exportSettingsRef.current && exportSettingsShouldOpen) {
-          exportSettingsRef.current.open = true;
-          exportSettingsRef.current.scrollIntoView()
-          setExportSettingsShouldOpen(false);
-
-          if (measurementsRef.current) measurementsRef.current.open = false;
-        }
+        dispatch([
+          { block: 'exportSettings', type: 'open' },
+          { block: 'modelOrigin', type: 'close' },
+          { block: 'measurements', type: 'close' }
+        ]);
         break;
       }
     }
-  }, [exportSettingsShouldOpen, measuremntsShouldOpen, modelOriginShouldOpen, state])
+  }, [state]);
 
   return (
     <CalciteShellPanel slot="panel-end" collapsed={isRoot} style={{
       '--calcite-shell-panel-width': '30vw'
     }}>
       <CalcitePanel>
-        <ModelOrigin blockElementRef={modelOriginRef} />
-        <Measurements blockElementRef={measurementsRef} />
-        <ExportSettings blockElementRef={exportSettingsRef} />
+        <ModelOrigin state={blockState.modelOrigin.state} dispatch={dispatch} />
+        <Measurements state={blockState.measurements.state} dispatch={dispatch} />
+        <ExportSettings state={blockState.exportSettings.state} dispatch={dispatch} />
       </CalcitePanel>
     </CalciteShellPanel>
   );

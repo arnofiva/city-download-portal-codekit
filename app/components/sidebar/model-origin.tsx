@@ -7,15 +7,17 @@ import {
 } from "@esri/calcite-components-react";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import { useAccessorValue } from "../../hooks/reactive";
-import { RefObject, useDeferredValue } from "react";
+import { Dispatch, useDeferredValue, useRef } from "react";
 import { useSelectionStateSelector } from "../selection/selection-context";
-import useEffectOnce from "~/hooks/useEffectOnce";
+import { BlockAction, BlockState } from "./sidebar-state";
 
 interface ModelOriginProps {
-  blockElementRef: RefObject<HTMLCalciteBlockElement>;
+  state: BlockState['state'];
+  dispatch: Dispatch<BlockAction[]>;
 }
 export default function ModelOrigin({
-  blockElementRef
+  state,
+  dispatch
 }: ModelOriginProps) {
   const view = useSceneView();
   const sr = useAccessorValue(() => view.spatialReference?.wkid, { initial: true });
@@ -35,15 +37,40 @@ export default function ModelOrigin({
     ? `${longitude.toFixed(2)}°`
     : null;
 
-  useEffectOnce(() => {
-    if (blockElementRef.current && origin) {
-      blockElementRef.current.open = true;
-      return true;
-    }
-  })
+  const wasClicked = useRef(false);
 
   return (
-    <CalciteBlock ref={blockElementRef} id="modelOrigin" heading="Model origin" collapsible>
+    <CalciteBlock
+      id="modelOrigin"
+      heading="Model origin"
+      collapsible
+      open={state === 'open'}
+      onClick={() => {
+        wasClicked.current = true;
+
+        setTimeout(() => {
+          wasClicked.current = false;
+        }, 150)
+      }}
+      onCalciteBlockBeforeClose={() => {
+        if (wasClicked.current) {
+          dispatch([{
+            type: 'close',
+            mode: 'manual',
+            block: 'modelOrigin'
+          }])
+        }
+      }}
+      onCalciteBlockBeforeOpen={() => {
+        if (wasClicked.current) {
+          dispatch([{
+            type: 'open',
+            mode: 'manual',
+            block: 'modelOrigin'
+          }])
+        }
+      }}
+    >
       <CalciteIcon slot="icon" icon="pin-tear-f"></CalciteIcon>
       <ul>
         <li>

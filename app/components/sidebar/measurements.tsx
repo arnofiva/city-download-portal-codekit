@@ -1,29 +1,34 @@
 import {
   CalciteBlock,
+  CalciteButton,
   CalciteIcon,
   CalciteLabel,
 } from "@esri/calcite-components-react";
 import Minimap from "../minimap";
 import {
-  RefObject,
+  Dispatch,
   useDeferredValue,
   useEffect,
+  useRef,
   useState
 } from "react";
-import { useFeatureQuerySelector, useSelectionStateSelector } from "../selection/selection-context";
-import useEffectOnce from "~/hooks/useEffectOnce";
+import { useFeatureQuerySelector, useSelectionActorRef, useSelectionStateSelector } from "../selection/selection-context";
 import { useAccessorValue } from "~/hooks/reactive";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import AreaMeasurement3DViewModel from "@arcgis/core/widgets/AreaMeasurement3D/AreaMeasurement3DViewModel.js";
 import DimensionsLayer from "../arcgis/dimensions-layer/dimensions-layer";
 import LengthDimension from "../arcgis/dimensions-layer/length-dimension";
+import { BlockAction, BlockState } from "./sidebar-state";
 
 interface MeasurementsProps {
-  blockElementRef: RefObject<HTMLCalciteBlockElement>;
+  state: BlockState['state'];
+  dispatch: Dispatch<BlockAction[]>;
 }
-export default function Measurements({ blockElementRef }: MeasurementsProps) {
+export default function Measurements({ state, dispatch }: MeasurementsProps) {
+  const actor = useSelectionActorRef();
+
   const view = useSceneView();
-  const [areaVm] = useState(() => new AreaMeasurement3DViewModel({ view }))
+  const [areaVm] = useState(() => new AreaMeasurement3DViewModel({ view }));
 
   const [northToSouth, setNorthToSouth] = useState<__esri.Length | undefined>();
   const [eastToWest, setEastToWest] = useState<__esri.Length | undefined>();
@@ -60,12 +65,8 @@ export default function Measurements({ blockElementRef }: MeasurementsProps) {
   });
 
   const hasSelected = useSelectionStateSelector(state => state.matches({ initialized: 'created' }));
-  useEffectOnce(() => {
-    if (hasSelected && blockElementRef.current) {
-      blockElementRef.current.open = true;
-      return true;
-    }
-  })
+
+  const wasClicked = useRef(false);
 
   return (
     <>
@@ -73,7 +74,31 @@ export default function Measurements({ blockElementRef }: MeasurementsProps) {
         id="measurements"
         heading="Measurements"
         collapsible
-        ref={blockElementRef}
+        open={state === 'open'}
+        onClick={() => {
+          wasClicked.current = true
+          setTimeout(() => {
+            wasClicked.current = false;
+          }, 150)
+        }}
+        onCalciteBlockClose={() => {
+          if (wasClicked.current) {
+            dispatch([{
+              type: 'close',
+              mode: 'manual',
+              block: 'measurements'
+            }])
+          }
+        }}
+        onCalciteBlockBeforeOpen={() => {
+          if (wasClicked.current) {
+            dispatch([{
+              type: 'open',
+              mode: 'manual',
+              block: 'measurements'
+            }])
+          }
+        }}
       >
         <CalciteIcon scale="s" slot="icon" icon="cursor-marquee"></CalciteIcon>
         <div className="flex flex-col gap-2">
@@ -92,6 +117,14 @@ export default function Measurements({ blockElementRef }: MeasurementsProps) {
               <MeasurementValue icon="urban-model" label="Selected features" value={featureCount} />
             </li>
           </ul>
+          <CalciteButton
+            scale="l"
+            iconStart="check"
+            disabled={!hasSelected}
+            onClick={() => actor.send({ type: 'update.complete' })}
+          >
+            Confirm selection
+          </CalciteButton>
         </div>
       </CalciteBlock>
       <Dimensions onEasetToWestResult={setEastToWest} onNorthToSouthResult={setNorthToSouth} />

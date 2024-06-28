@@ -10,14 +10,14 @@ import {
 } from "@esri/calcite-components-react";
 import { useScene } from "../arcgis/maps/web-scene/scene-context";
 import { useAccessorValue } from "../../hooks/reactive";
-import { RefObject, useDeferredValue, useEffect, useState } from "react";
+import { Dispatch, useDeferredValue, useEffect, useRef, useState } from "react";
 import { useSelectionStateSelector } from "../selection/selection-context";
 import { DownloadMachine } from "../download/download-machine";
 import { useActor } from "@xstate/react";
-import useEffectOnce from "~/hooks/useEffectOnce";
 import { completeWalkthrough } from "../walk-through/walk-through-popover";
 import { RootShellPortal } from "../root-shell";
 import ErrorAlertQueue from "../error-alert-queue";
+import { BlockAction, BlockState } from "./sidebar-state";
 
 function ExportErrorAlert({ onClose }: { type: string; onClose: () => void }) {
   return (
@@ -29,9 +29,10 @@ function ExportErrorAlert({ onClose }: { type: string; onClose: () => void }) {
 }
 
 interface ExportSettingsProps {
-  blockElementRef: RefObject<HTMLCalciteBlockElement>;
+  state: BlockState['state'];
+  dispatch: Dispatch<BlockAction[]>;
 }
-export default function ExportSettings({ blockElementRef }: ExportSettingsProps) {
+export default function ExportSettings({ dispatch, state }: ExportSettingsProps) {
   const scene = useScene();
 
   const title = useAccessorValue(() => {
@@ -67,22 +68,46 @@ export default function ExportSettings({ blockElementRef }: ExportSettingsProps)
   if (fileSize != null) fileSizeString = `${(fileSize * 1e-6).toFixed(2)} mb`;
   if (actor.context.loading && fileSize == null) fileSizeString = 'loading';
 
-  const hasFinished = useSelectionStateSelector(state => state.matches({ initialized: { created: 'idle' } }));
-  useEffectOnce(
-    () => {
-      if (blockElementRef.current != null && hasFinished) {
-        blockElementRef.current!.open = true;
-        blockElementRef.current!.scrollIntoView()
-        return true;
-      }
-    });
+  const ref = useRef<HTMLCalciteBlockElement>(null);
+  useEffect(() => {
+    if (state === 'open') {
+      ref.current?.scrollIntoView();
+    }
+  }, [ref, state])
+
+  const wasClicked = useRef(false);
 
   return (
     <CalciteBlock
       id="exportSettings"
       heading="Export"
       collapsible
-      ref={blockElementRef}
+      ref={ref}
+      open={state === 'open'}
+      onClick={() => {
+        wasClicked.current = true
+        setTimeout(() => {
+          wasClicked.current = false;
+        }, 150)
+      }}
+      onCalciteBlockClose={() => {
+        if (wasClicked) {
+          dispatch([{
+            type: 'close',
+            mode: 'manual',
+            block: 'exportSettings'
+          }])
+        }
+      }}
+      onCalciteBlockOpen={() => {
+        if (wasClicked) {
+          dispatch([{
+            type: 'open',
+            mode: 'manual',
+            block: 'exportSettings'
+          }])
+        }
+      }}
     >
       <CalciteIcon scale="s" slot="icon" icon="file-data"></CalciteIcon>
       <ul className="mesurement-list">
