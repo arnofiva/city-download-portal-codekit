@@ -13,6 +13,7 @@ import SelectionErrorAlert from "~/components/selection/selection-error-alert";
 import { useSceneListModal } from "~/components/scene-list-modal/scene-list-modal-context";
 import { useAccessorValue } from "~/hooks/reactive";
 import PortalItem from "@arcgis/core/portal/PortalItem";
+import ClientOnly from "~/components/client-only";
 
 const View = lazy(() => import('../../components/arcgis/views/scene-view/scene-view'));
 const Scene = lazy(() => import('../../components/arcgis/maps/web-scene/scene'));
@@ -47,15 +48,6 @@ export async function clientLoader({ params }: LoaderFunctionArgs) {
   };
 }
 
-function SceneActions() {
-
-  return (
-    <span id="select-action">
-      <SelectionAction />
-    </span>
-  )
-}
-
 export default function SceneRoute() {
   const {
     instance
@@ -80,10 +72,12 @@ export default function SceneRoute() {
           <View>
             <Search />
             <ViewUI position="bottom-left">
-              <SceneActions />
+              <SelectionAction />
             </ViewUI>
             <Sidebar />
-            <WalkthroughPopover />
+            <ClientOnly>
+              <WalkthroughPopover />
+            </ClientOnly>
             <SelectionErrorAlert />
             <SelectionExtent />
           </View>

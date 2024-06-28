@@ -66,11 +66,21 @@ export default function Measurements({ state, dispatch }: MeasurementsProps) {
 
   const hasSelected = useSelectionStateSelector(state => state.matches({ initialized: 'created' }));
 
+
+  const ref = useRef<HTMLCalciteBlockElement>(null);
+  useEffect(() => {
+    if (state === 'open') {
+      setTimeout(() => ref.current?.scrollIntoView(), 150);
+    }
+  }, [ref, state])
+
+
   const wasClicked = useRef(false);
 
   return (
     <>
       <CalciteBlock
+        ref={ref}
         id="measurements"
         heading="Measurements"
         collapsible

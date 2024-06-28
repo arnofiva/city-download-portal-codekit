@@ -77,7 +77,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
 
   return (
     <CalciteBlock
-      id="exportSettings"
+      id="export-settings"
       heading="Export"
       collapsible
       ref={ref}
@@ -113,7 +113,6 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
           <CalciteLabel scale="s">
             <p className="font-medium">Filename</p>
             <CalciteInputText
-              id="filename"
               placeholder={title}
               value={filename}
               onCalciteInputTextInput={(event) => {
@@ -139,25 +138,23 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
           </CalciteLabel>
         </li>
       </ul>
-      <span id="download">
-        <CalciteButton
-          scale="l"
-          width="full"
-          iconStart="download"
-          disabled={!canDownload}
-          loading={isLoadingWithoutFile}
-          onClick={() => {
-            if (canDownload) {
-              const name = filename || title || 'model';
-              downloadFile(name, actor.context.file!);
+      <CalciteButton
+        scale="l"
+        width="full"
+        iconStart="download"
+        disabled={!canDownload}
+        loading={isLoadingWithoutFile}
+        onClick={() => {
+          if (canDownload) {
+            const name = filename || title || 'model';
+            downloadFile(name, actor.context.file!);
 
-              completeWalkthrough();
-            }
-          }}
-        >
-          Export model
-        </CalciteButton>
-      </span>
+            completeWalkthrough();
+          }
+        }}
+      >
+        Export model
+      </CalciteButton>
       {isSelectionStable ? (
         <RootShellPortal>
           <ErrorAlertQueue

@@ -107,7 +107,6 @@ export default function ModelOrigin({
         </li>
       </ul>
       <CalciteSplitButton
-        id="copy-origin"
         primaryText="Copy to clipboard"
         width="full"
         primaryIconStart="copy-to-clipboard"

@@ -47,6 +47,7 @@ export function SelectionAction() {
       onClick={action}
       kind="brand"
       appearance={appearance}
+      id="select-action"
     >
       {text}
     </CalciteButton>

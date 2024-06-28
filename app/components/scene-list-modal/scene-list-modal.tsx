@@ -29,13 +29,12 @@ function SceneCard({ title, description, thumbnail, viewingMode, selected }: Sce
       className="max-w-[250px]"
       {...selectedProp}
     >
-      <img slot="thumbnail" alt="Two bears getting it on" src={thumbnail} />
+      <img slot="thumbnail" alt="Screenshot of the web scene" src={thumbnail} />
       <span slot="heading">{title}</span>
       <span slot="description">{sceneDescription}</span>
-      <div slot="footer-start" id="example-slotted-footer">
+      <div slot="footer-start">
         <CalciteChip
           id={id}
-
           value={viewingMode}
           icon={viewingMode === "global" ? 'coordinate-system' : 'urban-model'}
         >{viewingMode === 'global' ? 'Global' : 'Local'}</CalciteChip>

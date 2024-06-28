@@ -3,11 +3,11 @@ import { useSelectionStateSelector } from "../selection/selection-context";
 import { ComponentProps, useEffect, useRef, useState } from "react";
 
 const WalkthroughContent2 = [
-  `Navigate to an area of interest and select an area for download. You use the Search widget in the top left corner to navigate to an address or coordinate.\n\nUse the interactive drawing tool to specify the area`,
-  `Place an origin point to begin the selection.\n\nYou can click on the map to place the point, or you can press tab to open the tooltip and enter or paste in precise coordinates.`,
-  `Place a terminal point to complete the selection.\n\nYou can click on the map to place the point, or you can press tab to open the tooltip and enter or paste in precise coordinates.`,
-  `You can copy the coordinates of your origin point, either as a comma separated pair of latitude, longitude, or as a WKT string.`,
-  `Now you can download the selected slice as a 3D model.`,
+  `Navigate to an area of interest and select an area for download. You can use the Search widget in the top left corner to navigate to an address or coordinate.\n\nClick here to start making your selection.`,
+  `You can click on the map to place the origin point, or you can press tab to open the tooltip and enter or paste in precise coordinates.`,
+  `You can click on the map to complete drawing, or you can press tab to open the tooltip and enter or paste in precise coordinates.`,
+  `Here you can see precise information about your selection. You can adjust it if necessary on the map, otherwise click the button to confirm.`,
+  `Now you can download your selection as a 3D model.`,
 ] as const;
 
 export function completeWalkthrough() {
@@ -47,11 +47,11 @@ export default function WalkthroughPopover() {
   type Placement = ComponentProps<typeof CalcitePopover>['placement'];
   let placement: Placement = 'top';
   if (completedStep === 3) {
-    ref = 'copy-origin';
+    ref = 'measurements';
     placement = 'left';
   }
   if (completedStep === 4) {
-    ref = 'download'
+    ref = 'export-settings'
     placement = 'left'
   }
 
