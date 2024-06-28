@@ -12,7 +12,7 @@ import {
   useRef,
   useState
 } from "react";
-import { useFeatureQuerySelector, useSelectionActorRef, useSelectionStateSelector } from "../selection/selection-context";
+import { useElevationQuerySelector, useFeatureQuerySelector, useSelectionActorRef, useSelectionStateSelector } from "../selection/selection-context";
 import { useAccessorValue } from "~/hooks/reactive";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import AreaMeasurement3DViewModel from "@arcgis/core/widgets/AreaMeasurement3D/AreaMeasurement3DViewModel.js";
@@ -65,7 +65,6 @@ export default function Measurements({ state, dispatch }: MeasurementsProps) {
   });
 
   const hasSelected = useSelectionStateSelector(state => state.matches({ initialized: 'created' }));
-
 
   const ref = useRef<HTMLCalciteBlockElement>(null);
   useEffect(() => {
@@ -147,10 +146,19 @@ interface DimensionsProps {
   onEasetToWestResult: (result?: __esri.Length) => void
 }
 function Dimensions({ onEasetToWestResult, onNorthToSouthResult }: DimensionsProps) {
-  const origin = useSelectionStateSelector(state => state.context.origin);
+  const positionOrigin = useSelectionStateSelector(state => state.context.origin);
+  const elevationOrigin = useElevationQuerySelector(state => state?.context.result);
+
   const terminal = useSelectionStateSelector(state => state.context.terminal);
 
-  if (origin == null || terminal == null) return null;
+  if (positionOrigin == null || terminal == null) return null;
+
+  // the elevation origin is updated async, so the dimensions will look choppy if we use that directly
+  // instead we take the last available elevation, but use the x and y from the synchronously updating origin
+  // this leads to some jumping around if the elevation changes a lot, but that isn't super concerning
+  const origin = elevationOrigin?.clone() ?? positionOrigin;
+  origin.x = positionOrigin.x;
+  origin.y = positionOrigin.y;
 
   const widthStart = origin;
   const widthEnd = widthStart.clone();

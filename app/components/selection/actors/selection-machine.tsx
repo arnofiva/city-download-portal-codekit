@@ -3,11 +3,12 @@ import { contains } from "@arcgis/core/geometry/geometryEngine";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import SceneView from "@arcgis/core/views/SceneView";
 import SketchViewModel from "@arcgis/core/widgets/Sketch/SketchViewModel";
-import { ActorRefFrom, assign, emit, enqueueActions, fromCallback, sendTo, setup } from "xstate";
+import { assign, emit, enqueueActions, fromCallback, sendTo, setup } from "xstate";
 import { FeatureQueryMachine } from "./feature-query-machine";
 import { PlacePointActor } from "./place-point-actor";
 import { editPolygonActor } from "./update-polygon-actor";
 import { alignPolygonAfterChange } from "./utilities";
+import { ElevationQueryMachine } from "./elevation-query-machine";
 
 const updateOnClickCallback = fromCallback<any, { sketch: SketchViewModel, polygon: Polygon }>(({ input }) => {
   const sketch = input.sketch;
@@ -63,7 +64,6 @@ type SketchMachineContext = {
   terminal: Point | null;
   polygon: Polygon | null;
   shouldUpdateAfterCreation: boolean;
-  featureQuery: ActorRefFrom<typeof FeatureQueryMachine> | null,
 }
 
 type SketchMachineInput = {
@@ -71,7 +71,8 @@ type SketchMachineInput = {
   view: SceneView;
 }
 
-const FEATURE_QUERY_ACTOR_ID = 'feature-query';
+export const FEATURE_QUERY_ACTOR_ID = 'feature-query';
+export const ELEVATION_QUERY_ACTOR_ID = 'elevation-query';
 
 const updateOptions = {
   tool: 'reshape',
@@ -96,8 +97,8 @@ export const SelectionMachine = setup({
   actions: {
     assignOrigin: enqueueActions(({ enqueue }, point: Point | null = null) => {
       enqueue(({ context }) => context.sketch.layer.removeAll());
-
       enqueue.assign({ origin: point, terminal: null, polygon: null });
+      enqueue.sendTo(ELEVATION_QUERY_ACTOR_ID, { type: 'changePosition', position: point });
     }),
     assignTerminal: assign({
       terminal: (_, { terminal, }: { terminal: Point, origin: Point }) => terminal,
@@ -149,6 +150,9 @@ export const SelectionMachine = setup({
       enqueue.assign({ origin: null, terminal: null, polygon: null });
     }),
     updateFeatureQueryGeometry: sendTo(FEATURE_QUERY_ACTOR_ID, ({ context }) => ({ type: 'changeSelection', selection: context.polygon })),
+    updateElevationQueryPosition: sendTo(ELEVATION_QUERY_ACTOR_ID, ({ context }) => ({
+      type: 'changePosition', position: context.origin, ground: context.sketch.view.map.ground
+    })),
     clearSelection: assign({
       origin: null,
       polygon: null,
@@ -159,6 +163,7 @@ export const SelectionMachine = setup({
     updateOnClickCallback,
     watchForUpdates,
     featureQueryMachine: FeatureQueryMachine,
+    elevationQueryMachine: ElevationQueryMachine,
     placePoint: PlacePointActor,
     updatePolygon: editPolygonActor
   },
@@ -170,7 +175,6 @@ export const SelectionMachine = setup({
       terminal: null,
       polygon: null,
       shouldUpdateAfterCreation: true,
-      featureQuery: null
     }),
     initial: 'uninitialized',
     states: {
@@ -189,6 +193,9 @@ export const SelectionMachine = setup({
                   view,
                   layer,
                   defaultUpdateOptions: updateOptions,
+                  defaultCreateOptions: {
+                    hasZ: false
+                  },
                   tooltipOptions: {
                     enabled: true,
                     inputEnabled: true,
@@ -210,6 +217,11 @@ export const SelectionMachine = setup({
             id: FEATURE_QUERY_ACTOR_ID,
             src: 'featureQueryMachine',
             input: ({ context }) => ({ view: context.sketch.view as SceneView }),
+          },
+          {
+            id: ELEVATION_QUERY_ACTOR_ID,
+            src: 'elevationQueryMachine',
+            input: ({ context }) => ({ ground: context.sketch.view.map.ground }),
           }
         ],
         states: {
@@ -291,7 +303,7 @@ export const SelectionMachine = setup({
                         type: 'assignTerminal',
                         params: ({ event, context }) => ({ terminal: event.point, origin: context.origin! })
                       },
-                      'updateFeatureQueryGeometry'
+                      'updateFeatureQueryGeometry',
                     ],
                   }
                 }
@@ -357,7 +369,8 @@ export const SelectionMachine = setup({
                         type: 'assignPolygon',
                         params: ({ context, event }) => ({ next: event.polygon, previous: context.polygon })
                       },
-                      'updateFeatureQueryGeometry'
+                      'updateFeatureQueryGeometry',
+                      'updateElevationQueryPosition'
                     ]
                   },
                   "update.complete": {

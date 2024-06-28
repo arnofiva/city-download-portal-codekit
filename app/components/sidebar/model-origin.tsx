@@ -8,7 +8,7 @@ import {
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import { useAccessorValue } from "../../hooks/reactive";
 import { Dispatch, useDeferredValue, useRef } from "react";
-import { useSelectionStateSelector } from "../selection/selection-context";
+import { useElevationQuerySelector, useSelectionStateSelector } from "../selection/selection-context";
 import { BlockAction, BlockState } from "./sidebar-state";
 
 interface ModelOriginProps {
@@ -21,7 +21,16 @@ export default function ModelOrigin({
 }: ModelOriginProps) {
   const view = useSceneView();
   const sr = useAccessorValue(() => view.spatialReference?.wkid, { initial: true });
-  const origin = useDeferredValue(useSelectionStateSelector(state => state.context.origin));
+  const positionOrigin = useSelectionStateSelector(state => state.context.origin);
+  const elevationOrigin = useElevationQuerySelector(state => state?.context.result);
+
+  const adjustedOrigin = elevationOrigin?.clone() ?? positionOrigin;
+  if (positionOrigin) {
+    adjustedOrigin!.x = positionOrigin.x;
+    adjustedOrigin!.y = positionOrigin.y;
+  }
+  const origin = useDeferredValue(adjustedOrigin);
+  const elevation = useElevationQuerySelector(state => state?.context.result?.z);
 
   const latitude = origin?.latitude;
   const x = origin?.x;
@@ -101,7 +110,7 @@ export default function ModelOrigin({
           <CalciteLabel scale="s">
             <p className="font-medium">Elevation</p>
             <p>
-              {origin?.z?.toFixed(2) ?? "--"}
+              {elevation != null ? `${elevation?.toFixed(2)} m` : "--"}
             </p>
           </CalciteLabel>
         </li>
