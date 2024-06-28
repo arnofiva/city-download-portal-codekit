@@ -6,7 +6,7 @@ import useIsRoot from "~/hooks/useIsRoot";
 import ModelOrigin from "./model-origin";
 import Measurements from "./measurements";
 import ExportSettings from "./export-settings";
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { useSelectionStateSelector } from "../selection/selection-context";
 import { BlockStateReducer, SidebarState } from "./sidebar-state";
 
@@ -25,7 +25,12 @@ export default function Sidebar() {
     if (state.matches({ initialized: { created: 'idle' } })) return 'finished';
 
     return 'waiting';
-  })
+  });
+
+  const [completedState, setCompletedState] = useState('waiting');
+  if (state === 'terminal' && completedState === 'waiting') setCompletedState('terminal');
+  if (state === 'confirming' && completedState === 'terminal') setCompletedState('confirming');
+  if (state === 'finished' && completedState === 'confirming') setCompletedState('finished');
 
   const [blockState, dispatch] = useReducer(
     BlockStateReducer,
@@ -33,7 +38,7 @@ export default function Sidebar() {
   );
 
   useEffect(() => {
-    switch (state) {
+    switch (completedState) {
       case 'waiting': break;
       case 'terminal': {
         dispatch([{ block: 'modelOrigin', type: 'open' }]);
@@ -52,7 +57,7 @@ export default function Sidebar() {
         break;
       }
     }
-  }, [state]);
+  }, [completedState]);
 
   return (
     <CalciteShellPanel slot="panel-end" collapsed={isRoot} style={{
