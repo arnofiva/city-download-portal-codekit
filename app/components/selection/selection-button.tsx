@@ -18,69 +18,37 @@ export function SelectionAction() {
     actor.send({ type: 'initialize', view, layer: graphics });
   }, [actor, graphics, isSketchMachineUninitialized, view]);
 
-  const [hasFinishedSelectionOnce, setState] = useState(false);
+  const isIdle = useSelectionStateSelector(state =>
+    state.matches('uninitialized') ||
+    state.matches({ initialized: 'nonExistent' }) ||
+    state.matches({ initialized: { created: 'idle' } })
+  )
 
-  const state = useSelectionStateSelector((state) => {
-    switch (true) {
-      default:
-      case state.matches('uninitialized'):
-        return 'uninitialized';
-      case state.matches({ initialized: 'nonExistent' }): {
-        return 'idle'
-      }
-      case state.matches({ initialized: "creating" }): {
-        return 'creating'
-      }
-      case state.matches({ initialized: { created: 'idle' } }): {
-        return 'ready'
-      }
-      case state.matches({ initialized: { created: 'updating' } }): {
-        return 'updating'
-      }
-    }
-  });
+  const [hasBeenActive, setState] = useState(false);
 
-  if (!hasFinishedSelectionOnce && state == 'ready') {
+  if (!hasBeenActive && !isIdle) {
     setState(true);
   }
 
-  let text2 = 'Select area'
-  if (state === "idle") text2 = 'Select area'
-  if (state === "creating") text2 = 'Cancel selection'
-  if (state === "updating") text2 = hasFinishedSelectionOnce
-    ? 'Complete update'
-    : 'Cancel selection';
-  if (state === "ready") text2 = 'New selection'
-
-  let kind: HTMLCalciteButtonElement['kind'] = 'brand';
-  if (state === "idle") kind = "brand";
-  if (state === "creating") kind = hasFinishedSelectionOnce ? 'brand' : 'danger'
-  if (state === "updating") kind = hasFinishedSelectionOnce ? 'brand' : 'danger'
-  if (state === "ready") kind = 'brand'
+  const text = !hasBeenActive ? 'Select area' : 'New selection';
 
   const appearance: HTMLCalciteButtonElement['appearance'] =
-    state === "ready" || hasFinishedSelectionOnce
+    hasBeenActive
       ? 'outline-fill'
       : 'solid';
 
-  let action = () => actor.send({ type: 'create.start' });
-  if (state === "idle") action = () => actor.send({ type: 'create.start' });
-  if (state === "creating") action = () => actor.send({ type: 'create.cancel' });
-  if (state === "updating") action = hasFinishedSelectionOnce
-    ? () => actor.send({ type: 'update.complete' })
-    : () => actor.send({ type: 'delete' });
-  if (state === "ready") action = () => actor.send({ type: 'create.start' });
+  const action = () => actor.send({ type: 'create.start' });
 
   return (
     <CalciteButton
       scale="l"
       iconStart="rectangle-plus"
-      disabled={!viewReady || state === "uninitialized"}
+      disabled={!viewReady || !isIdle}
       onClick={action}
-      kind={kind}
+      kind="brand"
       appearance={appearance}
     >
-      {text2}
+      {text}
     </CalciteButton>
   )
 }
