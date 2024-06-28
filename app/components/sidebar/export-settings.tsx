@@ -22,8 +22,8 @@ import { BlockAction, BlockState } from "./sidebar-state";
 function ExportErrorAlert({ onClose }: { type: string; onClose: () => void }) {
   return (
     <CalciteAlert icon kind="danger" label="Export error" open autoClose onCalciteAlertClose={onClose}>
-      <p slot='title'>Failed to export</p>
-      <p slot="message">An error occurred during export.</p>
+      <p slot='title'>Failed to generate model</p>
+      <p slot="message">An error occurred while generating the model export.</p>
     </CalciteAlert>
   )
 }
@@ -41,6 +41,10 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
   }, { initial: true });
   const [filename, setFilename] = useState("")
 
+  const isSelectionStable = useSelectionStateSelector(state =>
+    state.matches({ initialized: { created: 'idle' } }) ||
+    state.matches({ initialized: { created: 'maybeCreating' } })
+  );
   const selection = useSelectionStateSelector(state => state.context.polygon);
   const [actor, send, actorRef] = useActor(DownloadMachine, { input: { scene } });
   const deferredSelection = useDeferredValue(selection);
@@ -51,12 +55,6 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
     }
     else send({ type: 'clear' })
   }, [deferredSelection, send])
-
-  useEffect(() => {
-    const subscription = actorRef.on("error", console.log);
-
-    return subscription.unsubscribe
-  }, [actorRef])
 
   const isLoadingWithoutFile = actor.context.file == null && actor.context.loading;
   const canDownload = actor.context.file != null && !actor.context.loading;
@@ -160,12 +158,14 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
           Export model
         </CalciteButton>
       </span>
-      <RootShellPortal>
-        <ErrorAlertQueue
-          alertComponent={ExportErrorAlert}
-          captureError={capture => actorRef.on("error", capture).unsubscribe}
-        />
-      </RootShellPortal>
+      {isSelectionStable ? (
+        <RootShellPortal>
+          <ErrorAlertQueue
+            alertComponent={ExportErrorAlert}
+            captureError={capture => actorRef.on("error", capture).unsubscribe}
+          />
+        </RootShellPortal>
+      ) : null}
     </CalciteBlock>
   );
 }

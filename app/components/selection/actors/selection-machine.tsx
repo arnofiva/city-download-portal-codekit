@@ -142,7 +142,10 @@ export const SelectionMachine = setup({
       })
     }),
     cancel: enqueueActions(({ enqueue }) => {
-      enqueue(({ context }) => context.sketch.layer.removeAll())
+      enqueue(({ context }) => {
+        context.sketch.cancel();
+        context.sketch.layer.removeAll();
+      })
       enqueue.assign({ origin: null, terminal: null, polygon: null });
     }),
     updateFeatureQueryGeometry: sendTo(FEATURE_QUERY_ACTOR_ID, ({ context }) => ({ type: 'changeSelection', selection: context.polygon })),
@@ -294,6 +297,12 @@ export const SelectionMachine = setup({
                 }
               },
             },
+            on: {
+              "create.cancel": {
+                target: "#(machine).initialized.nonExistent",
+                actions: 'cancel'
+              }
+            }
           },
           created: {
             initial: 'idle',
