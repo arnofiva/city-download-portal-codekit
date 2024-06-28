@@ -56,7 +56,8 @@ export default async function createMesh(scene: WebScene, extent: Extent, signal
   const ground = scene.ground;
 
   const layers = scene.allLayers.filter(layer => layer.type === "scene").toArray() as SceneLayer[];
-  const sr = layers.at(0)!.spatialReference;
+
+  const sr = layers.at(0)?.spatialReference ?? extent.spatialReference;
 
   const features = (await Promise.all(layers.map(layer => extractFeatures(layer, extent, signal)))).flat();
   const projectedExtent = projection.project(extent, sr) as Extent;
