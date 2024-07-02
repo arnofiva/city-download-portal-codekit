@@ -49,17 +49,11 @@ export default function ModelOrigin({
   const y = origin?.y;
 
   const latitudeString = latitude != null
-    ? intl.formatNumber(
-      latitude,
-      { maximumFractionDigits: 2, style: 'unit', unit: 'angle-degree', unitDisplay: 'short' }
-    )
+    ? `${latitude.toFixed(2)}°`
     : null;
 
   const longitudeString = longitude != null
-    ? intl.formatNumber(
-      longitude,
-      { maximumFractionDigits: 2, style: 'unit', unit: 'angle-degree', unitDisplay: 'short' }
-    )
+    ? `${longitude.toFixed(2)}°`
     : null;
 
   const wasClicked = useRef(false);
