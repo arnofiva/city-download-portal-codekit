@@ -66,7 +66,8 @@ export default function SceneListModal() {
       onCalciteModalClose={() => setOpen(false)}
     >
       <p slot="header">City download portal - Choose a city</p>
-      <CalciteCardGroup slot="content" label="City Download Portal" className="p-4">
+      <p slot="content-top">Choose a city to download your 3D model from.</p>
+      <CalciteCardGroup slot="content" label="City Download Portal">
         {scenes?.map((scene, index) => (
           <Link
             key={scene.id}
