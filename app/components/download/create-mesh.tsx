@@ -16,6 +16,12 @@ async function extractElevation(ground: Ground, extent: __esri.Extent) {
 }
 
 async function extractFeatures(sceneLayer: SceneLayer, extent: __esri.Geometry, signal?: AbortSignal) {
+  const supportsQuery = sceneLayer.capabilities.operations.supportsQuery;
+  const supportsGeometry = sceneLayer.capabilities.query.supportsQueryGeometry;
+
+  if (!supportsQuery || !supportsGeometry) {
+    return []
+  }
   // get the buildings
   const query = sceneLayer.createQuery();
   query.geometry = extent;
@@ -55,11 +61,16 @@ async function mergeSliceMeshes(elevation: Mesh, features: Mesh[], sceneOrigin: 
 export default async function createMesh(scene: WebScene, extent: Extent, signal?: AbortSignal) {
   const ground = scene.ground;
 
-  const layers = scene.allLayers.filter(layer => layer.type === "scene").toArray() as SceneLayer[];
+  const layers = scene.allLayers
+    .toArray()
+    .filter((layer): layer is SceneLayer => layer.type === "scene")
+    .filter(isQueryable)
 
   const sr = layers.at(0)?.spatialReference ?? extent.spatialReference;
 
   const features = (await Promise.all(layers.map(layer => extractFeatures(layer, extent, signal)))).flat();
+  console.log({ features, sr: new Set(features.map(f => f.spatialReference.wkid)) })
+
   const projectedExtent = projection.project(extent, sr) as Extent;
   const elevation = await extractElevation(ground, projectedExtent);
 
@@ -73,4 +84,11 @@ export default async function createMesh(scene: WebScene, extent: Extent, signal
   const slice = await mergeSliceMeshes(elevation, features, extractionOrigin, signal);
 
   return slice;
+}
+
+function isQueryable(sceneLayer: SceneLayer) {
+  const supportsQuery = sceneLayer.capabilities.operations.supportsQuery;
+  const supportsGeometry = sceneLayer.capabilities.query.supportsQueryGeometry;
+
+  return supportsQuery && supportsGeometry
 }
