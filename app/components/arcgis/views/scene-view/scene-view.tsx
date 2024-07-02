@@ -1,13 +1,14 @@
-import { PropsWithChildren, memo, useEffect, useState } from "react"
+import { PropsWithChildren, memo, useEffect } from "react"
 import CoreSceneView from '@arcgis/core/views/SceneView';
 import { SceneViewContext } from "./scene-view-context";
 import { useScene } from "../../maps/web-scene/scene-context";
 import Color from "@arcgis/core/Color.js";
+import useInstance from "~/hooks/useInstance";
 
 function InternalView({ children }: PropsWithChildren) {
   const scene = useScene();
 
-  const [view] = useState(() => new CoreSceneView({
+  const view = useInstance(() => new CoreSceneView({
     map: scene,
     highlightOptions: {
       color: new Color([255, 255, 0, 0.25])

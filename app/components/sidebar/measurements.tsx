@@ -9,52 +9,68 @@ import {
   Dispatch,
   useDeferredValue,
   useEffect,
-  useRef,
-  useState
+  useRef
 } from "react";
-import { useElevationQuerySelector, useFeatureQuerySelector, useSelectionActorRef, useSelectionStateSelector } from "../selection/selection-context";
-import { useAccessorValue } from "~/hooks/reactive";
-import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
-import AreaMeasurement3DViewModel from "@arcgis/core/widgets/AreaMeasurement3D/AreaMeasurement3DViewModel.js";
 import DimensionsLayer from "../arcgis/dimensions-layer/dimensions-layer";
 import LengthDimension from "../arcgis/dimensions-layer/length-dimension";
 import { BlockAction, BlockState } from "./sidebar-state";
+import { useFeatureQuerySelector2 } from "../selection/actors/feature-query-context";
+import { useElevationQuerySelector2 } from "../selection/actors/elevation-query-context";
+import { useSelectionStateSelector } from "~/data/selection-store";
+import { useReferenceElementId, useWalkthrough } from "../selection/walk-through-context";
+import * as intl from "@arcgis/core/intl";
+import { Point, Polyline, SpatialReference } from "@arcgis/core/geometry";
+import { distance, geodesicArea, geodesicLength, planarArea } from "@arcgis/core/geometry/geometryEngine";
 
+intl.convertNumberFormatToIntlOptions({
+  places: 2,
+
+})
 interface MeasurementsProps {
   state: BlockState['state'];
   dispatch: Dispatch<BlockAction[]>;
 }
 export default function Measurements({ state, dispatch }: MeasurementsProps) {
-  const actor = useSelectionActorRef();
+  const walkthrough = useWalkthrough();
 
-  const view = useSceneView();
-  const [areaVm] = useState(() => new AreaMeasurement3DViewModel({ view }));
+  const id = useReferenceElementId('confirm', 'left');
 
-  const [northToSouth, setNorthToSouth] = useState<__esri.Length | undefined>();
-  const [eastToWest, setEastToWest] = useState<__esri.Length | undefined>();
-
-  const selection = useSelectionStateSelector(state => state.context.polygon);
+  const selection = useSelectionStateSelector((store) => store.selection);
 
   const deferredSelection = useDeferredValue(selection);
 
-  useEffect(() => {
-    if (deferredSelection == null) {
-      areaVm.analysis.geometry = deferredSelection!;
-    } else {
-      view.whenAnalysisView(areaVm.analysis).then(analysisView => { analysisView.visible = false });
-      areaVm.analysis.geometry = deferredSelection!;
-    }
-  }, [areaVm.analysis, deferredSelection, view]);
+  let area = null;
+  let northToSouthLength = null;
+  let eastToWestLength = null;
 
-  const area = useAccessorValue(() => areaVm.measurement?.area.text);
+  if (deferredSelection) {
+    const calculateArea =
+      deferredSelection.spatialReference.isWGS84 || deferredSelection.spatialReference.isWebMercator
+        ? geodesicArea
+        : planarArea;
 
-  const nsUnit = shortUnit(northToSouth?.unit);
-  const ewUnit = shortUnit(eastToWest?.unit);
+    area = intl.formatNumber(
+      calculateArea(deferredSelection),
+      // intl does not support area units see list of supported units:
+      //  https://tc39.es/proposal-unified-intl-numberformat/section6/locales-currencies-tz_proposed_out.html#table-sanctioned-simple-unit-identifiers
+      { maximumFractionDigits: 2, style: 'unit', unit: 'meter', unitDisplay: 'short' }
+    ) + '²';
 
-  const northToSouthLength = northToSouth ? `${northToSouth.value.toFixed(2)} ${nsUnit}` : '--';
-  const eastToWestLength = eastToWest ? `${eastToWest.value.toFixed(2)} ${ewUnit}` : '--';
+    const oo = deferredSelection.rings[0][0];
+    const ot = deferredSelection.rings[0][1];
+    const to = deferredSelection.rings[0][3];
 
-  const featureCount = useFeatureQuerySelector(state => {
+    northToSouthLength = intl.formatNumber(
+      calculateDistance(oo, ot, deferredSelection!.spatialReference),
+      { maximumFractionDigits: 2, style: 'unit', unit: 'meter', unitDisplay: 'short' },
+    );
+    eastToWestLength = intl.formatNumber(
+      calculateDistance(oo, to, deferredSelection!.spatialReference),
+      { maximumFractionDigits: 2, style: 'unit', unit: 'meter', unitDisplay: 'short' }
+    )
+  }
+
+  const featureCount = useFeatureQuerySelector2(state => {
     if (state == null) return 0;
 
     const featureResultMap = state.context.features;
@@ -64,8 +80,6 @@ export default function Measurements({ state, dispatch }: MeasurementsProps) {
     return count;
   });
 
-  const hasSelected = useSelectionStateSelector(state => state.matches({ initialized: 'created' }));
-
   const ref = useRef<HTMLCalciteBlockElement>(null);
   useEffect(() => {
     if (state === 'open') {
@@ -73,14 +87,13 @@ export default function Measurements({ state, dispatch }: MeasurementsProps) {
     }
   }, [ref, state])
 
-
   const wasClicked = useRef(false);
 
   return (
     <>
       <CalciteBlock
         ref={ref}
-        id="measurements"
+        id={id}
         heading="Measurements"
         collapsible
         open={state === 'open'}
@@ -129,29 +142,26 @@ export default function Measurements({ state, dispatch }: MeasurementsProps) {
           <CalciteButton
             scale="l"
             iconStart="check"
-            disabled={!hasSelected}
-            onClick={() => actor.send({ type: 'update.complete' })}
+            disabled={deferredSelection == null}
+            onClick={() => {
+              walkthrough.advance('downloading');
+            }}
           >
             Confirm selection
           </CalciteButton>
         </div>
       </CalciteBlock>
-      <Dimensions onEasetToWestResult={setEastToWest} onNorthToSouthResult={setNorthToSouth} />
+      <Dimensions />
     </>
   );
 }
 
-interface DimensionsProps {
-  onNorthToSouthResult: (result?: __esri.Length) => void
-  onEasetToWestResult: (result?: __esri.Length) => void
-}
-function Dimensions({ onEasetToWestResult, onNorthToSouthResult }: DimensionsProps) {
-  const positionOrigin = useSelectionStateSelector(state => state.context.origin);
-  const elevationOrigin = useElevationQuerySelector(state => state?.context.result);
+function Dimensions() {
+  const positionOrigin = useSelectionStateSelector((store) => store.origin);
+  const terminal = useSelectionStateSelector((store) => store.terminal);
+  const elevationOrigin = useElevationQuerySelector2(state => state?.context.result) ?? null;
 
-  const terminal = useSelectionStateSelector(state => state.context.terminal);
-
-  if (positionOrigin == null || terminal == null) return null;
+  if (positionOrigin == null || terminal == null || elevationOrigin == null) return null;
 
   // the elevation origin is updated async, so the dimensions will look choppy if we use that directly
   // instead we take the last available elevation, but use the x and y from the synchronously updating origin
@@ -180,14 +190,12 @@ function Dimensions({ onEasetToWestResult, onNorthToSouthResult }: DimensionsPro
           startPoint={widthStart}
           endPoint={widthEnd}
           offset={150}
-          onMeasurementResult={onEasetToWestResult}
         />
         <LengthDimension
           measureType="horizontal"
           startPoint={heightStart}
           endPoint={heightEnd}
           offset={150}
-          onMeasurementResult={onNorthToSouthResult}
         />
       </DimensionsLayer>
       <DimensionsLayer>
@@ -215,20 +223,30 @@ function MeasurementValue({ icon, label, value }: MeasurementValueProps) {
   )
 }
 
-function shortUnit(unit?: __esri.LengthUnit) {
-  let short = 'm';
-  if (unit === "millimeters") short = "mm";
-  if (unit === "centimeters") short = "cm";
-  if (unit === "decimeters") short = "dm";
-  if (unit === "meters") short = "m";
-  if (unit === "kilometers") short = "km";
+function calculateDistance(a: number[], b: number[], sr: SpatialReference) {
+  if (sr.isWGS84 || sr.isWebMercator) {
+    const line = new Polyline({
+      paths: [[
+        a,
+        b
+      ]],
+      spatialReference: sr
+    });
 
-  if (unit === "inches") short = "in";
-  if (unit === "feet") short = "ft";
-  if (unit === "us-feet") short = "ft";
-  if (unit === "yards") short = "yr";
-  if (unit === "miles") short = "mi";
-  if (unit === "nautical-miles") short = "mi";
+    return geodesicLength(line);
+  } else {
+    const aPoint = new Point({
+      x: a[0],
+      y: a[1],
+      spatialReference: sr,
+    });
+    const bPoint = new Point({
+      x: b[0],
+      y: b[1],
+      spatialReference: sr,
+    });
 
-  return short;
+    return distance(aPoint, bPoint);
+  }
+
 }

@@ -8,8 +8,10 @@ import {
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import { useAccessorValue } from "../../hooks/reactive";
 import { Dispatch, useDeferredValue, useRef } from "react";
-import { useElevationQuerySelector, useSelectionStateSelector } from "../selection/selection-context";
 import { BlockAction, BlockState } from "./sidebar-state";
+import { useSelectionStateSelector } from "~/data/selection-store";
+import { useElevationQuerySelector2 } from "../selection/actors/elevation-query-context";
+import * as intl from "@arcgis/core/intl.js";
 
 interface ModelOriginProps {
   state: BlockState['state'];
@@ -17,20 +19,28 @@ interface ModelOriginProps {
 }
 export default function ModelOrigin({
   state,
-  dispatch
+  dispatch,
 }: ModelOriginProps) {
   const view = useSceneView();
   const sr = useAccessorValue(() => view.spatialReference?.wkid, { initial: true });
-  const positionOrigin = useSelectionStateSelector(state => state.context.origin);
-  const elevationOrigin = useElevationQuerySelector(state => state?.context.result);
 
-  const adjustedOrigin = elevationOrigin?.clone() ?? positionOrigin;
+  const elevationPoint = useElevationQuerySelector2(state => state?.context.result) ?? null;
+
+  const positionOrigin = useSelectionStateSelector((store) => store.origin, { initial: true }) ?? null;
+  const adjustedOrigin = elevationPoint?.clone() ?? positionOrigin;
   if (positionOrigin) {
     adjustedOrigin!.x = positionOrigin.x;
     adjustedOrigin!.y = positionOrigin.y;
   }
+
   const origin = useDeferredValue(adjustedOrigin);
-  const elevation = useElevationQuerySelector(state => state?.context.result?.z);
+  const elevation =
+    origin?.z != null
+      ? intl.formatNumber(
+        origin.z,
+        { maximumFractionDigits: 2, style: 'unit', unit: 'meter', unitDisplay: 'short' }
+      )
+      : null;
 
   const latitude = origin?.latitude;
   const x = origin?.x;
@@ -39,11 +49,17 @@ export default function ModelOrigin({
   const y = origin?.y;
 
   const latitudeString = latitude != null
-    ? `${latitude.toFixed(2)}°`
+    ? intl.formatNumber(
+      latitude,
+      { maximumFractionDigits: 2, style: 'unit', unit: 'angle-degree', unitDisplay: 'short' }
+    )
     : null;
 
   const longitudeString = longitude != null
-    ? `${longitude.toFixed(2)}°`
+    ? intl.formatNumber(
+      longitude,
+      { maximumFractionDigits: 2, style: 'unit', unit: 'angle-degree', unitDisplay: 'short' }
+    )
     : null;
 
   const wasClicked = useRef(false);
@@ -110,7 +126,7 @@ export default function ModelOrigin({
           <CalciteLabel scale="s">
             <p className="font-medium">Elevation</p>
             <p>
-              {elevation != null ? `${elevation?.toFixed(2)} m` : "--"}
+              {elevation != null ? elevation : "--"}
             </p>
           </CalciteLabel>
         </li>

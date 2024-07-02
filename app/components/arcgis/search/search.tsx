@@ -1,16 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useSceneView } from "../views/scene-view/scene-view-context";
 import SearchWidget from "@arcgis/core/widgets/Search.js";
 import { useScene } from "../maps/web-scene/scene-context";
 import { Extent } from "@arcgis/core/geometry";
 import { project } from "@arcgis/core/geometry/projection";
 import { useAccessorValue } from "~/hooks/reactive";
+import useInstance from "~/hooks/useInstance";
 
 
 export default function Search() {
   const view = useSceneView();
   const scene = useScene();
-  const [widget] = useState(() => new SearchWidget({ view }));
+  const widget = useInstance(() => new SearchWidget({ view }));
 
   const extent = useAccessorValue(
     () => {
@@ -46,9 +47,6 @@ export default function Search() {
 
       return extent;
     },
-    {
-      initial: true
-    }
   );
 
   // this is a little hacky, we access source.initialized just to access something on the source object

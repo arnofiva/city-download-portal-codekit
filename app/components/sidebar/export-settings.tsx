@@ -11,13 +11,13 @@ import {
 import { useScene } from "../arcgis/maps/web-scene/scene-context";
 import { useAccessorValue } from "../../hooks/reactive";
 import { Dispatch, useDeferredValue, useEffect, useRef, useState } from "react";
-import { useSelectionStateSelector } from "../selection/selection-context";
 import { DownloadMachine } from "../download/download-machine";
 import { useActor } from "@xstate/react";
-import { completeWalkthrough } from "../walk-through/walk-through-popover";
 import { RootShellPortal } from "../root-shell";
 import ErrorAlertQueue from "../error-alert-queue";
 import { BlockAction, BlockState } from "./sidebar-state";
+import { useSelectionStateSelector } from "~/data/selection-store";
+import { useReferenceElementId, useWalkthrough } from "../selection/walk-through-context";
 
 function ExportErrorAlert({ onClose }: { type: string; onClose: () => void }) {
   return (
@@ -33,19 +33,17 @@ interface ExportSettingsProps {
   dispatch: Dispatch<BlockAction[]>;
 }
 export default function ExportSettings({ dispatch, state }: ExportSettingsProps) {
+  const walkthrough = useWalkthrough();
   const scene = useScene();
 
   const title = useAccessorValue(() => {
     const title = scene.portalItem.title;
     return title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, "_");
-  }, { initial: true });
+  });
   const [filename, setFilename] = useState("")
 
-  const isSelectionStable = useSelectionStateSelector(state =>
-    state.matches({ initialized: { created: 'idle' } }) ||
-    state.matches({ initialized: { created: 'maybeCreating' } })
-  );
-  const selection = useSelectionStateSelector(state => state.context.polygon);
+  const selection = useSelectionStateSelector((store) => store.selection, { initial: true }) ?? null;
+
   const [actor, send, actorRef] = useActor(DownloadMachine, { input: { scene } });
   const deferredSelection = useDeferredValue(selection);
 
@@ -75,9 +73,11 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
 
   const wasClicked = useRef(false);
 
+  const id = useReferenceElementId('downloading', 'left')
+
   return (
     <CalciteBlock
-      id="export-settings"
+      id={id}
       heading="Export"
       collapsible
       ref={ref}
@@ -149,20 +149,18 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
             const name = filename || title || 'model';
             downloadFile(name, actor.context.file!);
 
-            completeWalkthrough();
+            walkthrough.advance('done');
           }
         }}
       >
         Export model
       </CalciteButton>
-      {isSelectionStable ? (
-        <RootShellPortal>
-          <ErrorAlertQueue
-            alertComponent={ExportErrorAlert}
-            captureError={capture => actorRef.on("error", capture).unsubscribe}
-          />
-        </RootShellPortal>
-      ) : null}
+      <RootShellPortal>
+        <ErrorAlertQueue
+          alertComponent={ExportErrorAlert}
+          captureError={capture => actorRef.on("error", capture).unsubscribe}
+        />
+      </RootShellPortal>
     </CalciteBlock>
   );
 }

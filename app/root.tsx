@@ -17,14 +17,16 @@ import globalStyles from "./global.css?url";
 import { defineCustomElements } from "@esri/calcite-components/dist/loader";
 import config from "@arcgis/core/config";
 import { CalciteScrim } from "@esri/calcite-components-react";
-import { PropsWithChildren, useEffect } from "react";
+import { PropsWithChildren, Suspense, lazy, useEffect } from "react";
 import SceneListModal from "./components/scene-list-modal/scene-list-modal";
 import { SceneListModalProvider } from "./components/scene-list-modal/scene-list-modal-context";
 import SCENES from "~/data/scenes";
 
 import { LinksFunction } from "@remix-run/node";
-import { SelectionContext } from "./components/selection/selection-context";
 import RootShell from "./components/root-shell";
+
+const StoreProvider = lazy(() => import('./data/selection-store'))
+const WalkthroughStoreProvider = lazy(() => import('./components/selection/walk-through-context'))
 
 export const meta: MetaFunction = () => {
   return [
@@ -71,7 +73,7 @@ export async function clientLoader() {
 
   try {
     await IdentityManager.checkSignInStatus("https://zurich.maps.arcgis.com/");
-  } catch (error) {
+  } catch (_error) {
     await IdentityManager.getCredential(info.portalUrl + "/sharing");
   }
   /* this should be removed eventually */
@@ -119,14 +121,18 @@ export function Layout({ children }: PropsWithChildren<LayoutProps>) {
         <Links />
       </head>
       <body>
-        <SelectionContext key={params.scene}>
-          <RootShell>
-            <SceneListModalProvider>
-              {children}
-              <SceneListModal />
-            </SceneListModalProvider>
-          </RootShell>
-        </SelectionContext>
+        <Suspense>
+          <StoreProvider key={params.scene}>
+            <WalkthroughStoreProvider>
+              <RootShell>
+                <SceneListModalProvider>
+                  {children}
+                  <SceneListModal />
+                </SceneListModalProvider>
+              </RootShell>
+            </WalkthroughStoreProvider>
+          </StoreProvider>
+        </Suspense>
         <ScrollRestoration />
         <Scripts />
       </body>

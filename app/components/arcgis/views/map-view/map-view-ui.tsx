@@ -1,7 +1,8 @@
-import { PropsWithChildren, useEffect, useState } from "react";
+import { PropsWithChildren, useEffect } from "react";
 import { useMapView } from "./map-view-context";
 import type SceneView from "@arcgis/core/views/SceneView";
 import { createPortal } from "react-dom";
+import useInstance from "~/hooks/useInstance";
 
 type Position = NonNullable<
   Exclude<Parameters<SceneView['ui']['add']>[1], string | undefined>['position']
@@ -12,7 +13,7 @@ interface ViewUIProps {
 }
 
 export function ViewUI({ position, index, children }: PropsWithChildren<ViewUIProps>) {
-  const [container] = useState(() => {
+  const container = useInstance(() => {
     const div = document.createElement('div');
     div.classList.add('contents');
     return div;

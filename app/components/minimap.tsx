@@ -7,7 +7,7 @@ import {
 } from "@arcgis/core/symbols";
 import { useSceneView } from "./arcgis/views/scene-view/scene-view-context";
 import { useAccessorValue } from "~/hooks/reactive";
-import { useSelectionStateSelector } from "./selection/selection-context";
+import { useSelectionStateSelector } from "~/data/selection-store";
 
 const Map = lazy(() => import('~/components/arcgis/maps/map/map'));
 const MapView = lazy(() => import('~/components/arcgis/views/map-view/map-view'));
@@ -21,9 +21,9 @@ const PolygonSymbol = new SimpleFillSymbol({
 })
 
 function SelectionGraphic() {
-  const selection = useSelectionStateSelector(state => state.context.polygon);
-
+  const selection = useSelectionStateSelector(store => store.selection);
   if (selection == null) return null;
+
 
   return (
     <Graphic
@@ -35,8 +35,8 @@ function SelectionGraphic() {
 
 function InternalMinimap() {
   const sceneView = useSceneView();
-  const extent = useAccessorValue(() => sceneView.extent, { initial: true });
-  const sr = useAccessorValue(() => sceneView.spatialReference?.wkid, { initial: true });
+  const extent = useAccessorValue(() => sceneView.extent);
+  const sr = useAccessorValue(() => sceneView.spatialReference?.wkid);
 
   const deferredExtent = useDeferredValue(extent);
 

@@ -6,9 +6,10 @@ import useIsRoot from "~/hooks/useIsRoot";
 import ModelOrigin from "./model-origin";
 import Measurements from "./measurements";
 import ExportSettings from "./export-settings";
-import { useEffect, useReducer, useState } from "react";
-import { useSelectionStateSelector } from "../selection/selection-context";
+import { useEffect, useReducer } from "react";
 import { BlockStateReducer, SidebarState } from "./sidebar-state";
+import { useWalkthroughSelector } from "../selection/walk-through-context";
+import { useSelectionStateSelector } from "~/data/selection-store";
 
 const initialState = {
   modelOrigin: { mode: 'managed', state: 'closed' },
@@ -19,36 +20,29 @@ const initialState = {
 export default function Sidebar() {
   const isRoot = useIsRoot();
 
-  const state = useSelectionStateSelector(state => {
-    if (state.matches({ initialized: { creating: 'terminal' } })) return 'terminal';
-    if (state.matches({ initialized: { created: 'updating' } })) return 'confirming';
-    if (state.matches({ initialized: { created: 'idle' } })) return 'finished';
+  const walkthroughState = useWalkthroughSelector(store => store.state);
+  const hasSelection = useSelectionStateSelector(store => store.selection != null)!;
 
-    return 'waiting';
-  });
-
-  const [completedState, setCompletedState] = useState('waiting');
-  if (state === 'terminal' && completedState === 'waiting') setCompletedState('terminal');
-  if (state === 'confirming' && completedState === 'terminal') setCompletedState('confirming');
-  if (state === 'finished' && completedState === 'confirming') setCompletedState('finished');
 
   const [blockState, dispatch] = useReducer(
     BlockStateReducer,
     initialState
   );
-
   useEffect(() => {
-    switch (completedState) {
-      case 'waiting': break;
-      case 'terminal': {
+    switch (walkthroughState) {
+      case 'not-started':
+      case 'done': break;
+
+      case 'placing-origin':
+      case 'placing-terminal': {
         dispatch([{ block: 'modelOrigin', type: 'open' }]);
         break;
       }
-      case 'confirming': {
+      case 'confirm': {
         dispatch([{ block: 'measurements', type: 'open' }]);
         break;
       }
-      case 'finished': {
+      case 'downloading': {
         dispatch([
           { block: 'exportSettings', type: 'open' },
           { block: 'modelOrigin', type: 'close' },
@@ -57,7 +51,7 @@ export default function Sidebar() {
         break;
       }
     }
-  }, [completedState]);
+  }, [walkthroughState]);
 
   return (
     <CalciteShellPanel slot="panel-end" collapsed={isRoot} style={{
@@ -65,7 +59,7 @@ export default function Sidebar() {
     }}>
       <CalcitePanel>
         <ModelOrigin state={blockState.modelOrigin.state} dispatch={dispatch} />
-        <Measurements state={blockState.measurements.state} dispatch={dispatch} />
+        <Measurements key={hasSelection ? 'selection' : 'no-selection'} state={blockState.measurements.state} dispatch={dispatch} />
         <ExportSettings state={blockState.exportSettings.state} dispatch={dispatch} />
       </CalcitePanel>
     </CalciteShellPanel>

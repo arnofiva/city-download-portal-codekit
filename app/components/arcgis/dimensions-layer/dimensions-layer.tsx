@@ -1,9 +1,10 @@
-import { PropsWithChildren, useEffect, useMemo, useState } from "react";
+import { PropsWithChildren, useEffect, useMemo } from "react";
 import DimensionLayer from "@arcgis/core/layers/DimensionLayer.js";
 import DimensionAnalysis from "@arcgis/core/analysis/DimensionAnalysis.js";
 import DimensionSimpleStyle from "@arcgis/core/analysis/DimensionSimpleStyle.js";
 import { DimensionsContext } from "./dimensions-context";
 import { useSceneView } from "../views/scene-view/scene-view-context";
+import useInstance from "~/hooks/useInstance";
 
 interface DimensionLayerProps {
   fontSize?: number
@@ -11,13 +12,14 @@ interface DimensionLayerProps {
 export default function DimensionsLayer({ fontSize = 0, children }: PropsWithChildren<DimensionLayerProps>) {
   const view = useSceneView();
 
-  const [analyses] = useState(() => new DimensionAnalysis({
+  const analyses = useInstance(() => new DimensionAnalysis({
     style: new DimensionSimpleStyle({
       color: "black",
       fontSize
     })
-  }))
-  const [layer] = useState(() => new DimensionLayer({
+  }));
+
+  const layer = useInstance(() => new DimensionLayer({
     source: analyses,
   }));
 

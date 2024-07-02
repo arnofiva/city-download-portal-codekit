@@ -1,9 +1,10 @@
-import { PropsWithChildren, memo, useEffect, useMemo, useState } from "react"
+import { PropsWithChildren, memo, useEffect, useMemo } from "react"
 import CoreMapView from '@arcgis/core/views/MapView';
 import { MapViewContext } from "./map-view-context";
 import Color from "@arcgis/core/Color.js";
 import { useMap } from "../../maps/map/map-context";
 import { Extent, SpatialReference } from "@arcgis/core/geometry";
+import useInstance from "~/hooks/useInstance";
 
 interface MapViewProps {
   spatialReference?: string;
@@ -19,7 +20,7 @@ function InternalMapView({ children, spatialReference, extent }: PropsWithChildr
       wkid: +spatialReference
     }), [spatialReference])
 
-  const [view] = useState(() => new CoreMapView({
+  const view = useInstance(() => new CoreMapView({
     map,
     extent,
     spatialReference: sr,

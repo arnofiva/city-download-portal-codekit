@@ -14,7 +14,7 @@ async function queryElevation({ input, signal }: { input: QueryFeaturesInput, si
   try {
     const result = await ground.queryElevation(position, { signal });
     return result.geometry as Point;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -91,6 +91,14 @@ export const ElevationQueryMachine = setup({
       },
       {
         target: '.idle',
+        actions: [
+          stopChild(QUERY_ELEVATION_ACTOR_ID),
+          assign({
+            activeQuery: null,
+            position: null,
+            result: null,
+          })
+        ]
       }
     ],
     changeElevation: {

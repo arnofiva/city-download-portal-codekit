@@ -124,6 +124,14 @@ export const FeatureQueryMachine = setup({
       },
       {
         target: '.idle',
+        actions: [
+          stopChild(QUERY_FEATURES_ACTOR_ID),
+          assign({
+            activeQuery: null,
+            features: new Map(),
+            selection: null,
+          })
+        ]
       }
     ],
     layersChanged: {

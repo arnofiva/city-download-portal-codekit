@@ -13,7 +13,7 @@ interface WebSceneProps {
 function InternalScene({ portalItem, children }: PropsWithChildren<WebSceneProps>) {
   const item = useMemo(() => {
     return typeof portalItem === "string" ? new PortalItem({
-      id: portalItem
+      id: portalItem,
     }) : portalItem
   }, [portalItem])
 
@@ -23,14 +23,15 @@ function InternalScene({ portalItem, children }: PropsWithChildren<WebSceneProps
 
   const loaded = useAccessorValue(
     () => scene.loaded,
-    { initial: true }
   )
 
   useEffect(() => {
     const isSamePortalItem =
       typeof portalItem === "string" ? item.id === portalItem : item.id === portalItem.id
 
-    if (isSamePortalItem) {
+    item.portal.units = 'metric';
+
+    if (!isSamePortalItem) {
       setScene(new CoreWebScene({
         portalItem: item
       }));

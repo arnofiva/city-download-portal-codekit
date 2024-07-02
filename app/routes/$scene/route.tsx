@@ -3,21 +3,20 @@ import { Suspense, lazy } from "react";
 import { redirect, useLoaderData, useRouteError } from "@remix-run/react";
 import Sidebar from "~/components/sidebar/sidebar";
 import invariant from "tiny-invariant";
-import { ViewUI } from "../../components/arcgis/views/scene-view/scene-view-ui";
+import { ViewUI } from "~/components/arcgis/views/scene-view/scene-view-ui";
 import { CalciteAction, CalciteNavigation, CalciteNavigationLogo, CalciteNavigationUser, CalciteScrim } from "@esri/calcite-components-react";
-import { SelectionAction } from "../../components/selection/selection-button";
 import GraphicsLayer from "~/components/arcgis/graphics-layer";
-import SelectionExtent from "../../components/selection/selection-graphic";
-import WalkthroughPopover from "~/components/walk-through/walk-through-popover";
-import SelectionErrorAlert from "~/components/selection/selection-error-alert";
 import { useSceneListModal } from "~/components/scene-list-modal/scene-list-modal-context";
 import { useAccessorValue } from "~/hooks/reactive";
 import PortalItem from "@arcgis/core/portal/PortalItem";
-import ClientOnly from "~/components/client-only";
+import { useSelectionState } from "~/data/selection-store";
+import { FeatureQueryProvider } from "~/components/selection/actors/feature-query-context";
+import { ElevationQueryProvider } from "~/components/selection/actors/elevation-query-context";
 
-const View = lazy(() => import('../../components/arcgis/views/scene-view/scene-view'));
-const Scene = lazy(() => import('../../components/arcgis/maps/web-scene/scene'));
-const Search = lazy(() => import('../../components/arcgis/search/search'));
+const Selection = lazy(() => import("~/components/selection/selection"));
+const View = lazy(() => import('~/components/arcgis/views/scene-view/scene-view'));
+const Scene = lazy(() => import('~/components/arcgis/maps/web-scene/scene'));
+const Search = lazy(() => import('~/components/arcgis/search/search'));
 
 export const meta: MetaFunction<typeof clientLoader> = ({ data }) => {
   return [
@@ -60,6 +59,8 @@ export default function SceneRoute() {
   const title = useAccessorValue(() => instance.title, { initial: true });
   const description = useAccessorValue(() => instance.description, { initial: true });
 
+  const store = useSelectionState();
+
   return (
     <Suspense fallback={<CalciteScrim />}>
       <Scene portalItem={instance}>
@@ -70,16 +71,15 @@ export default function SceneRoute() {
         </CalciteNavigation>
         <GraphicsLayer elevationMode="on-the-ground">
           <View>
-            <Search />
-            <ViewUI position="bottom-left">
-              <SelectionAction />
-            </ViewUI>
-            <Sidebar />
-            <ClientOnly>
-              <WalkthroughPopover />
-            </ClientOnly>
-            <SelectionErrorAlert />
-            <SelectionExtent />
+            <FeatureQueryProvider>
+              <ElevationQueryProvider>
+                <Search />
+                <Sidebar />
+                <ViewUI position="bottom-left">
+                  <Selection onChange={polygon => { store.selection = polygon }} />
+                </ViewUI>
+              </ElevationQueryProvider>
+            </FeatureQueryProvider>
           </View>
         </GraphicsLayer>
       </Scene>

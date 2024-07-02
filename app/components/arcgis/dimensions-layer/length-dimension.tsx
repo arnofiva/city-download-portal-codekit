@@ -1,9 +1,9 @@
 import CoreLengthDimension from "@arcgis/core/analysis/LengthDimension.js";
 import { useDimensions } from "./dimensions-context";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect } from "react";
 import { Point } from "@arcgis/core/geometry";
-import { useSceneView } from "../views/scene-view/scene-view-context";
 import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
+import useInstance from "~/hooks/useInstance";
 
 interface LengthDimensionProps {
   startPoint: Point;
@@ -20,17 +20,15 @@ function InternalLengthDimension({
   measureType,
   orientation,
   offset,
-  onMeasurementResult
 }: LengthDimensionProps) {
-  const view = useSceneView();
-  const [measurement] = useState(() => new CoreLengthDimension({
+  const measurement = useInstance(() => new CoreLengthDimension({
     startPoint,
     endPoint,
     measureType,
     orientation,
     offset
   }));
-  const { layer, analyses } = useDimensions();
+  const { analyses } = useDimensions();
 
   useEffect(() => {
     measurement.measureType = measureType ?? null!
@@ -43,19 +41,10 @@ function InternalLengthDimension({
   useEffect(() => {
     measurement.startPoint = startPoint;
     measurement.endPoint = endPoint;
-
-    view.whenAnalysisView(analyses)
-      .then(av => onMeasurementResult?.(av.results.find(r => r.dimension === measurement)?.length))
-      .catch(() => { });
-
-    view.whenLayerView(layer)
-      .then(lv => onMeasurementResult?.(lv.results.find(r => r.dimension === measurement)?.length))
-      .catch(() => { });
-
-  }, [startPoint, endPoint, measurement, view, layer, analyses, onMeasurementResult]);
+  }, [endPoint, measurement, startPoint]);
 
   useEffect(() => {
-    analyses.dimensions.push(measurement);
+    analyses.dimensions.add(measurement);
     return () => { analyses.dimensions.remove(measurement) };
   }, [analyses.dimensions, measurement]);
 
