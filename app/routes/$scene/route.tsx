@@ -53,11 +53,12 @@ export default function SceneRoute() {
   } = useLoaderData() as Awaited<ReturnType<typeof clientLoader>>;
   const [, setOpen] = useSceneListModal();
 
-  const fullName = useAccessorValue(() => instance.portal.user.fullName, { initial: true });
-  const username = useAccessorValue(() => instance.portal.user.username, { initial: true });
+  const fullName = useAccessorValue(() => instance.portal.user.fullName);
+  const username = useAccessorValue(() => instance.portal.user.username);
+  const avatar = useAccessorValue(() => instance.portal.user.thumbnailUrl)
 
-  const title = useAccessorValue(() => instance.title, { initial: true });
-  const description = useAccessorValue(() => instance.description, { initial: true });
+  const title = useAccessorValue(() => instance.title);
+  const description = useAccessorValue(() => instance.description);
 
   const store = useSelectionState();
 
@@ -66,7 +67,7 @@ export default function SceneRoute() {
       <Scene portalItem={instance}>
         <CalciteNavigation slot="header">
           <CalciteNavigationLogo slot="logo" heading={title} description={description} />
-          <CalciteNavigationUser slot="user" full-name={fullName} username={username} />
+          <CalciteNavigationUser slot="user" full-name={fullName} username={username} thumbnail={avatar} />
           <CalciteAction slot="navigation-action" text={""} icon="hamburger" onClick={() => setOpen(true)} />
         </CalciteNavigation>
         <GraphicsLayer elevationMode="on-the-ground">
