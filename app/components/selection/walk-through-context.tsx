@@ -61,7 +61,7 @@ class WalkthroughStore extends Accessor {
       let initialPosition: WalkthroughPosition = 0;
 
       // @ts-expect-error '+null === 0'
-      const storedPosition = +localStorage.getItem('WALKTHROUGH');
+      const storedPosition = +null // +localStorage.getItem('WALKTHROUGH');
       if (isWalkthroughPosition(storedPosition)) {
         initialPosition = storedPosition;
       }
@@ -82,7 +82,7 @@ class WalkthroughStore extends Accessor {
     }
 
     if (requestedPosition === 5) {
-      localStorage.setItem('WALKTHROUGH', 'TRUE');
+      // localStorage.setItem('WALKTHROUGH', 'TRUE');
     }
   }
 
