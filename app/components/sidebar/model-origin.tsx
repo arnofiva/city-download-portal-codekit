@@ -7,11 +7,47 @@ import {
 } from "@esri/calcite-components-react";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import { useAccessorValue } from "../../hooks/reactive";
-import { Dispatch, useDeferredValue, useRef } from "react";
+import { Dispatch, useDeferredValue, useEffect, useRef, useState } from "react";
 import { BlockAction, BlockState } from "./sidebar-state";
 import { useSelectionStateSelector } from "~/data/selection-store";
 import { useElevationQuerySelector2 } from "../selection/actors/elevation-query-context";
 import * as intl from "@arcgis/core/intl.js";
+
+function useSpatialMetadata(wkid: number) {
+  const [state, setState] = useState<'idle' | 'fetching'>('idle');
+  const [data, setData] = useState<undefined | any>();
+  const [error, setError] = useState<null | any>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const abortController = new AbortController();
+
+    setState('fetching');
+    fetch(`https://spatialreference.org/ref/epsg/${wkid}/projjson.json`, {
+      cache: 'force-cache',
+      signal: abortController.signal,
+    })
+      .then(result => result.json())
+      .then((data) => {
+        if (mounted) setData(data);
+      })
+      .catch((reason) => {
+        if (mounted) setError(reason)
+      })
+      .finally(() => {
+        if (mounted) setState("idle")
+      });
+
+    return () => {
+      abortController.abort();
+      mounted = false;
+    }
+  }, [wkid]);
+
+  return {
+    state, data, error
+  };
+}
 
 interface ModelOriginProps {
   state: BlockState['state'];
@@ -22,7 +58,21 @@ export default function ModelOrigin({
   dispatch,
 }: ModelOriginProps) {
   const view = useSceneView();
-  const sr = useAccessorValue(() => view.spatialReference?.wkid, { initial: true });
+  const sr = useAccessorValue(() => (view.spatialReference as any)?.latestWkid ?? view.spatialReference?.wkid, { initial: true });
+
+  const metadataQuery = useSpatialMetadata(sr);
+
+  let srName = metadataQuery.data?.name
+    ? `${metadataQuery.data?.name ?? ""} (${sr ?? "--"})`
+    : sr ?? "--";
+
+  if (sr === 3857) {
+    srName = "Web Mercator (3857)"
+  }
+
+  if (sr === 3395) {
+    srName = "World Mercator (3395)"
+  }
 
   const elevationPoint = useElevationQuerySelector2(state => state?.context.result) ?? null;
 
@@ -96,7 +146,7 @@ export default function ModelOrigin({
           <CalciteLabel scale="s">
             <p className="font-medium">Spatial reference (WKID)</p>
             <p>
-              {sr ?? "--"}
+              {srName}
             </p>
           </CalciteLabel>
         </li>
