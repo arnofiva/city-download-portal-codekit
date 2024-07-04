@@ -65,11 +65,11 @@ export default async function createMesh(scene: WebScene, extent: Extent, signal
     .toArray()
     .filter((layer): layer is SceneLayer => layer.type === "scene")
     .filter(isQueryable)
+    .filter(layer => layer.geometryType === "mesh")
 
   const sr = layers.at(0)?.spatialReference ?? extent.spatialReference;
 
   const features = (await Promise.all(layers.map(layer => extractFeatures(layer, extent, signal)))).flat();
-  console.log({ features, sr: new Set(features.map(f => f.spatialReference.wkid)) })
 
   const projectedExtent = projection.project(extent, sr) as Extent;
   const elevation = await extractElevation(ground, projectedExtent);
