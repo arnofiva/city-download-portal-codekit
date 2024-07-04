@@ -4,7 +4,7 @@ export type BlockAction = { mode?: 'managed' | 'manual', type: 'open' | 'close',
 export interface BlockState { mode: 'managed' | 'manual', state: 'closed' | 'open' }
 export interface SidebarState {
   modelOrigin: BlockState;
-  measurements: BlockState;
+  selection: BlockState;
   exportSettings: BlockState;
 }
 export function BlockStateReducer(state: SidebarState, actions: BlockAction[]) {

@@ -22,15 +22,11 @@ import * as intl from "@arcgis/core/intl";
 import { Point, Polyline, SpatialReference } from "@arcgis/core/geometry";
 import { distance, geodesicArea, geodesicLength, planarArea } from "@arcgis/core/geometry/geometryEngine";
 
-intl.convertNumberFormatToIntlOptions({
-  places: 2,
-
-})
 interface MeasurementsProps {
   state: BlockState['state'];
   dispatch: Dispatch<BlockAction[]>;
 }
-export default function Measurements({ state, dispatch }: MeasurementsProps) {
+export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
   const walkthrough = useWalkthrough();
 
   const id = useReferenceElementId('confirm', 'left');
@@ -94,7 +90,7 @@ export default function Measurements({ state, dispatch }: MeasurementsProps) {
       <CalciteBlock
         ref={ref}
         id={id}
-        heading="Measurements"
+        heading="Selection"
         collapsible
         open={state === 'open'}
         onClick={() => {
@@ -108,7 +104,7 @@ export default function Measurements({ state, dispatch }: MeasurementsProps) {
             dispatch([{
               type: 'close',
               mode: 'manual',
-              block: 'measurements'
+              block: 'selection'
             }])
           }
         }}
@@ -117,7 +113,7 @@ export default function Measurements({ state, dispatch }: MeasurementsProps) {
             dispatch([{
               type: 'open',
               mode: 'manual',
-              block: 'measurements'
+              block: 'selection'
             }])
           }
         }}

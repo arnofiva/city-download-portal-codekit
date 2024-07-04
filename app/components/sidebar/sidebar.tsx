@@ -4,7 +4,7 @@ import {
 } from "@esri/calcite-components-react";
 import useIsRoot from "~/hooks/useIsRoot";
 import ModelOrigin from "./model-origin";
-import Measurements from "./measurements";
+import SelectionInfo from "./selection-info";
 import ExportSettings from "./export-settings";
 import { useEffect, useReducer } from "react";
 import { BlockStateReducer, SidebarState } from "./sidebar-state";
@@ -13,7 +13,7 @@ import { useSelectionStateSelector } from "~/data/selection-store";
 
 const initialState = {
   modelOrigin: { mode: 'managed', state: 'closed' },
-  measurements: { mode: 'managed', state: 'closed' },
+  selection: { mode: 'managed', state: 'closed' },
   exportSettings: { mode: 'managed', state: 'closed' },
 } satisfies SidebarState;
 
@@ -39,14 +39,14 @@ export default function Sidebar() {
         break;
       }
       case 'confirm': {
-        dispatch([{ block: 'measurements', type: 'open' }]);
+        dispatch([{ block: 'selection', type: 'open' }]);
         break;
       }
       case 'downloading': {
         dispatch([
           { block: 'exportSettings', type: 'open' },
           { block: 'modelOrigin', type: 'close' },
-          { block: 'measurements', type: 'close' }
+          { block: 'selection', type: 'close' }
         ]);
         break;
       }
@@ -59,7 +59,7 @@ export default function Sidebar() {
     }}>
       <CalcitePanel>
         <ModelOrigin state={blockState.modelOrigin.state} dispatch={dispatch} />
-        <Measurements key={hasSelection ? 'selection' : 'no-selection'} state={blockState.measurements.state} dispatch={dispatch} />
+        <SelectionInfo key={hasSelection ? 'selection' : 'no-selection'} state={blockState.selection.state} dispatch={dispatch} />
         <ExportSettings state={blockState.exportSettings.state} dispatch={dispatch} />
       </CalcitePanel>
     </CalciteShellPanel>
