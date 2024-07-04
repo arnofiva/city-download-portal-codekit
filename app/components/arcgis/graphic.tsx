@@ -44,8 +44,10 @@ export default function Graphic<GeometryType extends Geometry = Geometry>({
     return handle.remove;
   }, [graphic, layer.graphics]);
 
+  const currentGeometryProp = useRef<GeometryType>(geometry);
   useEffect(() => {
     graphic.geometry = geometry
+    currentGeometryProp.current = geometry
   }, [geometry, graphic]);
 
   useEffect(() => {
@@ -62,7 +64,8 @@ export default function Graphic<GeometryType extends Geometry = Geometry>({
     const handle = reactiveUtils.watch(
       () => getCurrentGeometry() as GeometryType,
       (geometry) => {
-        currentOnChange.current?.(geometry)
+        if (geometry != currentGeometryProp.current)
+          currentOnChange.current?.(geometry)
       });
 
     return handle.remove;
