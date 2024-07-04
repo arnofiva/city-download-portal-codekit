@@ -90,7 +90,7 @@ export default function ModelOrigin({
         }
       }}
     >
-      <CalciteIcon slot="icon" icon="pin-tear-f"></CalciteIcon>
+      <CalciteIcon slot="icon" icon="pin-tear-f" scale="s"></CalciteIcon>
       <ul>
         <li>
           <CalciteLabel scale="s">
