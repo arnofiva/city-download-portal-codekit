@@ -18,16 +18,14 @@ export function ViewUI({ position, index, children }: PropsWithChildren<ViewUIPr
     div.classList.add('contents');
     return div;
   })
+
   const view = useSceneView();
+
   useEffect(() => {
     view.ui.add(container, { position, index })
 
     return () => {
-      try {
-        view.ui.remove(container);
-      } catch (error) {
-        console.error(error);
-      }
+      view.ui.remove(container);
     }
   }, [container, index, position, view]);
 
