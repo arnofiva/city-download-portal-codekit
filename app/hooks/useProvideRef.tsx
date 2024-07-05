@@ -9,5 +9,5 @@ export default function useProvideRef<T>(item: T, ref?: ForwardedRef<T>) {
     } else {
       ref(item);
     }
-  });
+  }, [item, ref]);
 }

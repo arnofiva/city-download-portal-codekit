@@ -6,21 +6,27 @@ import { Symbol as ArcgisSymbol } from '@arcgis/core/symbols';
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
 import useProvideRef from "~/hooks/useProvideRef";
 import useInstance from "~/hooks/useInstance";
+import { useSketch } from "./sketch/sketch";
 
 interface GraphicProps<GeometryType extends Geometry = Geometry> {
   geometry: GeometryType;
   symbol: ArcgisSymbol;
   onChange?: (geometry: GeometryType) => void;
+  onUpdateStart?: (graphic: CoreGraphic) => void,
+  onUpdateComplete?: (graphic: CoreGraphic) => void,
   onDelete?: () => void;
   ref?: ForwardedRef<CoreGraphic>;
 }
 export default function Graphic<GeometryType extends Geometry = Geometry>({
   geometry,
   symbol,
+  onUpdateStart,
+  onUpdateComplete,
   onChange,
   onDelete,
   ref
 }: GraphicProps<GeometryType>): ReactNode {
+  const sketch = useSketch();
   const id = useId();
   const graphic = useInstance(() => new CoreGraphic({
     attributes: {
@@ -34,6 +40,7 @@ export default function Graphic<GeometryType extends Geometry = Geometry>({
   useEffect(() => {
     currentOnDelete.current = onDelete;
   })
+
   useEffect(() => {
     const handle = layer.graphics.on('change', (event) => {
       if (event.removed.includes(graphic)) {
@@ -78,15 +85,31 @@ export default function Graphic<GeometryType extends Geometry = Geometry>({
     }
   }, [graphic, layer]);
 
+  const currentOnUpdateStart = useRef(onUpdateStart);
   useEffect(() => {
-    if (ref == null) return;
+    currentOnUpdateStart.current = onUpdateStart;
+  })
 
-    if (typeof ref === 'object') {
-      ref.current = graphic;
-    } else {
-      ref(graphic);
-    }
-  });
+  const currentOnUpdateComplete = useRef(onUpdateComplete);
+  useEffect(() => {
+    currentOnUpdateComplete.current = onUpdateComplete;
+  })
+  useEffect(() => {
+    if (sketch == null) return;
+
+    const handle = sketch.on("update", (event) => {
+      if (event.graphics.includes(graphic)) {
+        if (event.state === "start") {
+          currentOnUpdateStart.current?.(graphic);
+        }
+        if (event.state === 'complete') {
+          currentOnUpdateComplete.current?.(graphic)
+        }
+      }
+    })
+
+    return handle.remove;
+  }, [graphic, sketch]);
 
   useProvideRef(graphic, ref);
 

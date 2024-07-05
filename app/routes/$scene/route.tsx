@@ -12,6 +12,8 @@ import PortalItem from "@arcgis/core/portal/PortalItem";
 import { useSelectionState } from "~/data/selection-store";
 import { FeatureQueryProvider } from "~/components/selection/actors/feature-query-context";
 import { ElevationQueryProvider } from "~/components/selection/actors/elevation-query-context";
+import SelectionTool from "~/components/selection/selection-tool";
+import SelectionGraphic from "~/components/selection/selection-graphic";
 
 const Selection = lazy(() => import("~/components/selection/selection"));
 const View = lazy(() => import('~/components/arcgis/views/scene-view/scene-view'));
@@ -72,15 +74,18 @@ export default function SceneRoute() {
         </CalciteNavigation>
         <GraphicsLayer elevationMode="on-the-ground">
           <View>
-            <FeatureQueryProvider>
-              <ElevationQueryProvider>
-                <Search />
-                <Sidebar />
-                <ViewUI position="bottom-left">
-                  <Selection onChange={polygon => { store.selection = polygon }} />
-                </ViewUI>
-              </ElevationQueryProvider>
-            </FeatureQueryProvider>
+            <Selection>
+              <FeatureQueryProvider>
+                <ElevationQueryProvider>
+                  <Search />
+                  <Sidebar />
+                  <ViewUI position="bottom-left">
+                    <SelectionTool onChange={polygon => { store.selection = polygon }} />
+                  </ViewUI>
+                  <SelectionGraphic />
+                </ElevationQueryProvider>
+              </FeatureQueryProvider>
+            </Selection>
           </View>
         </GraphicsLayer>
       </Scene>

@@ -1,6 +1,6 @@
 import { Point } from "@arcgis/core/geometry";
 import { useSketch } from "../sketch";
-import { PropsWithChildren, useEffect } from "react";
+import { ReactNode, useEffect } from "react";
 import { useEffectWhen } from "~/hooks/reactive";
 
 interface PointToolProps {
@@ -8,6 +8,7 @@ interface PointToolProps {
   onActive?: (point: Point) => void;
   onComplete?: (point: Point) => void;
   onCancel?: (point: Point) => void;
+  children: ({ start }: { start: () => void }) => ReactNode;
 }
 
 export default function PointTool({
@@ -16,7 +17,7 @@ export default function PointTool({
   onActive,
   onComplete,
   onCancel,
-}: PropsWithChildren<PointToolProps>) {
+}: PointToolProps) {
   const sketch = useSketch();
 
   useEffectWhen(
@@ -46,5 +47,5 @@ export default function PointTool({
     return handle.remove
   });
 
-  return children;
+  return children({ start: () => sketch.create("point") });
 }

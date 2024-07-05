@@ -21,6 +21,7 @@ import { useReferenceElementId, useWalkthrough } from "../selection/walk-through
 import * as intl from "@arcgis/core/intl";
 import { Point, Polyline, SpatialReference } from "@arcgis/core/geometry";
 import { distance, geodesicArea, geodesicLength, planarArea } from "@arcgis/core/geometry/geometryEngine";
+import { useSelectionActor } from "../selection/selection";
 
 interface MeasurementsProps {
   state: BlockState['state'];
@@ -85,6 +86,8 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
 
   const wasClicked = useRef(false);
 
+  const [selectionActorState, send] = useSelectionActor();
+
   return (
     <>
       <CalciteBlock
@@ -135,16 +138,34 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
               <MeasurementValue icon="urban-model" label="Selected features" value={featureCount} />
             </li>
           </ul>
-          <CalciteButton
-            scale="l"
-            iconStart="check"
-            disabled={deferredSelection == null}
-            onClick={() => {
-              walkthrough.advance('downloading');
-            }}
-          >
-            Confirm selection
-          </CalciteButton>
+          {selectionActorState.matches({ created: 'idle' })
+            ? (
+              <CalciteButton
+                scale="l"
+                iconStart="check"
+                disabled={deferredSelection == null}
+                appearance="outline-fill"
+                onClick={() => {
+                  send({ type: 'update.start' });
+                }}
+              >
+                Update selection
+              </CalciteButton>
+            )
+            : (
+              <CalciteButton
+                scale="l"
+                iconStart="check"
+                disabled={deferredSelection == null}
+                onClick={() => {
+                  send({ type: 'update.complete' });
+                  walkthrough.advance('downloading');
+                }}
+              >
+                Confirm selection
+              </CalciteButton>
+            )
+          }
         </div>
       </CalciteBlock>
       <Dimensions />
@@ -174,9 +195,9 @@ function Dimensions() {
   const heightEnd = heightStart.clone();
   heightEnd.x = terminal?.x;
 
-  const borderStart = origin.clone();
-  borderStart.x = terminal.x;
-  borderStart.y = terminal.y;
+  // const borderStart = origin.clone();
+  // borderStart.x = terminal.x;
+  // borderStart.y = terminal.y;
 
   return (
     <>
@@ -194,10 +215,10 @@ function Dimensions() {
           offset={150}
         />
       </DimensionsLayer>
-      <DimensionsLayer>
+      {/* <DimensionsLayer>
         <LengthDimension measureType="horizontal" startPoint={borderStart} endPoint={widthEnd} offset={150} />
         <LengthDimension measureType="horizontal" startPoint={borderStart} endPoint={heightEnd} offset={150} />
-      </DimensionsLayer>
+      </DimensionsLayer> */}
     </>
   )
 }
