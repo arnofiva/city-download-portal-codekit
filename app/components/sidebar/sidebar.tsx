@@ -9,7 +9,6 @@ import ExportSettings from "./export-settings";
 import { useEffect, useReducer } from "react";
 import { BlockStateReducer, SidebarState } from "./sidebar-state";
 import { useWalkthroughSelector } from "../selection/walk-through-context";
-import { useSelectionStateSelector } from "~/data/selection-store";
 
 const initialState = {
   modelOrigin: { mode: 'managed', state: 'closed' },
@@ -21,8 +20,6 @@ export default function Sidebar() {
   const isRoot = useIsRoot();
 
   const walkthroughState = useWalkthroughSelector(store => store.state);
-  const hasSelection = useSelectionStateSelector(store => store.selection != null)!;
-
 
   const [blockState, dispatch] = useReducer(
     BlockStateReducer,
@@ -59,7 +56,10 @@ export default function Sidebar() {
     }}>
       <CalcitePanel>
         <ModelOrigin state={blockState.modelOrigin.state} dispatch={dispatch} />
-        <SelectionInfo key={hasSelection ? 'selection' : 'no-selection'} state={blockState.selection.state} dispatch={dispatch} />
+        <SelectionInfo
+          state={blockState.selection.state}
+          dispatch={dispatch}
+        />
         <ExportSettings state={blockState.exportSettings.state} dispatch={dispatch} />
       </CalcitePanel>
     </CalciteShellPanel>

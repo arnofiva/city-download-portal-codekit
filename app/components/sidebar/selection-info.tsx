@@ -47,7 +47,7 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
         : planarArea;
 
     area = intl.formatNumber(
-      calculateArea(deferredSelection),
+      Math.abs(calculateArea(deferredSelection)),
       // intl does not support area units see list of supported units:
       //  https://tc39.es/proposal-unified-intl-numberformat/section6/locales-currencies-tz_proposed_out.html#table-sanctioned-simple-unit-identifiers
       { maximumFractionDigits: 2, style: 'unit', unit: 'meter', unitDisplay: 'short' }

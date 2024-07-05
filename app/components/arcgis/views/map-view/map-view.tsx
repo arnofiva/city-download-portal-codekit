@@ -1,17 +1,19 @@
-import { PropsWithChildren, memo, useEffect, useMemo } from "react"
+import { ForwardedRef, PropsWithChildren, memo, useEffect, useMemo } from "react"
 import CoreMapView from '@arcgis/core/views/MapView';
 import { MapViewContext } from "./map-view-context";
 import Color from "@arcgis/core/Color.js";
 import { useMap } from "../../maps/map/map-context";
 import { Extent, SpatialReference } from "@arcgis/core/geometry";
 import useInstance from "~/hooks/useInstance";
+import useProvideRef from "~/hooks/useProvideRef";
 
 interface MapViewProps {
   spatialReference?: string;
   extent?: Extent;
+  ref?: ForwardedRef<CoreMapView>;
 }
 
-function InternalMapView({ children, spatialReference, extent }: PropsWithChildren<MapViewProps>) {
+function InternalMapView({ ref, children, spatialReference, extent }: PropsWithChildren<MapViewProps>) {
   const map = useMap();
 
   const sr = useMemo(() => spatialReference == null ?
@@ -46,6 +48,8 @@ function InternalMapView({ children, spatialReference, extent }: PropsWithChildr
   useEffect(() => {
     view.map = map;
   }, [view, map]);
+
+  useProvideRef(view, ref)
 
   return (
     <MapViewContext.Provider value={view}>
