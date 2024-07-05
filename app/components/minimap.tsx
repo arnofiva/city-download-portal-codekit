@@ -3,13 +3,15 @@ import { CalciteScrim } from "@esri/calcite-components-react";
 import GraphicsLayer from "./arcgis/graphics-layer";
 import Graphic from "./arcgis/graphic";
 import {
-  SimpleFillSymbol
+  SimpleFillSymbol,
+  SimpleLineSymbol
 } from "@arcgis/core/symbols";
 import { useSceneView } from "./arcgis/views/scene-view/scene-view-context";
 import { useAccessorValue } from "~/hooks/reactive";
 import { useSelectionStateSelector } from "~/data/selection-store";
 import CoreMapView from "@arcgis/core/views/MapView";
 import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
+import { Polyline } from "@arcgis/core/geometry";
 
 const Map = lazy(() => import('~/components/arcgis/maps/map/map'));
 const MapView = lazy(() => import('~/components/arcgis/views/map-view/map-view'));
@@ -22,16 +24,52 @@ const PolygonSymbol = new SimpleFillSymbol({
   }
 })
 
+const LineSymbol = new SimpleLineSymbol({
+  width: 3,
+  cap: 'square'
+})
+
 function SelectionGraphic() {
   const selection = useSelectionStateSelector(store => store.selection);
   if (selection == null) return null;
 
+  const [
+    oo,
+    ot,
+    _tt,
+    to,
+  ] = selection.rings[0];
+  const ooot = new Polyline({
+    paths: [[
+      oo,
+      ot
+    ]],
+    spatialReference: selection.spatialReference
+  })
+
+  const ooto = new Polyline({
+    paths: [[
+      oo,
+      to
+    ]],
+    spatialReference: selection.spatialReference
+  })
 
   return (
-    <Graphic
-      geometry={selection}
-      symbol={PolygonSymbol}
-    />
+    <>
+      <Graphic
+        geometry={selection}
+        symbol={PolygonSymbol}
+      />
+      <Graphic
+        geometry={ooot}
+        symbol={LineSymbol}
+      />
+      <Graphic
+        geometry={ooto}
+        symbol={LineSymbol}
+      />
+    </>
   )
 }
 
