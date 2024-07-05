@@ -14,11 +14,6 @@ const WalkthroughContent = [
   ""
 ] as const;
 
-export function completeWalkthrough() {
-  window.dispatchEvent(new Event("complete-walkthrough"));
-  localStorage.setItem("WALKTHROUGH", "true");
-}
-
 export default function WalkthroughPopover() {
   const view = useSceneView();
 
@@ -63,7 +58,7 @@ export default function WalkthroughPopover() {
    */
   const wasClosedByInteraction = useRef(false);
 
-  const hasDoneWalkthrough = localStorage.getItem('WALKTHROUGH') ?? false;
+  const hasDoneWalkthrough = pos === 5;
 
   if (hasDoneWalkthrough) return (
     <SketchTooltip
@@ -102,7 +97,6 @@ export default function WalkthroughPopover() {
           if (wasClosedByInteraction.current) {
             setForceClose(true);
             walkthrough.advance('done');
-            localStorage.setItem("WALKTHROUGH", "true")
           }
           wasClosedByInteraction.current = false;
         }}
