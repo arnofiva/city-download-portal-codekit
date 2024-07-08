@@ -57,7 +57,18 @@ async function loadModules() {
   }
 }
 
+let hasSetup = false;
+function setup() {
+  if (hasSetup) return;
+
+  setAssetPath(import.meta.url);
+  defineCustomElements(window);
+  document.body.classList.toggle('setup')
+  hasSetup = true;
+}
+
 export async function clientLoader() {
+  setup();
   /* this should be removed eventually */
   const { OAuthInfo, IdentityManager } = await loadModules();
 
@@ -95,6 +106,10 @@ export async function clientLoader() {
 
     await ws.load();
 
+    // await new Promise((resolve) => {
+    //   console.log({ resolve })
+    // })
+
     return ws;
   }));
 
@@ -121,7 +136,7 @@ export function Layout({ children }: PropsWithChildren<LayoutProps>) {
         <Links />
       </head>
       <body>
-        <Suspense>
+        <Suspense fallback={<CalciteScrim loading />}>
           <StoreProvider key={params.scene}>
             <WalkthroughStoreProvider>
               <RootShell>

@@ -5,3 +5,8 @@ body,
   width: 100%;
   height: 100%;
 }
+
+/* we hide the body until calcite is loaded to avoid a FOUC */
+body:not(.setup) {
+  display: none;
+}

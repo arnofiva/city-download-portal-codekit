@@ -29,7 +29,9 @@ function SceneCard({ title, description, thumbnail, viewingMode, selected }: Sce
       className="max-w-[250px]"
       {...selectedProp}
     >
-      <img slot="thumbnail" alt="Screenshot of the web scene" src={thumbnail} />
+      <img slot="thumbnail" alt="Screenshot of the web scene" src={thumbnail} style={{
+        backgroundColor: "var(--calcite-color-foreground-2)",
+      }} className="w-[250px] h-[165px]" />
       <span slot="heading">{title}</span>
       <span slot="description">{sceneDescription}</span>
       <div slot="footer-start">
@@ -40,6 +42,42 @@ function SceneCard({ title, description, thumbnail, viewingMode, selected }: Sce
         >{viewingMode === 'global' ? 'Global' : 'Local'}</CalciteChip>
       </div>
     </CalciteCard>
+  )
+}
+
+function LoadCard() {
+  return (
+    <>
+      <div className="sr-only">Loading content</div>
+      <CalciteCard
+        className="max-w-[250px]"
+        disabled
+        aria-hidden
+      >
+        <img slot="thumbnail" style={{
+          backgroundColor: "var(--calcite-color-foreground-2)",
+        }} className="w-[250px] h-[165px]" alt="" src="" />
+        <span slot="heading" style={{
+          backgroundColor: "var(--calcite-color-foreground-2)",
+        }} className="rounded-sm w-full min-h-5" />
+        <span slot="description" className="rounded-sm w-full flex flex-col gap-0">
+          <span className="w-full min-h-5" style={{
+            backgroundColor: "var(--calcite-color-foreground-2)",
+          }} />
+          <span className="w-full min-h-5" style={{
+            backgroundColor: "var(--calcite-color-foreground-2)",
+          }} />
+          <span className="w-16 min-h-5" style={{
+            backgroundColor: "var(--calcite-color-foreground-2)",
+          }} />
+        </span>
+        <div slot="footer-start">
+          <CalciteChip value="loading">
+            <span className="w-[100px] text-transparent">----------------</span>
+          </CalciteChip>
+        </div>
+      </CalciteCard>
+    </>
   )
 }
 
@@ -81,6 +119,9 @@ export default function SceneListModal() {
             />
           </Link>
         ))}
+        {scenes == null || scenes.length === 0 ? (
+          <LoadCard />
+        ) : null}
       </CalciteCardGroup>
     </CalciteModal>
   )
