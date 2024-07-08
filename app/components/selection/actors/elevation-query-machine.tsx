@@ -1,20 +1,26 @@
 import Ground from "@arcgis/core/Ground";
-import { Point } from "@arcgis/core/geometry";
+import { Multipoint, Point, Polygon } from "@arcgis/core/geometry";
 import { ActorRefFrom, assign, fromPromise, setup, stopChild } from "xstate";
 
-interface QueryFeaturesInput {
+interface QueryElevationInput {
   ground: Ground
-  position: Point | null
+  selection: Polygon | null
 }
-async function queryElevation({ input, signal }: { input: QueryFeaturesInput, signal: AbortSignal }) {
-  const { ground, position } = input;
+async function queryElevation({ input, signal }: { input: QueryElevationInput, signal: AbortSignal }) {
+  const { ground, selection } = input;
 
-  if (position == null) return null;
-
-  try {
-    const result = await ground.queryElevation(position, { signal });
-    return result.geometry as Point;
-  } catch (_error) {
+  if (selection != null) {
+    const multipoint = new Multipoint({
+      points: selection.rings[0],
+      spatialReference: selection.spatialReference
+    })
+    try {
+      const result = await ground.queryElevation(multipoint, { signal });
+      return result.geometry as Multipoint;
+    } catch (_error) {
+      return null;
+    }
+  } else {
     return null;
   }
 }
@@ -29,20 +35,23 @@ export const ElevationQueryMachine = setup({
   },
   actions: {
     updatePosition: assign({
-      position: (_, point: Point) => point
+      selection: (_, selection: Polygon) => selection,
     }),
     assignResult: assign({
-      result: (_, result: Point | null) => result,
+      elevationInfo: (_, result: { corners: Multipoint | null }) => result.corners,
     }),
     updateActiveQuery: assign({
-      activeQuery: ({ context, spawn, self }, params: { position: Point | null, ground: Ground } | null) => {
+      activeQuery: (
+        { context, spawn, self },
+        params: { selection: Polygon | null, ground: Ground } | null
+      ) => {
         if (params == null) return context.activeQuery;
 
-        const { position, ground } = params;
-        const actor = spawn('query', { input: { ground, position }, id: QUERY_ELEVATION_ACTOR_ID })
+        const { ground, selection } = params;
+        const actor = spawn('query', { input: { ground, selection }, id: QUERY_ELEVATION_ACTOR_ID })
         actor.subscribe(snapshot => {
           if (snapshot.status === "done") {
-            self.send({ type: 'changeElevation', result: snapshot.output });
+            self.send({ type: 'changeElevation', elevationInfo: snapshot.output });
           }
         });
 
@@ -54,14 +63,15 @@ export const ElevationQueryMachine = setup({
     query: fromPromise(queryElevation),
   },
   guards: {
-    hasPosition: ({ event }) => event.type === 'changePosition' && event.position != null,
+    hasPosition: ({ event }) => event.type === 'changePosition' && event.selection != null,
   }
 }).createMachine({
   context: ({ input }) => ({
     ground: input.ground,
     position: null,
+    selection: null,
     activeQuery: null,
-    result: null,
+    elevationInfo: null,
   }),
   initial: 'idle',
   states: {
@@ -72,7 +82,8 @@ export const ElevationQueryMachine = setup({
         {
           type: 'updateActiveQuery',
           params: ({ event }) => {
-            if (event.type === 'changePosition') return { position: event.position, ground: event.ground };
+            if (event.type === 'changePosition')
+              return { selection: event.selection, ground: event.ground };
             else return null;
           }
         }
@@ -86,7 +97,7 @@ export const ElevationQueryMachine = setup({
         guard: 'hasPosition',
         actions: {
           type: "updatePosition",
-          params: ({ event }) => event.position!
+          params: ({ event }) => event.selection!,
         },
       },
       {
@@ -96,7 +107,6 @@ export const ElevationQueryMachine = setup({
           assign({
             activeQuery: null,
             position: null,
-            result: null,
           })
         ]
       }
@@ -104,7 +114,9 @@ export const ElevationQueryMachine = setup({
     changeElevation: {
       actions: {
         type: 'assignResult',
-        params: ({ event }) => event.result
+        params: ({ event }) => ({
+          corners: event.elevationInfo,
+        })
       }
     }
   }
@@ -117,12 +129,13 @@ type ElevationQueryMachineInput = {
 type ElevationQueryMachineContext = {
   ground: Ground
   position: Point | null
+  selection: Polygon | null
   activeQuery: ActorRefFrom<ReturnType<typeof queryElevation>> | null,
-  result: Point | null;
+  elevationInfo: Multipoint | null;
 }
 
 type ElevationQueryEvent =
-  | { type: 'changePosition', position: Point | null, ground: Ground }
-  | { type: 'changeElevation', result: Point | null };
+  | { type: 'changePosition', selection: Polygon | null, ground: Ground }
+  | { type: 'changeElevation', elevationInfo: Multipoint | null };
 
 

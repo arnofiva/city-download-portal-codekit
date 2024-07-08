@@ -10,7 +10,7 @@ import { useAccessorValue } from "../../hooks/reactive";
 import { Dispatch, useDeferredValue, useEffect, useRef, useState } from "react";
 import { BlockAction, BlockState } from "./sidebar-state";
 import { useSelectionStateSelector } from "~/data/selection-store";
-import { useElevationQuerySelector2 } from "../selection/actors/elevation-query-context";
+import { useElevationQuerySelector } from "../selection/actors/elevation-query-context";
 import * as intl from "@arcgis/core/intl.js";
 
 function useSpatialMetadata(wkid: number) {
@@ -74,7 +74,7 @@ export default function ModelOrigin({
     srName = "World Mercator (3395)"
   }
 
-  const elevationPoint = useElevationQuerySelector2(state => state?.context.result) ?? null;
+  const elevationPoint = useElevationQuerySelector(state => state?.context.elevationInfo?.getPoint(0)) ?? null;
 
   const positionOrigin = useSelectionStateSelector((store) => store.origin, { initial: true }) ?? null;
   const adjustedOrigin = elevationPoint?.clone() ?? positionOrigin;

@@ -1,16 +1,18 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Point, Polygon } from "@arcgis/core/geometry";
 import Graphic from "~/components/arcgis/graphic";
-import { FillSymbol3DLayer, PolygonSymbol3D } from "@arcgis/core/symbols";
+import { FillSymbol3DLayer, IconSymbol3DLayer, PointSymbol3D, PolygonSymbol3D, TextSymbol3DLayer } from "@arcgis/core/symbols";
 import StylePattern3D from "@arcgis/core/symbols/patterns/StylePattern3D";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import CoreGraphic from "@arcgis/core/Graphic";
 import WalkthroughPopover from "~/components/selection/walk-through-popover";
 import { RootShellPortal } from "~/components/root-shell";
 import { contains } from "@arcgis/core/geometry/geometryEngine";
+import LineCallout3D from "@arcgis/core/symbols/callouts/LineCallout3D.js";
 import Highlight from "./highlight";
 import { useSelectionActor } from "./selection";
-
+import GraphicsLayer from "../arcgis/graphics-layer";
+import pinTearIcon from './pin-tear-f.svg?url';
 interface SelectionProps {
   onChange?: (selection: Polygon | null) => void;
 }
@@ -83,6 +85,14 @@ function InternalSelectionGraphic({
           onDelete={() => send({ type: 'delete' })}
         />
       ) : null}
+      <GraphicsLayer elevationMode="relative-to-ground">
+        {origin && polygon ? (
+          <Graphic
+            geometry={origin}
+            symbol={OriginSymbol}
+          />
+        ) : null}
+      </GraphicsLayer>
       <RootShellPortal>
         <WalkthroughPopover />
       </RootShellPortal>
@@ -112,6 +122,32 @@ const PolygonSymbol = new PolygonSymbol3D({
       pattern: new StylePattern3D({ style: 'diagonal-cross' })
     })
   ]
+});
+
+const OriginSymbol = new PointSymbol3D({
+  symbolLayers: [
+    new TextSymbol3DLayer({
+      text: 'origin',
+      size: 24
+    }),
+    new IconSymbol3DLayer({
+      resource: {
+        href: pinTearIcon
+      },
+      anchor: 'bottom',
+      size: 35,
+      material: { color: 'blue' }
+    })
+  ],
+  // verticalOffset: {
+  //   screenLength: 150,
+  //   maxWorldLength: 150,
+  //   minWorldLength: 150
+  // },
+  // callout: new LineCallout3D({
+  //   color: 'white',
+  //   size: 2,
+  // })
 });
 
 const SelectionGraphic = memo(InternalSelectionGraphic);

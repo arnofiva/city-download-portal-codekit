@@ -13,11 +13,11 @@ export function ElevationQueryProvider({ children }: PropsWithChildren) {
 
   const ref = useActorRef(ElevationQueryMachine, { input: { ground } });
 
-  const origin = useSelectionStateSelector((store) => store.origin) ?? null
+  const selection = useSelectionStateSelector(store => store.selection) ?? null
 
   useEffect(() => {
-    ref.send({ type: 'changePosition', position: origin, ground })
-  }, [ref, ground, origin])
+    ref.send({ type: 'changePosition', selection, ground })
+  }, [ref, ground, selection]);
 
   return (
     <ElevationQueryContext.Provider value={ref}>
@@ -31,7 +31,7 @@ type ActorSnapshot<Actor> = Actor extends {
   getSnapshot(): infer TSnapshot;
 } ? TSnapshot : undefined;
 
-export function useElevationQuerySelector2<T>(
+export function useElevationQuerySelector<T>(
   selector: (state: ActorSnapshot<ElevationQueryActorRef> | undefined) => T,
   compare?: (a: T, b: T) => boolean
 ) {

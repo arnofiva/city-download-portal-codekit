@@ -15,7 +15,7 @@ import DimensionsLayer from "../arcgis/dimensions-layer/dimensions-layer";
 import LengthDimension from "../arcgis/dimensions-layer/length-dimension";
 import { BlockAction, BlockState } from "./sidebar-state";
 import { useFeatureQuerySelector2 } from "../selection/actors/feature-query-context";
-import { useElevationQuerySelector2 } from "../selection/actors/elevation-query-context";
+import { useElevationQuerySelector } from "../selection/actors/elevation-query-context";
 import { useSelectionStateSelector } from "~/data/selection-store";
 import { useReferenceElementId, useWalkthrough } from "../selection/walk-through-context";
 import * as intl from "@arcgis/core/intl";
@@ -176,50 +176,50 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
 function Dimensions() {
   const positionOrigin = useSelectionStateSelector((store) => store.origin);
   const terminal = useSelectionStateSelector((store) => store.terminal);
-  const elevationOrigin = useElevationQuerySelector2(state => state?.context.result) ?? null;
+  const elevationStuff = useElevationQuerySelector(state => state?.context.elevationInfo) ?? null;
 
-  if (positionOrigin == null || terminal == null || elevationOrigin == null) return null;
+  if (positionOrigin == null || terminal == null || elevationStuff == null) return null;
+
+  const maxZ = elevationStuff?.points
+    .reduce((max, [_x, _y, z]) => Math.max(max, z), -Infinity);
+
+  const otz = elevationStuff?.getPoint(1).z;
+  const toz = elevationStuff?.getPoint(3).z;
 
   // the elevation origin is updated async, so the dimensions will look choppy if we use that directly
   // instead we take the last available elevation, but use the x and y from the synchronously updating origin
   // this leads to some jumping around if the elevation changes a lot, but that isn't super concerning
-  const origin = elevationOrigin?.clone() ?? positionOrigin;
+  const origin = elevationStuff?.getPoint(0) ?? positionOrigin;
   origin.x = positionOrigin.x;
   origin.y = positionOrigin.y;
 
-  const widthStart = origin;
+  const widthStart = origin.clone();
   const widthEnd = widthStart.clone();
   widthEnd.y = terminal?.y;
+  widthEnd.z = Math.min(otz ?? widthEnd.z, widthEnd.z);
 
-  const heightStart = origin;
+  const heightStart = origin.clone();
   const heightEnd = heightStart.clone();
   heightEnd.x = terminal?.x;
+  heightEnd.z = Math.min(toz ?? heightEnd.z, heightEnd.z);
 
-  // const borderStart = origin.clone();
-  // borderStart.x = terminal.x;
-  // borderStart.y = terminal.y;
+  const offset = maxZ - origin.z;
 
   return (
-    <>
-      <DimensionsLayer fontSize={12}>
-        <LengthDimension
-          measureType="horizontal"
-          startPoint={widthStart}
-          endPoint={widthEnd}
-          offset={150}
-        />
-        <LengthDimension
-          measureType="horizontal"
-          startPoint={heightStart}
-          endPoint={heightEnd}
-          offset={150}
-        />
-      </DimensionsLayer>
-      {/* <DimensionsLayer>
-        <LengthDimension measureType="horizontal" startPoint={borderStart} endPoint={widthEnd} offset={150} />
-        <LengthDimension measureType="horizontal" startPoint={borderStart} endPoint={heightEnd} offset={150} />
-      </DimensionsLayer> */}
-    </>
+    <DimensionsLayer fontSize={12}>
+      <LengthDimension
+        measureType="horizontal"
+        startPoint={widthStart}
+        endPoint={widthEnd}
+        offset={offset + 25}
+      />
+      <LengthDimension
+        measureType="horizontal"
+        startPoint={heightStart}
+        endPoint={heightEnd}
+        offset={offset + 25}
+      />
+    </DimensionsLayer>
   )
 }
 
