@@ -76,9 +76,6 @@ class WalkthroughStore extends Accessor {
 
     if (requestedPosition > currentPosition) {
       this._position = requestedPosition;
-      this.notifyChange('_position')
-      this.notifyChange('position')
-      this.notifyChange('state')
     }
 
     if (requestedPosition === 5) {
