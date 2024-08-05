@@ -6,6 +6,8 @@ import type WebScene from "@arcgis/core/WebScene";
 import { useId } from "react";
 import { clientLoader as RootClientLoader } from "../../root";
 import { useSceneListModal } from "./scene-list-modal-context";
+import webSceneLocal from './web-scene-local.svg';
+import webSceneGlobal from './web-scene-global.svg';
 
 interface SceneCardProps {
   title: string;
@@ -14,6 +16,7 @@ interface SceneCardProps {
   viewingMode: 'global' | 'local'
   selected?: boolean;
 }
+
 function SceneCard({ title, description, thumbnail, viewingMode, selected }: SceneCardProps) {
   const id = useId();
 
@@ -38,8 +41,13 @@ function SceneCard({ title, description, thumbnail, viewingMode, selected }: Sce
         <CalciteChip
           id={id}
           value={viewingMode}
-          icon={viewingMode === "global" ? 'coordinate-system' : 'urban-model'}
-        >{viewingMode === 'global' ? 'Global' : 'Local'}</CalciteChip>
+        >
+          {viewingMode === "global"
+            ? <img className="h-[16px]" slot="image" src={webSceneGlobal} alt="" />
+            : <img className="h-[16px]" slot="image" src={webSceneLocal} alt="" />
+          }
+          {viewingMode === 'global' ? 'Global webscene' : 'Local webscene'}
+        </CalciteChip>
       </div>
     </CalciteCard>
   )
@@ -56,7 +64,7 @@ function LoadCard() {
       >
         <img slot="thumbnail" style={{
           backgroundColor: "var(--calcite-color-foreground-2)",
-        }} className="w-[250px] h-[165px]" alt="" src="" />
+        }} className="w-[250px] h-[165px]" alt="" src={null!} />
         <span slot="heading" style={{
           backgroundColor: "var(--calcite-color-foreground-2)",
         }} className="rounded-sm w-full min-h-5" />
