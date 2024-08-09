@@ -142,15 +142,7 @@ export default function ModelOrigin({
       }}
     >
       <CalciteIcon slot="icon" icon="pin-tear-f" scale="s"></CalciteIcon>
-      <ul>
-        <li>
-          <CalciteLabel scale="s">
-            <p className="font-medium">Spatial reference (WKID)</p>
-            <p>
-              {srName}
-            </p>
-          </CalciteLabel>
-        </li>
+      <ul className="grid grid-cols-2 grid-rows-2">
         <li>
           <CalciteLabel scale="s">
             <p className="font-medium">{latitude != null ? "Latitude" : "x"}</p>
@@ -159,11 +151,19 @@ export default function ModelOrigin({
             </p>
           </CalciteLabel>
         </li>
-        <li>
+        <li className="row-start-2">
           <CalciteLabel scale="s">
             <p className="font-medium">{longitude != null ? "Longitude" : 'y'}</p>
             <p>
               {longitudeString ?? y?.toFixed(2) ?? "--"}
+            </p>
+          </CalciteLabel>
+        </li>
+        <li>
+          <CalciteLabel scale="s">
+            <p className="font-medium">Spatial reference (WKID)</p>
+            <p>
+              {srName}
             </p>
           </CalciteLabel>
         </li>

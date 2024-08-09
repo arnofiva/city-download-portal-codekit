@@ -19,8 +19,7 @@ import { useElevationQuerySelector } from "../selection/actors/elevation-query-c
 import { useSelectionStateSelector } from "~/data/selection-store";
 import { useReferenceElementId, useWalkthrough } from "../selection/walk-through-context";
 import * as intl from "@arcgis/core/intl";
-import { Point, Polyline, SpatialReference } from "@arcgis/core/geometry";
-import { distance, geodesicArea, geodesicLength, planarArea } from "@arcgis/core/geometry/geometryEngine";
+import { geodesicArea, planarArea } from "@arcgis/core/geometry/geometryEngine";
 import { useSelectionActor } from "../selection/selection";
 
 interface MeasurementsProps {
@@ -53,16 +52,12 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
       { maximumFractionDigits: 2, style: 'unit', unit: 'meter', unitDisplay: 'short' }
     ) + '²';
 
-    const oo = deferredSelection.rings[0][0];
-    const ot = deferredSelection.rings[0][1];
-    const to = deferredSelection.rings[0][3];
-
     northToSouthLength = intl.formatNumber(
-      calculateDistance(oo, ot, deferredSelection!.spatialReference),
+      deferredSelection.extent.height,
       { maximumFractionDigits: 2, style: 'unit', unit: 'meter', unitDisplay: 'short' },
     );
     eastToWestLength = intl.formatNumber(
-      calculateDistance(oo, to, deferredSelection!.spatialReference),
+      deferredSelection.extent.width,
       { maximumFractionDigits: 2, style: 'unit', unit: 'meter', unitDisplay: 'short' }
     )
   }
@@ -126,10 +121,10 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
           <Minimap />
           <ul className="h-full grid grid-cols-2 grid-rows-2 gap-2">
             <li>
-              <MeasurementValue icon="arrow-up" label="North to south length" value={northToSouthLength} />
+              <MeasurementValue icon="arrow-double-vertical" label="North to south length" value={northToSouthLength} />
             </li>
             <li>
-              <MeasurementValue icon="arrow-right" label="East to west length" value={eastToWestLength} />
+              <MeasurementValue icon="arrow-double-horizontal" label="East to west length" value={eastToWestLength} />
             </li>
             <li>
               <MeasurementValue icon="grid-diamond" label="Area" value={area} />
@@ -232,32 +227,4 @@ function MeasurementValue({ icon, label, value }: MeasurementValueProps) {
       </span>
     </CalciteLabel>
   )
-}
-
-function calculateDistance(a: number[], b: number[], sr: SpatialReference) {
-  if (sr.isWGS84 || sr.isWebMercator) {
-    const line = new Polyline({
-      paths: [[
-        a,
-        b
-      ]],
-      spatialReference: sr
-    });
-
-    return geodesicLength(line);
-  } else {
-    const aPoint = new Point({
-      x: a[0],
-      y: a[1],
-      spatialReference: sr,
-    });
-    const bPoint = new Point({
-      x: b[0],
-      y: b[1],
-      spatialReference: sr,
-    });
-
-    return distance(aPoint, bPoint);
-  }
-
 }
