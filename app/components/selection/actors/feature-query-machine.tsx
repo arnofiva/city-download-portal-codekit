@@ -1,8 +1,10 @@
 import { Polygon } from "@arcgis/core/geometry";
+import SceneLayer from "@arcgis/core/layers/SceneLayer";
 import SceneView from "@arcgis/core/views/SceneView";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
 import { InvokeCallback } from "node_modules/xstate/dist/declarations/src/actors/callback";
 import { ActorRefFrom, type EventObject, assign, fromCallback, fromPromise, setup, stopChild } from "xstate";
+import { removeSceneLayerClones } from "../scene-filter-highlights";
 
 interface QueryFeaturesInput {
   view: SceneView;
@@ -11,7 +13,7 @@ interface QueryFeaturesInput {
 async function queryFeatures({ input, signal }: { input: QueryFeaturesInput, signal: AbortSignal }) {
   const { view, selection } = input;
 
-  const sceneLayerViews = view.allLayerViews.filter(lv => lv.layer.type === "scene").toArray() as SceneLayerView[];
+  const sceneLayerViews = view.allLayerViews.filter(lv => lv.layer.type === "scene" && (lv.layer as SceneLayer).geometryType === 'mesh').toArray() as SceneLayerView[];
 
   const promises: Promise<__esri.FeatureSet>[] = [];
   for (const layerView of sceneLayerViews) {
@@ -36,9 +38,11 @@ const QUERY_FEATURES_ACTOR_ID = 'query';
 const watchLayers: FeatureQueryMachineInvokedCallback = ({ input, sendBack }) => {
   const map = input.view.map;
 
-  const layers = map.allLayers.on("change", () => {
-    sendBack({ type: 'layersChanged' })
-  });
+  const layers = map.allLayers
+    .filter(removeSceneLayerClones)
+    .on("change", () => {
+      sendBack({ type: 'layersChanged' })
+    });
 
   const views = input.view.allLayerViews.on("change", () => {
     sendBack({ type: 'layersChanged' })

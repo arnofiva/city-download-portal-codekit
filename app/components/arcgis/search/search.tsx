@@ -6,6 +6,7 @@ import { Extent } from "@arcgis/core/geometry";
 import { project } from "@arcgis/core/geometry/projection";
 import { useAccessorValue } from "~/hooks/reactive";
 import useInstance from "~/hooks/useInstance";
+import { removeSceneLayerClones } from "~/components/selection/scene-filter-highlights";
 
 
 export default function Search() {
@@ -16,6 +17,7 @@ export default function Search() {
   const extent = useAccessorValue(
     () => {
       const extents = scene.allLayers
+        .filter(removeSceneLayerClones)
         .filter(layer => layer.type === 'scene' && layer.fullExtent != null)
         .map(layer => layer.fullExtent)
 

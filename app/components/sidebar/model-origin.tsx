@@ -12,6 +12,7 @@ import { BlockAction, BlockState } from "./sidebar-state";
 import { useSelectionStateSelector } from "~/data/selection-store";
 import { useElevationQuerySelector } from "../selection/actors/elevation-query-context";
 import * as intl from "@arcgis/core/intl.js";
+import * as coordinateFormatter from "@arcgis/core/geometry/coordinateFormatter.js";
 
 function useSpatialMetadata(wkid: number) {
   const [state, setState] = useState<'idle' | 'fetching'>('idle');
@@ -180,32 +181,39 @@ export default function ModelOrigin({
         width="full"
         primaryIconStart="copy-to-clipboard"
         appearance="outline-fill"
+        disabled={origin == null}
         onCalciteSplitButtonPrimaryClick={() => {
           if (origin) {
-            const { x, y, latitude, longitude, z } = origin;
+            try {
+              navigator.clipboard.writeText(coordinateFormatter.toLatitudeLongitude(origin, 'dms', 3))
+            } catch (_) {
+              const { x, y, z } = origin;
 
-            let text = z == null ? `${x},${y}` : `${x},${y},${z}`;
-            if (latitude != null && longitude != null)
-              text = z == null ? `${latitude},${longitude}` : `${latitude},${longitude},${z}`;
-
-            navigator.clipboard.writeText(text);
+              // let text = z == null ? `${x},${y}` : `${x},${y},${z}`;
+              // tooltips don't support pasting values with z when the layer is on-the-ground...
+              const text = z == null ? `${x},${y}` : `${x},${y}`;
+              navigator.clipboard.writeText(text);
+            }
           }
         }}
       >
         <CalciteDropdownItem
           onClick={() => {
             if (origin) {
-              const { x, y, latitude, longitude, z } = origin;
+              try {
+                navigator.clipboard.writeText(coordinateFormatter.toLatitudeLongitude(origin, 'dms', 3))
+              } catch (_) {
+                const { x, y, z } = origin;
 
-              let text = z == null ? `${x},${y}` : `${x},${y},${z}`;
-              if (latitude != null && longitude != null)
-                text = z == null ? `${latitude},${longitude}` : `${latitude},${longitude},${z}`;
-
-              navigator.clipboard.writeText(text);
+                // let text = z == null ? `${x},${y}` : `${x},${y},${z}`;
+                // tooltips don't support pasting values with z when the layer is on-the-ground...
+                const text = z == null ? `${x},${y}` : `${x},${y}`;
+                navigator.clipboard.writeText(text);
+              }
             }
           }}
         >
-          Copy as lat,lng
+          Copy as a latitude, longitude pair
         </CalciteDropdownItem>
         <CalciteDropdownItem
           onClick={() => {

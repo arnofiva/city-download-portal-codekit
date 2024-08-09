@@ -5,6 +5,7 @@ import DimensionSimpleStyle from "@arcgis/core/analysis/DimensionSimpleStyle.js"
 import { DimensionsContext } from "./dimensions-context";
 import { useSceneView } from "../views/scene-view/scene-view-context";
 import useInstance from "~/hooks/useInstance";
+import { SymbologyColors } from "~/symbology";
 
 interface DimensionLayerProps {
   fontSize?: number
@@ -14,8 +15,10 @@ export default function DimensionsLayer({ fontSize = 0, children }: PropsWithChi
 
   const analyses = useInstance(() => new DimensionAnalysis({
     style: new DimensionSimpleStyle({
-      color: "black",
-      fontSize
+      color: SymbologyColors.measurements(),
+      fontSize,
+      textColor: 'white',
+      textBackgroundColor: 'black'
     })
   }));
 

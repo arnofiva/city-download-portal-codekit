@@ -18,6 +18,7 @@ import ErrorAlertQueue from "../error-alert-queue";
 import { BlockAction, BlockState } from "./sidebar-state";
 import { useSelectionStateSelector } from "~/data/selection-store";
 import { useReferenceElementId, useWalkthrough } from "../selection/walk-through-context";
+import { useSelectionActor } from "../selection/selection";
 
 function ExportErrorAlert({ onClose }: { type: string; onClose: () => void }) {
   return (
@@ -42,17 +43,18 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
   });
   const [filename, setFilename] = useState("")
 
+  const [s] = useSelectionActor();
   const selection = useSelectionStateSelector((store) => store.selection, { initial: true }) ?? null;
 
   const [actor, send, actorRef] = useActor(DownloadMachine, { input: { scene } });
   const deferredSelection = useDeferredValue(selection);
 
   useEffect(() => {
-    if (deferredSelection) {
+    if (deferredSelection && s.matches({ created: 'idle' })) {
       send({ type: 'change', selection: deferredSelection });
     }
     else send({ type: 'clear' })
-  }, [deferredSelection, send])
+  }, [deferredSelection, s, send])
 
   const isLoadingWithoutFile = actor.context.file == null && actor.context.loading;
   const canDownload = actor.context.file != null && !actor.context.loading;

@@ -21,6 +21,6 @@ function InternalHighlight() {
   return null;
 }
 
-const Highlight = memo(InternalHighlight);
+const Highlights = memo(InternalHighlight);
 
-export default Highlight;
+export default Highlights;

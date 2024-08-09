@@ -180,9 +180,6 @@ function Dimensions() {
 
   if (positionOrigin == null || terminal == null || elevationStuff == null) return null;
 
-  const maxZ = elevationStuff?.points
-    .reduce((max, [_x, _y, z]) => Math.max(max, z), -Infinity);
-
   const otz = elevationStuff?.getPoint(1).z;
   const toz = elevationStuff?.getPoint(3).z;
 
@@ -203,21 +200,18 @@ function Dimensions() {
   heightEnd.x = terminal?.x;
   heightEnd.z = Math.min(toz ?? heightEnd.z, heightEnd.z);
 
-  const offset = maxZ - origin.z;
 
   return (
     <DimensionsLayer fontSize={12}>
       <LengthDimension
         measureType="horizontal"
-        startPoint={widthStart}
-        endPoint={widthEnd}
-        offset={offset + 25}
+        startPoint={widthEnd}
+        endPoint={origin}
       />
       <LengthDimension
         measureType="horizontal"
-        startPoint={heightStart}
-        endPoint={heightEnd}
-        offset={offset + 25}
+        startPoint={heightEnd}
+        endPoint={origin}
       />
     </DimensionsLayer>
   )

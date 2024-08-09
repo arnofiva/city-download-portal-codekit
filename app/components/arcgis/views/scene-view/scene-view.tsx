@@ -4,6 +4,7 @@ import { SceneViewContext } from "./scene-view-context";
 import { useScene } from "../../maps/web-scene/scene-context";
 import Color from "@arcgis/core/Color.js";
 import useInstance from "~/hooks/useInstance";
+import { SymbologyColors } from "~/symbology";
 
 function InternalView({ children }: PropsWithChildren) {
   const scene = useScene();
@@ -11,8 +12,13 @@ function InternalView({ children }: PropsWithChildren) {
   const view = useInstance(() => new CoreSceneView({
     map: scene,
     highlightOptions: {
-      color: new Color([255, 255, 0, 0.25])
-    }
+      color: SymbologyColors.selection(),
+      fillOpacity: 0.8,
+      shadowOpacity: 0,
+      haloColor: 'white',
+      haloOpacity: 0
+    },
+    popupEnabled: false,
   }));
 
   useEffect(() => {

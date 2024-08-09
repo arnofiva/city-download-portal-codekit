@@ -1,18 +1,20 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Point, Polygon } from "@arcgis/core/geometry";
+import { Point, Polygon, Polyline } from "@arcgis/core/geometry";
 import Graphic from "~/components/arcgis/graphic";
-import { FillSymbol3DLayer, IconSymbol3DLayer, PointSymbol3D, PolygonSymbol3D, TextSymbol3DLayer } from "@arcgis/core/symbols";
-import StylePattern3D from "@arcgis/core/symbols/patterns/StylePattern3D";
+import { ExtrudeSymbol3DLayer, FillSymbol3DLayer, IconSymbol3DLayer, LineSymbol3D, LineSymbol3DLayer, PointSymbol3D, PolygonSymbol3D, TextSymbol3DLayer } from "@arcgis/core/symbols";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import CoreGraphic from "@arcgis/core/Graphic";
 import WalkthroughPopover from "~/components/selection/walk-through-popover";
 import { RootShellPortal } from "~/components/root-shell";
 import { contains } from "@arcgis/core/geometry/geometryEngine";
-import LineCallout3D from "@arcgis/core/symbols/callouts/LineCallout3D.js";
-import Highlight from "./highlight";
+import FeatureFilterHighlights from "./scene-filter-highlights";
 import { useSelectionActor } from "./selection";
 import GraphicsLayer from "../arcgis/graphics-layer";
 import pinTearIcon from './pin-tear-f.svg?url';
+import { SymbologyColors } from "~/symbology";
+import { useSelectionStateSelector } from "~/data/selection-store";
+import { useElevationQuerySelector } from "./actors/elevation-query-context";
+
 interface SelectionProps {
   onChange?: (selection: Polygon | null) => void;
 }
@@ -22,6 +24,8 @@ function InternalSelectionGraphic({
   const view = useSceneView();
 
   const [state, send] = useSelectionActor();
+
+  const isActive = state.matches('creating') || state.matches({ created: 'updating' })
 
   const origin = state.context.origin;
   const terminal = state.context.terminal;
@@ -78,26 +82,106 @@ function InternalSelectionGraphic({
         <Graphic
           ref={handleClickOnGraphic}
           geometry={polygon}
-          symbol={PolygonSymbol}
+          symbol={FootprintSymbol}
           onUpdateStart={() => send({ type: 'update.start' })}
           onUpdateComplete={() => send({ type: 'update.complete' })}
           onChange={(polygon) => send({ type: 'update.active', polygon })}
           onDelete={() => send({ type: 'delete' })}
         />
       ) : null}
-      <GraphicsLayer elevationMode="relative-to-ground">
-        {origin && polygon ? (
-          <Graphic
-            geometry={origin}
-            symbol={OriginSymbol}
-          />
-        ) : null}
+      <GraphicsLayer elevationMode="absolute-height">
+        {!isActive ? <Volume /> : null}
+        <Origin />
       </GraphicsLayer>
       <RootShellPortal>
         <WalkthroughPopover />
       </RootShellPortal>
-      <Highlight />
+      <FeatureFilterHighlights />
+      {/* <Highlights /> */}
     </>
+  )
+}
+
+function Origin() {
+  const polygon = useSelectionStateSelector((store) => store.selection);
+  const elevationStuff = useElevationQuerySelector(state => state?.context.elevationInfo) ?? null;
+
+  const spatialReference = polygon?.spatialReference;
+
+  const zmin = useMemo(() => elevationStuff?.extent.zmin ?? 0, [elevationStuff?.extent.zmin])
+  const zmax = useMemo(() => elevationStuff?.extent.zmax ?? 0, [elevationStuff?.extent.zmax])
+
+  const bufferedZmin = zmin - 100;
+  const height = (zmax - bufferedZmin) + 200;
+
+  const ring = polygon?.rings?.[0]
+  const [x, y] = ring?.[0] ?? []
+
+  const originLine = useMemo(() => {
+    if (x == null || y == null) return null;
+
+    const line = new Polyline({
+      paths: [
+        [
+          [x, y, bufferedZmin],
+          [x, y, bufferedZmin + height],
+        ],
+      ],
+      spatialReference,
+    })
+    return line;
+  }, [bufferedZmin, height, spatialReference, x, y])
+
+  return (
+    originLine ? (
+      <Graphic geometry={originLine} symbol={OriginSymbol} />
+    ) : null
+  )
+}
+
+function Volume() {
+  const polygon = useSelectionStateSelector((store) => store.selection);
+  const elevationStuff = useElevationQuerySelector(state => state?.context.elevationInfo) ?? null;
+
+  const zmin = useMemo(() => elevationStuff?.extent.zmin ?? 0, [elevationStuff?.extent.zmin])
+  const zmax = useMemo(() => elevationStuff?.extent.zmax ?? 0, [elevationStuff?.extent.zmax])
+
+  const bufferedZmin = zmin - 100;
+  const height = (zmax - bufferedZmin) + 200;
+
+  const VolumeSymbol = useMemo(() => new PolygonSymbol3D({
+    symbolLayers: [
+      new ExtrudeSymbol3DLayer({
+        size: height,
+        castShadows: false,
+        edges: {
+          type: 'solid',
+          color: SymbologyColors.selection(0.85),
+          size: 1
+        }
+      })
+    ]
+  }), [height])
+
+  const elevatedPolygon = useMemo(() => {
+    if (polygon == null) return null;
+
+    const ring = polygon.rings[0]
+    const elevatedRing = ring.map(([x, y]) => [x, y, bufferedZmin])
+
+    return new Polygon({
+      rings: [elevatedRing],
+      spatialReference: polygon.spatialReference
+    })
+  }, [bufferedZmin, polygon])
+
+  return (
+    elevatedPolygon ? (
+      <Graphic
+        geometry={elevatedPolygon}
+        symbol={VolumeSymbol}
+      />
+    ) : null
   )
 }
 
@@ -114,41 +198,33 @@ function createSelectionPolygon(origin: Point, terminal: Point) {
   })
 }
 
-const PolygonSymbol = new PolygonSymbol3D({
+const FootprintSymbol = new PolygonSymbol3D({
   symbolLayers: [
     new FillSymbol3DLayer({
-      material: { color: [255, 0, 0, 0.25] },
-      outline: { color: [255, 0, 0, 1] },
-      pattern: new StylePattern3D({ style: 'diagonal-cross' })
+      material: { color: SymbologyColors.selection(0.25) },
+      outline: { color: SymbologyColors.selection() },
     })
   ]
 });
 
-const OriginSymbol = new PointSymbol3D({
+const OriginSymbol = new LineSymbol3D({
   symbolLayers: [
-    new TextSymbol3DLayer({
-      text: 'origin',
-      size: 24
-    }),
-    new IconSymbol3DLayer({
-      resource: {
-        href: pinTearIcon
-      },
-      anchor: 'bottom',
-      size: 35,
-      material: { color: 'blue' }
-    })
-  ],
-  // verticalOffset: {
-  //   screenLength: 150,
-  //   maxWorldLength: 150,
-  //   minWorldLength: 150
-  // },
-  // callout: new LineCallout3D({
-  //   color: 'white',
-  //   size: 2,
-  // })
-});
+    new LineSymbol3DLayer({
+      size: 3,  // points
+      material: { color: "red" },
+      cap: "round",
+      join: "round",
+
+      marker: {  // autocasts as new LineStyleMarker3D()
+        type: "style",
+        style: "diamond",
+        placement: "end",
+        color: "red"  // black line with red arrows
+      }
+    })]
+})
+
+
 
 const SelectionGraphic = memo(InternalSelectionGraphic);
 export default SelectionGraphic;

@@ -8,6 +8,7 @@ import { type Extent, Point } from "@arcgis/core/geometry";
 import type WebScene from "@arcgis/core/WebScene";
 // import convertGLBToOBJ from "./obj-conversion";
 import * as projection from "@arcgis/core/geometry/projection";
+import { removeSceneLayerClones } from "../selection/scene-filter-highlights";
 
 async function extractElevation(ground: Ground, extent: __esri.Extent) {
   return await meshUtils.createFromElevation(ground, extent, {
@@ -62,6 +63,7 @@ export default async function createMesh(scene: WebScene, extent: Extent, signal
   const ground = scene.ground;
 
   const layers = scene.allLayers
+    .filter(removeSceneLayerClones)
     .toArray()
     .filter((layer): layer is SceneLayer => layer.type === "scene")
     .filter(isQueryable)
