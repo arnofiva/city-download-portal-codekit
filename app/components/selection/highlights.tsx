@@ -1,13 +1,13 @@
 import { useEffect, memo } from "react";
-import { useFeatureQuerySelector2 } from "./actors/feature-query-context";
+import { useSelectedFeaturesFromLayerViews } from "../../hooks/queries/feature-query";
 
 function InternalHighlight() {
-  const featureMap = useFeatureQuerySelector2(state => state?.context.features);
+  const query = useSelectedFeaturesFromLayerViews();
 
   useEffect(() => {
-    if (featureMap) {
+    if (query.data) {
       const handles: IHandle[] = [];
-      for (const [layerview, { features }] of featureMap) {
+      for (const [layerview, features] of query.data) {
         const handle = layerview.highlight(features);
         handles.push(handle);
       }
@@ -16,7 +16,7 @@ function InternalHighlight() {
         for (const handle of handles) handle.remove();
       }
     }
-  }, [featureMap]);
+  }, [query.data]);
 
   return null;
 }

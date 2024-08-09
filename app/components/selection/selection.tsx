@@ -5,7 +5,7 @@ import { ActorRefFrom, SnapshotFrom } from "xstate";
 import { useActor } from "@xstate/react";
 import CoreGraphic from "@arcgis/core/Graphic";
 import { SketchLayer } from "../arcgis/sketch/sketch-layer";
-import { SelectionEvent, SelectionInput, createSelectionMachine } from "./actors/selection-machine";
+import { SelectionEvent, SelectionInput, createSelectionMachine } from "../../hooks/queries/selection-machine";
 
 const SelectionContext = createContext<[
   SnapshotFrom<typeof createSelectionMachine>,

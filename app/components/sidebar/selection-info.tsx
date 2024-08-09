@@ -14,13 +14,13 @@ import {
 import DimensionsLayer from "../arcgis/dimensions-layer/dimensions-layer";
 import LengthDimension from "../arcgis/dimensions-layer/length-dimension";
 import { BlockAction, BlockState } from "./sidebar-state";
-import { useFeatureQuerySelector2 } from "../selection/actors/feature-query-context";
-import { useElevationQuerySelector } from "../selection/actors/elevation-query-context";
+import { useSelectionElevationInfo } from "../../hooks/queries/elevation-query";
 import { useSelectionStateSelector } from "~/data/selection-store";
 import { useReferenceElementId, useWalkthrough } from "../selection/walk-through-context";
 import * as intl from "@arcgis/core/intl";
 import { geodesicArea, planarArea } from "@arcgis/core/geometry/geometryEngine";
 import { useSelectionActor } from "../selection/selection";
+import { useSelectedFeaturesFromLayerViews } from "../../hooks/queries/feature-query";
 
 interface MeasurementsProps {
   state: BlockState['state'];
@@ -62,15 +62,8 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
     )
   }
 
-  const featureCount = useFeatureQuerySelector2(state => {
-    if (state == null) return 0;
-
-    const featureResultMap = state.context.features;
-    const count = Array.from(featureResultMap.values())
-      .reduce((total, { features }) => features.length + total, 0);
-
-    return count;
-  });
+  const { data } = useSelectedFeaturesFromLayerViews();
+  const featureCount = (data ? Array.from(data.values()) : []).reduce((total, f) => total + f.length, 0)
 
   const ref = useRef<HTMLCalciteBlockElement>(null);
   useEffect(() => {
@@ -171,17 +164,17 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
 function Dimensions() {
   const positionOrigin = useSelectionStateSelector((store) => store.origin);
   const terminal = useSelectionStateSelector((store) => store.terminal);
-  const elevationStuff = useElevationQuerySelector(state => state?.context.elevationInfo) ?? null;
+  const elevationQuery = useSelectionElevationInfo()
 
-  if (positionOrigin == null || terminal == null || elevationStuff == null) return null;
+  if (positionOrigin == null || terminal == null || elevationQuery.data == null) return null;
 
-  const otz = elevationStuff?.getPoint(1).z;
-  const toz = elevationStuff?.getPoint(3).z;
+  const otz = elevationQuery.data?.getPoint(1).z;
+  const toz = elevationQuery.data?.getPoint(3).z;
 
   // the elevation origin is updated async, so the dimensions will look choppy if we use that directly
   // instead we take the last available elevation, but use the x and y from the synchronously updating origin
   // this leads to some jumping around if the elevation changes a lot, but that isn't super concerning
-  const origin = elevationStuff?.getPoint(0) ?? positionOrigin;
+  const origin = elevationQuery.data?.getPoint(0) ?? positionOrigin;
   origin.x = positionOrigin.x;
   origin.y = positionOrigin.y;
 

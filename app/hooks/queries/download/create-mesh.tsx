@@ -3,37 +3,15 @@ import MeshLocalVertexSpace from "@arcgis/core/geometry/support/MeshLocalVertexS
 import MeshGeoreferencedVertexSpace from "@arcgis/core/geometry/support/MeshGeoreferencedVertexSpace";
 import * as meshUtils from "@arcgis/core/geometry/support/meshUtils";
 import type Ground from '@arcgis/core/Ground';
-import type SceneLayer from "@arcgis/core/layers/SceneLayer";
 import { type Extent, Point } from "@arcgis/core/geometry";
 import type WebScene from "@arcgis/core/WebScene";
 // import convertGLBToOBJ from "./obj-conversion";
 import * as projection from "@arcgis/core/geometry/projection";
-import { removeSceneLayerClones } from "../selection/scene-filter-highlights";
 
 async function extractElevation(ground: Ground, extent: __esri.Extent) {
   return await meshUtils.createFromElevation(ground, extent, {
     demResolution: "finest-contiguous"
   });
-}
-
-async function extractFeatures(sceneLayer: SceneLayer, extent: __esri.Geometry, signal?: AbortSignal) {
-  const supportsQuery = sceneLayer.capabilities.operations.supportsQuery;
-  const supportsGeometry = sceneLayer.capabilities.query.supportsQueryGeometry;
-
-  if (!supportsQuery || !supportsGeometry) {
-    return []
-  }
-  // get the buildings
-  const query = sceneLayer.createQuery();
-  query.geometry = extent;
-  query.distance = 0;
-  query.returnGeometry = true;
-  const results = await sceneLayer.queryFeatures(query, { signal });
-  const meshes = results.features
-    .map((feature) => feature.geometry)
-    .filter((geometry): geometry is __esri.Mesh => geometry.type === "mesh");
-
-  return meshes;
 }
 
 async function mergeSliceMeshes(elevation: Mesh, features: Mesh[], sceneOrigin: Point, signal?: AbortSignal) {
@@ -59,19 +37,9 @@ async function mergeSliceMeshes(elevation: Mesh, features: Mesh[], sceneOrigin: 
   return slice;
 }
 
-export default async function createMesh(scene: WebScene, extent: Extent, signal?: AbortSignal) {
+export async function createMesh(scene: WebScene, extent: Extent, features: Mesh[], signal: AbortSignal) {
   const ground = scene.ground;
-
-  const layers = scene.allLayers
-    .filter(removeSceneLayerClones)
-    .toArray()
-    .filter((layer): layer is SceneLayer => layer.type === "scene")
-    .filter(isQueryable)
-    .filter(layer => layer.geometryType === "mesh")
-
-  const sr = layers.at(0)?.spatialReference ?? extent.spatialReference;
-
-  const features = (await Promise.all(layers.map(layer => extractFeatures(layer, extent, signal)))).flat();
+  const sr = extent.spatialReference;
 
   const projectedExtent = projection.project(extent, sr) as Extent;
   const elevation = await extractElevation(ground, projectedExtent);
@@ -86,11 +54,4 @@ export default async function createMesh(scene: WebScene, extent: Extent, signal
   const slice = await mergeSliceMeshes(elevation, features, extractionOrigin, signal);
 
   return slice;
-}
-
-function isQueryable(sceneLayer: SceneLayer) {
-  const supportsQuery = sceneLayer.capabilities.operations.supportsQuery;
-  const supportsGeometry = sceneLayer.capabilities.query.supportsQueryGeometry;
-
-  return supportsQuery && supportsGeometry
 }

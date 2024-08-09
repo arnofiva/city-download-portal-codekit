@@ -73,7 +73,6 @@ const SceneLayerHighlight = memo(
           mainLayerView.filter = null!
 
           cloneLayerView.visible = false;
-          console.log(cloneLayerView)
           cloneLayerView.filter = null!
         }
       }

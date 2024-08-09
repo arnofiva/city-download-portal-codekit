@@ -7,48 +7,13 @@ import {
 } from "@esri/calcite-components-react";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import { useAccessorValue } from "../../hooks/reactive";
-import { Dispatch, useDeferredValue, useEffect, useRef, useState } from "react";
+import { Dispatch, useDeferredValue, useRef } from "react";
 import { BlockAction, BlockState } from "./sidebar-state";
 import { useSelectionStateSelector } from "~/data/selection-store";
-import { useElevationQuerySelector } from "../selection/actors/elevation-query-context";
+import { useSelectionElevationInfo } from "../../hooks/queries/elevation-query";
 import * as intl from "@arcgis/core/intl.js";
 import * as coordinateFormatter from "@arcgis/core/geometry/coordinateFormatter.js";
-
-function useSpatialMetadata(wkid: number) {
-  const [state, setState] = useState<'idle' | 'fetching'>('idle');
-  const [data, setData] = useState<undefined | any>();
-  const [error, setError] = useState<null | any>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    const abortController = new AbortController();
-
-    setState('fetching');
-    fetch(`https://spatialreference.org/ref/epsg/${wkid}/projjson.json`, {
-      cache: 'force-cache',
-      signal: abortController.signal,
-    })
-      .then(result => result.json())
-      .then((data) => {
-        if (mounted) setData(data);
-      })
-      .catch((reason) => {
-        if (mounted) setError(reason)
-      })
-      .finally(() => {
-        if (mounted) setState("idle")
-      });
-
-    return () => {
-      abortController.abort();
-      mounted = false;
-    }
-  }, [wkid]);
-
-  return {
-    state, data, error
-  };
-}
+import { useQuery } from "~/hooks/useQuery";
 
 interface ModelOriginProps {
   state: BlockState['state'];
@@ -59,25 +24,31 @@ export default function ModelOrigin({
   dispatch,
 }: ModelOriginProps) {
   const view = useSceneView();
-  const sr = useAccessorValue(() => (view.spatialReference as any)?.latestWkid ?? view.spatialReference?.wkid, { initial: true });
+  const sr = useAccessorValue(() => (view.spatialReference as any)?.latestWkid ?? view.spatialReference?.wkid);
 
-  const metadataQuery = useSpatialMetadata(sr);
+  const query = useQuery({
+    key: ["spatial-reference", { wkid: sr }],
+    callback: async ({ signal, key }) => {
+      const [_, { wkid }] = key;
+      const data = await fetch(`https://spatialreference.org/ref/epsg/${wkid}/projjson.json`, {
+        cache: 'force-cache',
+        signal,
+      })
+        .then(response => response.json())
 
-  let srName = metadataQuery.data?.name
-    ? `${metadataQuery.data?.name ?? ""} (${sr ?? "--"})`
-    : sr ?? "--";
+      return data.name as string;
+    },
+    enabled: sr != null,
+  })
 
-  if (sr === 3857) {
-    srName = "Web Mercator (3857)"
-  }
+  const srName = query.data ?? '--'
 
-  if (sr === 3395) {
-    srName = "World Mercator (3395)"
-  }
+  const elevationQuery = useSelectionElevationInfo()
 
-  const elevationPoint = useElevationQuerySelector(state => state?.context.elevationInfo?.getPoint(0)) ?? null;
+  const elevationPoint = elevationQuery.data?.getPoint(0) ?? null
 
   const positionOrigin = useSelectionStateSelector((store) => store.origin, { initial: true }) ?? null;
+
   const adjustedOrigin = elevationPoint?.clone() ?? positionOrigin;
   if (positionOrigin) {
     adjustedOrigin!.x = positionOrigin.x;

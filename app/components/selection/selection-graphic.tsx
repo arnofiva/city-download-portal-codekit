@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Point, Polygon, Polyline } from "@arcgis/core/geometry";
 import Graphic from "~/components/arcgis/graphic";
-import { ExtrudeSymbol3DLayer, FillSymbol3DLayer, IconSymbol3DLayer, LineSymbol3D, LineSymbol3DLayer, PointSymbol3D, PolygonSymbol3D, TextSymbol3DLayer } from "@arcgis/core/symbols";
+import { ExtrudeSymbol3DLayer, FillSymbol3DLayer, LineSymbol3D, LineSymbol3DLayer, PolygonSymbol3D } from "@arcgis/core/symbols";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import CoreGraphic from "@arcgis/core/Graphic";
 import WalkthroughPopover from "~/components/selection/walk-through-popover";
@@ -10,10 +10,10 @@ import { contains } from "@arcgis/core/geometry/geometryEngine";
 import FeatureFilterHighlights from "./scene-filter-highlights";
 import { useSelectionActor } from "./selection";
 import GraphicsLayer from "../arcgis/graphics-layer";
-import pinTearIcon from './pin-tear-f.svg?url';
 import { SymbologyColors } from "~/symbology";
 import { useSelectionStateSelector } from "~/data/selection-store";
-import { useElevationQuerySelector } from "./actors/elevation-query-context";
+import { useSelectionElevationInfo } from "../../hooks/queries/elevation-query";
+// import Highlights from "./highlights";
 
 interface SelectionProps {
   onChange?: (selection: Polygon | null) => void;
@@ -104,12 +104,11 @@ function InternalSelectionGraphic({
 
 function Origin() {
   const polygon = useSelectionStateSelector((store) => store.selection);
-  const elevationStuff = useElevationQuerySelector(state => state?.context.elevationInfo) ?? null;
-
+  const elevationQuery = useSelectionElevationInfo()
   const spatialReference = polygon?.spatialReference;
 
-  const zmin = useMemo(() => elevationStuff?.extent.zmin ?? 0, [elevationStuff?.extent.zmin])
-  const zmax = useMemo(() => elevationStuff?.extent.zmax ?? 0, [elevationStuff?.extent.zmax])
+  const zmin = useMemo(() => elevationQuery.data?.extent.zmin ?? 0, [elevationQuery.data?.extent.zmin])
+  const zmax = useMemo(() => elevationQuery.data?.extent.zmax ?? 0, [elevationQuery.data?.extent.zmax])
 
   const bufferedZmin = zmin - 100;
   const height = (zmax - bufferedZmin) + 200;
@@ -141,10 +140,10 @@ function Origin() {
 
 function Volume() {
   const polygon = useSelectionStateSelector((store) => store.selection);
-  const elevationStuff = useElevationQuerySelector(state => state?.context.elevationInfo) ?? null;
+  const elevationQuery = useSelectionElevationInfo()
 
-  const zmin = useMemo(() => elevationStuff?.extent.zmin ?? 0, [elevationStuff?.extent.zmin])
-  const zmax = useMemo(() => elevationStuff?.extent.zmax ?? 0, [elevationStuff?.extent.zmax])
+  const zmin = useMemo(() => elevationQuery.data?.extent.zmin ?? 0, [elevationQuery.data?.extent.zmin])
+  const zmax = useMemo(() => elevationQuery.data?.extent.zmax ?? 0, [elevationQuery.data?.extent.zmax])
 
   const bufferedZmin = zmin - 100;
   const height = (zmax - bufferedZmin) + 200;

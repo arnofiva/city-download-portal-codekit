@@ -11,8 +11,7 @@ import {
 import { useScene } from "../arcgis/maps/web-scene/scene-context";
 import { useAccessorValue } from "../../hooks/reactive";
 import { Dispatch, useDeferredValue, useEffect, useRef, useState } from "react";
-import { DownloadMachine } from "../download/download-machine";
-import { useActor } from "@xstate/react";
+import { useDownloadQuery } from "../../hooks/queries/download/download-query";
 import { RootShellPortal } from "../root-shell";
 import ErrorAlertQueue from "../error-alert-queue";
 import { BlockAction, BlockState } from "./sidebar-state";
@@ -46,25 +45,20 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
   const [s] = useSelectionActor();
   const selection = useSelectionStateSelector((store) => store.selection, { initial: true }) ?? null;
 
-  const [actor, send, actorRef] = useActor(DownloadMachine, { input: { scene } });
+  const downloadQuery = useDownloadQuery(s.matches({ created: 'idle' }));
+  const file = downloadQuery.data;
+
   const deferredSelection = useDeferredValue(selection);
 
-  useEffect(() => {
-    if (deferredSelection && s.matches({ created: 'idle' })) {
-      send({ type: 'change', selection: deferredSelection });
-    }
-    else send({ type: 'clear' })
-  }, [deferredSelection, s, send])
+  const isLoadingWithoutFile = downloadQuery.data == null && downloadQuery.status === 'loading';
+  const canDownload = downloadQuery.data != null && downloadQuery.status === 'success'
 
-  const isLoadingWithoutFile = actor.context.file == null && actor.context.loading;
-  const canDownload = actor.context.file != null && !actor.context.loading;
-
-  const fileSize = actor.context.file?.size;
+  const fileSize = downloadQuery.data?.size;
 
   let fileSizeString = 'unknown'
   if (deferredSelection == null) fileSizeString = 'no selection';
   if (fileSize != null) fileSizeString = `${(fileSize * 1e-6).toFixed(2)} mb`;
-  if (actor.context.loading && fileSize == null) fileSizeString = 'loading';
+  if (downloadQuery.status === 'loading' && fileSize == null) fileSizeString = 'loading';
 
   const ref = useRef<HTMLCalciteBlockElement>(null);
   useEffect(() => {
@@ -149,7 +143,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
         onClick={() => {
           if (canDownload) {
             const name = filename || title || 'model';
-            downloadFile(name, actor.context.file!);
+            downloadFile(name, file!);
 
             walkthrough.advance('done');
           }
@@ -160,7 +154,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
       <RootShellPortal>
         <ErrorAlertQueue
           alertComponent={ExportErrorAlert}
-          captureError={capture => actorRef.on("error", capture).unsubscribe}
+          captureError={() => () => { }}
         />
       </RootShellPortal>
     </CalciteBlock>

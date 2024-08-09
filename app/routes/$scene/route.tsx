@@ -10,8 +10,6 @@ import { useSceneListModal } from "~/components/scene-list-modal/scene-list-moda
 import { useAccessorValue } from "~/hooks/reactive";
 import PortalItem from "@arcgis/core/portal/PortalItem";
 import { useSelectionState } from "~/data/selection-store";
-import { FeatureQueryProvider } from "~/components/selection/actors/feature-query-context";
-import { ElevationQueryProvider } from "~/components/selection/actors/elevation-query-context";
 import SelectionTool from "~/components/selection/selection-tool";
 import SelectionGraphic from "~/components/selection/selection-graphic";
 
@@ -75,16 +73,12 @@ export default function SceneRoute() {
         <GraphicsLayer elevationMode="on-the-ground">
           <View>
             <Selection>
-              <FeatureQueryProvider>
-                <ElevationQueryProvider>
-                  <Search />
-                  <Sidebar />
-                  <ViewUI position="bottom-left">
-                    <SelectionTool onChange={polygon => { store.selection = polygon }} />
-                  </ViewUI>
-                  <SelectionGraphic />
-                </ElevationQueryProvider>
-              </FeatureQueryProvider>
+              <Search />
+              <Sidebar />
+              <ViewUI position="bottom-left">
+                <SelectionTool onChange={polygon => { store.selection = polygon }} />
+              </ViewUI>
+              <SelectionGraphic />
             </Selection>
           </View>
         </GraphicsLayer>
