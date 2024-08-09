@@ -13,23 +13,29 @@ interface QueryFeaturesInput {
 async function queryFeatures({ input, signal }: { input: QueryFeaturesInput, signal: AbortSignal }) {
   const { view, selection } = input;
 
-  const sceneLayerViews = view.allLayerViews.filter(lv => lv.layer.type === "scene" && (lv.layer as SceneLayer).geometryType === 'mesh').toArray() as SceneLayerView[];
+  const sceneLayerViews = view.allLayerViews
+    .filter(lv => lv.visible)
+    .filter(lv => removeSceneLayerClones(lv.layer))
+    .filter(lv => lv.layer.type === "scene" && (lv.layer as SceneLayer).geometryType === 'mesh').toArray() as SceneLayerView[];
 
   const promises: Promise<__esri.FeatureSet>[] = [];
   for (const layerView of sceneLayerViews) {
+    console.log(layerView.layer.type, layerView.layer.geometryType, layerView.layer.title, layerView.layer.id, layerView,)
     const query = layerView.createQuery();
     query.geometry = selection.extent;
+    query.spatialRelationship = 'intersects'
     const queryPromise = layerView.queryFeatures(query, { signal });
     promises.push(queryPromise);
   }
 
   const settled = await Promise.all(promises)
 
+  signal.throwIfAborted()
+
   const entries = Object.entries(settled)
     .map(([index, result]) => ([sceneLayerViews[+index], result] as const));
 
   const results = new Map(entries);
-
   return results;
 }
 
