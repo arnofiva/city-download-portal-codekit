@@ -28,9 +28,8 @@ export default function ModelOrigin({
 
   const query = useQuery({
     key: ["spatial-reference", { wkid: sr }],
-    callback: async ({ signal, key }) => {
-      const [_, { wkid }] = key;
-      const data = await fetch(`https://spatialreference.org/ref/epsg/${wkid}/projjson.json`, {
+    callback: async ({ signal }) => {
+      const data = await fetch(`https://spatialreference.org/ref/epsg/${sr!}/projjson.json`, {
         cache: 'force-cache',
         signal,
       })

@@ -1,6 +1,7 @@
 import { CalciteShell } from "@esri/calcite-components-react";
 import { PropsWithChildren, createContext, useContext, useId, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { Toaster } from "./toast";
 
 const RootShellIdContext = createContext<string>(null!);
 
@@ -13,7 +14,9 @@ export default function RootShell({ children }: PropsWithChildren) {
   return (
     <CalciteShell id={id}>
       <RootShellIdContext.Provider value={id}>
-        {children}
+        <Toaster>
+          {children}
+        </Toaster>
       </RootShellIdContext.Provider>
     </CalciteShell>
   )

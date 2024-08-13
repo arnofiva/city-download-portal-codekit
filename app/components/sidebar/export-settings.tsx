@@ -1,5 +1,4 @@
 import {
-  CalciteAlert,
   CalciteBlock,
   CalciteButton,
   CalciteIcon,
@@ -12,21 +11,11 @@ import { useScene } from "../arcgis/maps/web-scene/scene-context";
 import { useAccessorValue } from "../../hooks/reactive";
 import { Dispatch, useDeferredValue, useEffect, useRef, useState } from "react";
 import { useDownloadQuery } from "../../hooks/queries/download/download-query";
-import { RootShellPortal } from "../root-shell";
-import ErrorAlertQueue from "../error-alert-queue";
 import { BlockAction, BlockState } from "./sidebar-state";
 import { useSelectionStateSelector } from "~/data/selection-store";
 import { useReferenceElementId, useWalkthrough } from "../selection/walk-through-context";
 import { useSelectionActor } from "../selection/selection";
-
-function ExportErrorAlert({ onClose }: { type: string; onClose: () => void }) {
-  return (
-    <CalciteAlert icon kind="danger" label="Export error" open autoClose onCalciteAlertClose={onClose}>
-      <p slot='title'>Failed to generate model</p>
-      <p slot="message">An error occurred while generating the model export.</p>
-    </CalciteAlert>
-  )
-}
+import { useToast } from "../toast";
 
 interface ExportSettingsProps {
   state: BlockState['state'];
@@ -70,6 +59,27 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
   const wasClicked = useRef(false);
 
   const id = useReferenceElementId('downloading', 'left')
+
+  const toast = useToast();
+
+  useEffect(() => {
+    if (downloadQuery.data) {
+      toast({
+        title: 'Model generation complete',
+        message: 'The model is ready for export!',
+        severity: 'success',
+        code: '1'
+      })
+    }
+    if (downloadQuery.error) {
+      toast({
+        title: 'Model generation error',
+        message: 'There was an error while generating the model',
+        severity: 'danger',
+        code: '0'
+      })
+    }
+  }, [downloadQuery.data, downloadQuery.error, toast])
 
   return (
     <CalciteBlock
@@ -151,12 +161,6 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
       >
         Export model
       </CalciteButton>
-      <RootShellPortal>
-        <ErrorAlertQueue
-          alertComponent={ExportErrorAlert}
-          captureError={() => () => { }}
-        />
-      </RootShellPortal>
     </CalciteBlock>
   );
 }

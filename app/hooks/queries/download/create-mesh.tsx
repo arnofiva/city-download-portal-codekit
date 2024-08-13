@@ -14,13 +14,13 @@ async function extractElevation(ground: Ground, extent: __esri.Extent) {
   });
 }
 
-async function mergeSliceMeshes(elevation: Mesh, features: Mesh[], sceneOrigin: Point, signal?: AbortSignal) {
-  const VertexSpace = sceneOrigin.spatialReference.isWGS84 || sceneOrigin.spatialReference.isWebMercator
+async function mergeSliceMeshes(elevation: Mesh, features: Mesh[], origin: Point, signal?: AbortSignal) {
+  const VertexSpace = origin.spatialReference.isWGS84 || origin.spatialReference.isWebMercator
     ? MeshLocalVertexSpace
     : MeshGeoreferencedVertexSpace
 
   const vertexSpace = new VertexSpace({
-    origin: [sceneOrigin.x, sceneOrigin.y, sceneOrigin.z],
+    origin: [origin.x, origin.y, origin.z],
   });
 
   const meshes = await Promise.all(

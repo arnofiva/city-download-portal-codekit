@@ -20,13 +20,13 @@ function useSceneLayerViews() {
   return sceneLayerViews;
 }
 
-export function useSelectedFeaturesFromLayerViews() {
+export function useSelectedFeaturesFromLayerViews(key?: string) {
   const polygon = useSelectionStateSelector((store) => store.selection);
   const deferredPolygon = useDeferredValue(polygon)
   const sceneLayerViews = useSceneLayerViews();
 
   const query = useQuery({
-    key: ['selected-features', 'layerviews', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings],
+    key: ['selected-features', 'layerviews', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings, key],
     callback: async ({ signal }) => {
       const featureMap = new Map<SceneLayerView, __esri.FeatureSet['features']>();
       const promises: Promise<unknown>[] = [];
@@ -35,9 +35,7 @@ export function useSelectedFeaturesFromLayerViews() {
         query.geometry = deferredPolygon!.extent;
         query.spatialRelationship = 'intersects'
         const queryPromise = layerView.queryFeatures(query, { signal })
-          .then((featureSet) => {
-            featureMap.set(layerView, featureSet.features)
-          });
+          .then((featureSet) => featureMap.set(layerView, featureSet.features));
         promises.push(queryPromise);
       }
 
@@ -72,7 +70,6 @@ export function useSelectedFeaturesFromLayers(enabled = false) {
           });
         promises.push(queryPromise);
       }
-
       await Promise.all(promises)
 
       return featureMap;
@@ -96,6 +93,7 @@ export function useSelectionFootprints(enabled = false) {
       const sceneLayers = sceneLayerViews!.map(lv => lv.layer);
 
       const footprints: Polygon[] = []
+
       for (const layer of sceneLayers) {
         const footprintQuery = layer.createQuery()
         footprintQuery.multipatchOption = "xyFootprint";

@@ -1,11 +1,91 @@
 import Accessor from "@arcgis/core/core/Accessor";
 import { subclass, property } from "@arcgis/core/core/accessorSupport/decorators";
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import { useAccessorValue } from "./reactive";
 import useInstance from "./useInstance";
 
-type CacheEntry = { data: unknown, status: Query<any, any>['status'] };
+@subclass()
+class CacheEntry extends Accessor {
+  key: any
+
+  @property({ constructOnly: true })
+  cb: (signal: AbortController['signal']) => Promise<any> = async () => { };
+
+  @property({ constructOnly: true })
+  evict!: () => void;
+
+  @property()
+  private _data?: any
+
+  @property()
+  get data() {
+    return this._data
+  }
+
+  @property()
+  private _error: unknown
+
+  get error() {
+    return this._error;
+  }
+
+  @property()
+  status: 'idle' | 'loading' | 'success' | 'error' | 'disabled' = 'loading'
+
+  @property()
+  observers = 0;
+
+  #abortController?: AbortController;
+
+  async fetch() {
+    try {
+      this.status = 'loading';
+      this.#abortController?.abort()
+      const controller = new AbortController()
+      this.#abortController = controller;
+
+      const data = await this.cb(this.#abortController.signal)
+
+      controller.signal.throwIfAborted()
+
+      this.status = 'success'
+      this._data = data
+      this._error = undefined
+    } catch (error) {
+      const isAbortError = typeof error === 'object' && error != null && 'name' in error && error.name === 'AbortError';
+      if (!isAbortError) {
+        this.status = 'error'
+        this._error = error;
+        this._data = undefined;
+      }
+    }
+  }
+
+  disable() {
+    this.status = 'disabled'
+  }
+
+  enable() {
+    this.status = 'idle'
+  }
+
+  initialize() {
+    this.addHandles([
+      reactiveUtils.watch(() => this.observers, (observers) => {
+        if (observers === 0) {
+          this.#abortController?.abort()
+          this.evict()
+        }
+      }),
+      reactiveUtils.when(() => this.status === 'disabled', () => this.#abortController?.abort()),
+      reactiveUtils.watch(() => this.status, (current, previous) => {
+        if (previous === 'disabled' && current === 'idle') this.fetch()
+      })
+    ])
+  }
+}
+
 class LRU {
   #max = 100
   #cache = new Map<string, CacheEntry>();
@@ -29,6 +109,10 @@ class LRU {
     this.#cache.set(key, val);
   }
 
+  delete(key: string) {
+    this.#cache.delete(key);
+  }
+
   first() {
     return this.#cache.keys().next().value;
   }
@@ -36,9 +120,8 @@ class LRU {
 
 const cache = new LRU();
 
-type QueryCallback<ReturnType, Key> = (args: {
+type QueryCallback<ReturnType> = (args: {
   signal: AbortSignal,
-  key: Key,
 }) => Promise<ReturnType>
 
 @subclass()
@@ -49,75 +132,96 @@ class Query<
   @property()
   key?: Key
 
+  get isDownload() {
+    return this.key?.includes("download")
+  }
+
   @property()
-  private _data?: NoInfer<ReturnType>;
+  private cacheEntry?: CacheEntry;
+
+  @property()
+  get status() {
+    return this.cacheEntry?.status ?? 'idle'
+  }
 
   @property()
   get data(): NoInfer<ReturnType> | undefined {
-    return this._data;
+    return this.cacheEntry?.data;
+  }
+
+  @property()
+  get error() {
+    return this.cacheEntry?.error;
   }
 
   @property({ constructOnly: true })
-  callback!: QueryCallback<ReturnType, Key>
+  callback!: QueryCallback<ReturnType>
 
   constructor(props: {
     key: Key
-    callback: QueryCallback<ReturnType, Key>
+    callback: QueryCallback<ReturnType>
   }) {
     super(props)
   }
 
   @property()
-  status: 'idle' | 'loading' | 'success' | 'error' = 'idle'
-
-  @property()
   enabled = true
 
-  #sequence = 0;
-  #abortController: AbortController | null = null
+  #maxTries = 1
+  #tryCallback = async (signal: AbortController['signal']) => {
+    let tries = 0;
+
+    const attempt = async () => {
+      if (signal.aborted) return this.data;
+
+      return await this.callback({
+        signal: signal
+      })
+    }
+
+    let error: unknown;
+
+    while (this.#maxTries > tries) {
+      try {
+        return await attempt();
+      } catch (_error) {
+        tries++;
+        error = _error;
+      }
+    }
+
+    throw error;
+  }
+
+  refresh = async () => {
+    return this.cacheEntry?.fetch();
+  }
 
   setup() {
+    const key = this.key as any;
+    const cached = cache.get(key)
+
+    if (cached) {
+      this.cacheEntry = cached
+    } else {
+      this.cacheEntry = new CacheEntry({ cb: this.#tryCallback, evict: () => cache.delete(key) })
+      cache.set(key, this.cacheEntry)
+    }
+
     this.addHandles([
-      reactiveUtils.when(() => !this.enabled, () => this.#abortController?.abort('query disabled')),
+      reactiveUtils.watch(() => this.status, (status) => {
+        if (this.key?.includes('debug'))
+          console.log(status)
+      }),
       reactiveUtils.watch(() => JSON.stringify([this.key, this.enabled]), async () => {
-        if (!this.enabled) return;
-
-        const id = this.#sequence++;
-        const stringifiedKey = this.key as any;
-
-        const cached = cache.get(stringifiedKey)
-        const cachedStatus = cached?.status;
-
-        if (cached && cachedStatus !== 'error') {
-          if (cached.status === 'loading') this.status = 'loading';
-
-          this._data = await cached.data as any;
-          this.status = 'success'
-        } else {
-          this.status = 'loading';
-          const key = JSON.parse((stringifiedKey as any)) as Key;
-
-          this.#abortController?.abort()
-          this.#abortController = new AbortController();
-
-          const data = this.callback({
-            signal: this.#abortController.signal,
-            key,
-          });
-
-          const cacheEntry: CacheEntry = { data, status: 'loading' };
-          cache.set(stringifiedKey, cacheEntry)
-
-          try {
-            this._data = await data;
-            cacheEntry.status = 'success'
-            this.status = 'success'
-          } catch (_error) {
-            cacheEntry.status = 'error'
-            if (this.#sequence === id) this.status = 'error'
-          }
-        }
-      }, { initial: true })
+        if (this.enabled) this.cacheEntry?.fetch();
+      }, { initial: true }),
+      reactiveUtils.watch(() => this.cacheEntry, (entry, oldEntry) => {
+        if (entry) entry.observers++;
+        if (oldEntry) oldEntry.observers--;
+      }),
+      reactiveUtils.when(() => !this.enabled, () => this.cacheEntry?.disable()),
+      reactiveUtils.when(() => this.enabled, () => this.cacheEntry?.enable()),
     ])
     return () => {
       this.removeHandles()
@@ -130,7 +234,7 @@ export function useQuery<
   const Key extends ReadonlyArray<any> = []
 >(params: {
   key: Key,
-  callback: QueryCallback<ReturnType, Key>,
+  callback: QueryCallback<ReturnType>,
   enabled?: boolean
 }) {
   const callback = useRef(params.callback)
@@ -150,10 +254,16 @@ export function useQuery<
     process.enabled = params.enabled ?? true
   })
 
-  const query = useAccessorValue(() => ({
-    data: process.data,
-    status: process.status,
-  })) ?? { data: undefined, status: 'idle' }
+  const data = useAccessorValue(() => process.data);
+  const error = useAccessorValue(() => process.error);
+  const status = useAccessorValue(() => process.status);
+
+  const query = useMemo(() => ({
+    data,
+    error,
+    status: status ?? 'idle',
+    retry: process.refresh
+  }), [data, error, process.refresh, status])
 
   useEffect(() => {
     return process.setup()
