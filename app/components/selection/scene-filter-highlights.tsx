@@ -6,11 +6,19 @@ import SceneLayer from "@arcgis/core/layers/SceneLayer";
 import { useSelectionStateSelector } from "~/data/selection-store";
 import { SymbologyColors } from "~/symbology";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
-import useInstance from "~/hooks/useInstance";
 import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer.js";
 import { FillSymbol3DLayer, MeshSymbol3D } from "@arcgis/core/symbols";
 import FeatureFilter from "@arcgis/core/layers/support/FeatureFilter.js";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
+
+const HighlightRenderer = new SimpleRenderer({
+  symbol: new MeshSymbol3D({
+    symbolLayers: [
+      new FillSymbol3DLayer({
+        material: { color: SymbologyColors.selection() }
+      })]
+  })
+});
 
 interface SceneLayerProps {
   layer: SceneLayer
@@ -37,15 +45,6 @@ const SceneLayerHighlight = memo(
 
     const mainLayerView = layerViews?.find(lv => lv.layer === layer)
     const cloneLayerView = layerViews?.find(lv => lv.layer === clone)
-
-    const renderer = useInstance(() => (new SimpleRenderer({
-      symbol: new MeshSymbol3D({
-        symbolLayers: [
-          new FillSymbol3DLayer({
-            material: { color: SymbologyColors.selection() }
-          })]
-      })
-    })));
 
     useEffect(() => {
       return () => {
@@ -82,14 +81,14 @@ const SceneLayerHighlight = memo(
     useEffect(() => {
       const clone = layer.clone();
       clone.title = cloneTitle
-      clone.renderer = renderer;
+      clone.renderer = HighlightRenderer;
       clone.visible = false;
       scene.layers.add(clone);
 
       return () => {
         scene.layers.remove(clone)
       }
-    }, [cloneTitle, layer, renderer, scene.layers])
+    }, [cloneTitle, layer, scene.layers])
 
     return null;
   }

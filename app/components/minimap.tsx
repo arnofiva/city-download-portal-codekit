@@ -35,7 +35,7 @@ const FootprintSymbol = new SimpleFillSymbol({
 })
 
 const StaleFootprintSymbol = new SimpleFillSymbol({
-  color: SymbologyColors.selection(0.40),
+  color: SymbologyColors.staleSelection(),
   outline: {
     width: 0,
   }
@@ -88,18 +88,22 @@ function SelectionGraphic() {
   return (
     <>
       <Graphic
+        index={0}
         geometry={selection}
         symbol={PolygonSymbol}
       />
       <Graphic
+        index={1}
         geometry={ooot}
         symbol={LineSymbol}
       />
       <Graphic
+        index={1}
         geometry={ooto}
         symbol={LineSymbol}
       />
       <Graphic
+        index={1}
         geometry={origin}
         symbol={OriginSymbol}
       />
@@ -115,6 +119,7 @@ function Footprint() {
 
   return (
     <Graphic
+      index={0}
       geometry={footprints}
       symbol={footprintQuery.status === 'loading' ? StaleFootprintSymbol : FootprintSymbol}
     />

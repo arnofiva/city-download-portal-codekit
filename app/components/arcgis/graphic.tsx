@@ -16,6 +16,7 @@ interface GraphicProps<GeometryType extends Geometry = Geometry> {
   onUpdateComplete?: (graphic: CoreGraphic) => void,
   onDelete?: () => void;
   ref?: ForwardedRef<CoreGraphic>;
+  index?: number
 }
 export default function Graphic<GeometryType extends Geometry = Geometry>({
   geometry,
@@ -24,7 +25,8 @@ export default function Graphic<GeometryType extends Geometry = Geometry>({
   onUpdateComplete,
   onChange,
   onDelete,
-  ref
+  ref,
+  index
 }: GraphicProps<GeometryType>): ReactNode {
   const sketch = useSketch();
   const id = useId();
@@ -79,11 +81,11 @@ export default function Graphic<GeometryType extends Geometry = Geometry>({
   }, [getCurrentGeometry]);
 
   useEffect(() => {
-    layer.add(graphic);
+    layer.graphics.add(graphic, index);
     return () => {
       layer.remove(graphic)
     }
-  }, [graphic, layer]);
+  }, [graphic, index, layer]);
 
   const currentOnUpdateStart = useRef(onUpdateStart);
   useEffect(() => {
