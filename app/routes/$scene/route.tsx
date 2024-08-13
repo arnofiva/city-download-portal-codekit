@@ -47,29 +47,36 @@ export async function clientLoader({ params }: LoaderFunctionArgs) {
   };
 }
 
+function Header({ portalItem }: { portalItem: PortalItem }) {
+  const [, setOpen] = useSceneListModal();
+
+  const fullName = useAccessorValue(() => portalItem.portal.user.fullName);
+  const username = useAccessorValue(() => portalItem.portal.user.username);
+  const avatar = useAccessorValue(() => portalItem.portal.user.thumbnailUrl)
+
+  const title = useAccessorValue(() => portalItem.title);
+  const description = useAccessorValue(() => portalItem.description);
+
+  return (
+    <CalciteNavigation slot="header">
+      <CalciteNavigationLogo slot="logo" heading={title} description={description} />
+      <CalciteNavigationUser slot="user" full-name={fullName} username={username} thumbnail={avatar} />
+      <CalciteAction slot="navigation-action" text={""} icon="hamburger" onClick={() => setOpen(true)} />
+    </CalciteNavigation>
+  )
+}
+
 export default function SceneRoute() {
   const {
     instance
   } = useLoaderData() as Awaited<ReturnType<typeof clientLoader>>;
-  const [, setOpen] = useSceneListModal();
-
-  const fullName = useAccessorValue(() => instance.portal.user.fullName);
-  const username = useAccessorValue(() => instance.portal.user.username);
-  const avatar = useAccessorValue(() => instance.portal.user.thumbnailUrl)
-
-  const title = useAccessorValue(() => instance.title);
-  const description = useAccessorValue(() => instance.description);
 
   const store = useSelectionState();
 
   return (
     <Suspense fallback={<CalciteScrim />}>
       <Scene portalItem={instance}>
-        <CalciteNavigation slot="header">
-          <CalciteNavigationLogo slot="logo" heading={title} description={description} />
-          <CalciteNavigationUser slot="user" full-name={fullName} username={username} thumbnail={avatar} />
-          <CalciteAction slot="navigation-action" text={""} icon="hamburger" onClick={() => setOpen(true)} />
-        </CalciteNavigation>
+        <Header portalItem={instance} />
         <GraphicsLayer elevationMode="on-the-ground">
           <View>
             <Selection>

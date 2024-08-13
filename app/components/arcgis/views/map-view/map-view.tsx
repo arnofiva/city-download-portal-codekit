@@ -54,7 +54,7 @@ function InternalMapView({ ref, children, spatialReference, extent }: PropsWithC
   return (
     <MapViewContext.Provider value={view}>
       <div
-        className="w-full h-full"
+        className="w-full h-full isolate"
         ref={(node) => {
           if (node && view.container !== node) {
             view.container = node;

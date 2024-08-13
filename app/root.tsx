@@ -24,6 +24,7 @@ import SCENES from "~/data/scenes";
 
 import { LinksFunction } from "@remix-run/node";
 import RootShell from "./components/root-shell";
+import { Toaster } from "./components/toast";
 
 const StoreProvider = lazy(() => import('./data/selection-store'))
 const WalkthroughStoreProvider = lazy(() => import('./components/selection/walk-through-context'))
@@ -141,7 +142,9 @@ export function Layout({ children }: PropsWithChildren<LayoutProps>) {
             <WalkthroughStoreProvider>
               <RootShell>
                 <SceneListModalProvider>
-                  {children}
+                  <Toaster>
+                    {children}
+                  </Toaster>
                   <SceneListModal />
                 </SceneListModalProvider>
               </RootShell>

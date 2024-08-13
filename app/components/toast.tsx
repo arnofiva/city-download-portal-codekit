@@ -31,6 +31,7 @@ function Toast({ store }: { store: ToastStore }) {
 
   return messages.map(message => (
     <CalciteAlert
+      slot="alerts"
       key={message.code}
       icon
       kind={message.severity}
@@ -56,10 +57,10 @@ export function Toaster({ children }: PropsWithChildren) {
 
   return (
     <>
-      <Toast store={store} />
       <ToastContext.Provider value={store.toast}>
         {children}
       </ToastContext.Provider>
+      <Toast store={store} />
     </>
   )
 }

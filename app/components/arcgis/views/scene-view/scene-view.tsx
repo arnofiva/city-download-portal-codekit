@@ -2,7 +2,6 @@ import { PropsWithChildren, memo, useEffect } from "react"
 import CoreSceneView from '@arcgis/core/views/SceneView';
 import { SceneViewContext } from "./scene-view-context";
 import { useScene } from "../../maps/web-scene/scene-context";
-import Color from "@arcgis/core/Color.js";
 import useInstance from "~/hooks/useInstance";
 import { SymbologyColors } from "~/symbology";
 
@@ -15,7 +14,6 @@ function InternalView({ children }: PropsWithChildren) {
       color: SymbologyColors.selection(),
       fillOpacity: 0.8,
       shadowOpacity: 0,
-      haloColor: 'white',
       haloOpacity: 0
     },
     popupEnabled: false,
@@ -28,7 +26,7 @@ function InternalView({ children }: PropsWithChildren) {
   return (
     <SceneViewContext.Provider value={view}>
       <div
-        className="w-full h-full"
+        className="w-full h-full isolate"
         ref={(node) => {
           if (node && view.container !== node) {
             view.container = node;
