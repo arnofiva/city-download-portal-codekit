@@ -1,4 +1,4 @@
-import { Suspense, lazy, memo, useDeferredValue, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, memo, useEffect, useRef, useState } from "react";
 import { CalciteScrim } from "@esri/calcite-components-react";
 import GraphicsLayer from "./arcgis/graphics-layer";
 import Graphic from "./arcgis/graphic";
@@ -12,7 +12,7 @@ import { useAccessorValue } from "~/hooks/reactive";
 import { useSelectionStateSelector } from "~/data/selection-store";
 import CoreMapView from "@arcgis/core/views/MapView";
 import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
-import { Geometry, Polygon, Polyline } from "@arcgis/core/geometry";
+import { Geometry, Point, Polygon, Polyline } from "@arcgis/core/geometry";
 import useInstance from "~/hooks/useInstance";
 import { SymbologyColors } from "~/symbology";
 import { useSelectionFootprints } from "../hooks/queries/feature-query";
@@ -58,9 +58,11 @@ const OriginSymbol = new SimpleMarkerSymbol({
   outline: null!
 })
 
-function SelectionGraphic() {
-  const origin = useSelectionStateSelector(store => store.origin);
-  const selection = useSelectionStateSelector(store => store.selection);
+interface SelectionGraphicProps {
+  origin: Point
+  selection: Polygon
+}
+function SelectionGraphic({ origin, selection }: SelectionGraphicProps) {
   if (selection == null || origin == null) return null;
 
   const [
@@ -102,17 +104,15 @@ function SelectionGraphic() {
         geometry={ooto}
         symbol={LineSymbol}
       />
-      <Graphic
-        index={1}
-        geometry={origin}
-        symbol={OriginSymbol}
-      />
     </>
   )
 }
 
-function Footprint() {
-  const footprintQuery = useSelectionFootprints(true);
+interface FootprintGraphicProps {
+  selection: Polygon
+}
+function Footprint({ selection }: FootprintGraphicProps) {
+  const footprintQuery = useSelectionFootprints(selection);
   const footprints = footprintQuery.data;
 
   if (footprints == null) return null;
@@ -126,9 +126,29 @@ function Footprint() {
   )
 }
 
+// useDeferred is "too fast"...
+function useDebouncedValue<T>(value: T, delay = 500) {
+  const [current, setCurrent] = useState(value);
+  const [shouldUpdate, setShouldUpdate] = useState(false);
+
+  useEffect(() => {
+    if (current !== value) {
+      const timeout = setTimeout(() => setShouldUpdate(true), delay)
+      return () => clearTimeout(timeout);
+    }
+  }, [current, delay, value])
+
+  if (current !== value && shouldUpdate) {
+    setCurrent(value)
+    setShouldUpdate(false)
+  }
+
+  return current;
+}
+
 function InternalMinimap() {
   const [isOpen, setIsOpen] = useState(false);
-
+  const [ready, setReady] = useState(false);
 
   const observer = useInstance(() => new MutationObserver((mutations) => {
     for (const mutation of mutations) {
@@ -141,16 +161,26 @@ function InternalMinimap() {
 
   const sceneView = useSceneView();
   const selection = useSelectionStateSelector((state) => state.selection);
+  const origin = useSelectionStateSelector((state) => state.modelOrigin ?? state.selectionOrigin);
 
   const viewExtent = useAccessorValue(() => sceneView.extent);
   const sr = useAccessorValue(() => sceneView.spatialReference?.wkid);
 
-  const deferredSelection = useDeferredValue(selection);
+  const deferredOrigin = useDebouncedValue(origin, 200);
+  const deferredSelection = useDebouncedValue(selection, 200);
+
 
   const mapRef = useRef<CoreMapView>(null);
 
   useEffect(() => {
-    if (mapRef.current == null || !isOpen) return;
+    if (mapRef.current) {
+      mapRef.current.when(() => setReady(true));
+    }
+  })
+
+  useEffect(() => {
+    if (mapRef.current == null || !isOpen || !ready) return;
+
     const controller = new AbortController();
     let target: Geometry | undefined = viewExtent;
 
@@ -161,10 +191,10 @@ function InternalMinimap() {
     }
 
     if (target)
-      mapRef.current.goTo({ target }, { signal: controller.signal, animate: false }).catch()
+      mapRef.current.goTo({ target }, { signal: controller.signal, animate: true }).catch()
 
     return () => controller.abort()
-  }, [viewExtent, deferredSelection, isOpen]);
+  }, [viewExtent, deferredSelection, isOpen, ready]);
 
   const disableMapInteractions = "[&_.esri-view-surface]:pointer-events-none"
   return (
@@ -180,8 +210,21 @@ function InternalMinimap() {
         <Suspense fallback={<CalciteScrim loading />}>
           <Map>
             <GraphicsLayer>
-              <SelectionGraphic />
-              <Footprint />
+              {deferredOrigin != null ? <Graphic
+                index={1}
+                geometry={deferredOrigin}
+                symbol={OriginSymbol}
+              />
+                : null}
+              {
+                deferredOrigin != null && deferredSelection != null ?
+                  (
+                    <>
+                      <SelectionGraphic origin={deferredOrigin} selection={deferredSelection} />
+                      <Footprint selection={deferredSelection} />
+                    </>
+                  ) : null
+              }
             </GraphicsLayer>
             <MapView ref={mapRef} spatialReference={`${sr}`} />
           </Map>

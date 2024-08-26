@@ -107,10 +107,6 @@ export async function clientLoader() {
 
     await ws.load();
 
-    // await new Promise((resolve) => {
-    //   console.log({ resolve })
-    // })
-
     return ws;
   }));
 

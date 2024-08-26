@@ -10,63 +10,41 @@ import { useAccessorValue } from "~/hooks/reactive";
 
 @subclass()
 class SelectionStore extends Accessor {
-  #selection: Polygon | null = null;
+  @property()
+  selection: Polygon | null = null;
 
   @property()
-  get selection(): Polygon | null {
-    return this.#selection;
-  }
-
-  #origin: Point | null = null;
+  modelOrigin: Point | null = null;
 
   @property()
-  get origin(): Point | null {
+  get selectionOrigin(): Point | null {
     const selection = this.selection;
-    if (selection == null) {
-      this.#origin = null;
-    } else {
+    if (selection != null) {
       const [[[x, y]]] = selection.rings;
 
-      if (this.#origin?.x !== x || this.#origin?.y !== y) {
-        const point = new Point({
-          x,
-          y,
-          spatialReference: selection.spatialReference
-        })
-        this.#origin = point;
-      }
+      return new Point({
+        x,
+        y,
+        spatialReference: selection.spatialReference
+      })
+    } else {
+      return null
     }
-
-    return this.#origin
   }
-
-  #terminal: Point | null = null;
 
   @property()
-  get terminal(): Point | null {
+  get selectionTerminal(): Point | null {
     const selection = this.selection;
-    if (selection == null) {
-      this.#terminal = null;
-    } else {
+    if (selection != null) {
       const [[_oo, _ot, [x, y]]] = selection.rings;
-
-      if (this.#terminal?.x !== x || this.#terminal?.y !== y) {
-        const point = new Point({
-          x,
-          y,
-          spatialReference: selection.spatialReference
-        })
-        this.#terminal = point;
-      }
+      return new Point({
+        x,
+        y,
+        spatialReference: selection.spatialReference
+      })
+    } else {
+      return null;
     }
-
-    return this.#terminal
-  }
-
-  set selection(selection: Polygon | null) {
-    this.#selection = selection;
-    // not sure why the property decorators are not working..
-    this.notifyChange('selection');
   }
 }
 

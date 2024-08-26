@@ -8,8 +8,7 @@
     "dev": "remix vite:dev",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc",
-    "postinstall": "npx patch-package"
+    "typecheck": "tsc"
   },
   "dependencies": {
     "@arcgis/core": "^4.30.0-next.20240615",

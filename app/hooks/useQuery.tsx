@@ -209,10 +209,6 @@ class Query<
     }
 
     this.addHandles([
-      reactiveUtils.watch(() => this.status, (status) => {
-        if (this.key?.includes('debug'))
-          console.log(status)
-      }),
       reactiveUtils.watch(() => JSON.stringify([this.key, this.enabled]), async () => {
         if (this.enabled) this.cacheEntry?.fetch();
       }, { initial: true }),

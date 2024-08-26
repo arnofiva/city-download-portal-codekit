@@ -37,21 +37,18 @@ async function mergeSliceMeshes(elevation: Mesh, features: Mesh[], origin: Point
   return slice;
 }
 
-export async function createMesh(scene: WebScene, extent: Extent, features: Mesh[], signal: AbortSignal) {
+export async function createMesh({
+  scene, extent, features, signal, origin,
+}: {
+  scene: WebScene, extent: Extent, features: Mesh[], signal: AbortSignal, origin: Point
+}) {
   const ground = scene.ground;
   const sr = extent.spatialReference;
 
   const projectedExtent = projection.project(extent, sr) as Extent;
   const elevation = await extractElevation(ground, projectedExtent);
 
-  const extractionOrigin = new Point({
-    x: elevation.extent.xmin,
-    y: elevation.extent.ymin,
-    z: elevation.extent.zmin,
-    spatialReference: extent.spatialReference
-  });
-
-  const slice = await mergeSliceMeshes(elevation, features, extractionOrigin, signal);
+  const slice = await mergeSliceMeshes(elevation, features, origin, signal);
 
   return slice;
 }

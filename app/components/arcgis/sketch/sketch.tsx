@@ -7,6 +7,7 @@ import useProvideRef from "~/hooks/useProvideRef";
 
 interface SketchProps {
   ref?: ForwardedRef<SketchViewModel>;
+  hasZ?: boolean;
 }
 
 const SketchContext = createContext<SketchViewModel>(null!);
@@ -44,7 +45,7 @@ export function SketchTooltip({
   return null;
 }
 
-export default function Sketch({ ref, children }: PropsWithChildren<SketchProps>) {
+export default function Sketch({ ref, children, hasZ }: PropsWithChildren<SketchProps>) {
   const view = useSceneView();
   const layer = useGraphicsLayer();
 
@@ -73,6 +74,10 @@ export default function Sketch({ ref, children }: PropsWithChildren<SketchProps>
       },
     },
   }));
+
+  useEffect(() => {
+    sketch.defaultCreateOptions.hasZ = hasZ ?? false
+  }, [hasZ, sketch.defaultCreateOptions])
 
   useProvideRef(sketch, ref);
 

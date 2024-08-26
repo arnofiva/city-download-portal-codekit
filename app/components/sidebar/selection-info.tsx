@@ -162,21 +162,22 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
 }
 
 function Dimensions() {
-  const positionOrigin = useSelectionStateSelector((store) => store.origin);
-  const terminal = useSelectionStateSelector((store) => store.terminal);
+  const positionOrigin = useSelectionStateSelector((store) => store.selectionOrigin);
+  const terminal = useSelectionStateSelector((store) => store.selectionTerminal);
   const elevationQuery = useSelectionElevationInfo()
 
   if (positionOrigin == null || terminal == null || elevationQuery.data == null) return null;
 
-  const otz = elevationQuery.data?.getPoint(1).z;
-  const toz = elevationQuery.data?.getPoint(3).z;
+  const otz = elevationQuery.data.selectionPoints.ot.z;
+  const toz = elevationQuery.data.selectionPoints.to.z;
 
   // the elevation origin is updated async, so the dimensions will look choppy if we use that directly
   // instead we take the last available elevation, but use the x and y from the synchronously updating origin
   // this leads to some jumping around if the elevation changes a lot, but that isn't super concerning
-  const origin = elevationQuery.data?.getPoint(0) ?? positionOrigin;
+  const origin = positionOrigin.clone();
   origin.x = positionOrigin.x;
   origin.y = positionOrigin.y;
+  origin.z = elevationQuery.data.selectionPoints.oo.z
 
   const widthStart = origin.clone();
   const widthEnd = widthStart.clone();
@@ -187,7 +188,6 @@ function Dimensions() {
   const heightEnd = heightStart.clone();
   heightEnd.x = terminal?.x;
   heightEnd.z = Math.min(toz ?? heightEnd.z, heightEnd.z);
-
 
   return (
     <DimensionsLayer fontSize={12}>

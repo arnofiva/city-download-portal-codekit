@@ -80,12 +80,11 @@ export function useSelectedFeaturesFromLayers(enabled = false) {
   return query;
 }
 
-export function useSelectionFootprints(enabled = false) {
+export function useSelectionFootprints(selection: Polygon | null) {
   const view = useSceneView()
   const sceneLayerViews = useSceneLayerViews();
 
-  const polygon = useSelectionStateSelector((store) => store.selection);
-  const deferredPolygon = useDeferredValue(polygon)
+  const deferredPolygon = useDeferredValue(selection)
 
   const query = useQuery({
     key: ['selecion-footprints', 'layers', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings],
@@ -117,7 +116,7 @@ export function useSelectionFootprints(enabled = false) {
       if (fpUnion != null) return fpUnion
       else throw new Error('failed to combine footprints');
     },
-    enabled: enabled && deferredPolygon != null && sceneLayerViews != null,
+    enabled: deferredPolygon != null && sceneLayerViews != null,
   })
 
   return query;

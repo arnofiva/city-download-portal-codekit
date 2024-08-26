@@ -4,14 +4,17 @@ import { redirect, useLoaderData, useRouteError } from "@remix-run/react";
 import Sidebar from "~/components/sidebar/sidebar";
 import invariant from "tiny-invariant";
 import { ViewUI } from "~/components/arcgis/views/scene-view/scene-view-ui";
-import { CalciteAction, CalciteNavigation, CalciteNavigationLogo, CalciteNavigationUser, CalciteScrim } from "@esri/calcite-components-react";
-import GraphicsLayer from "~/components/arcgis/graphics-layer";
+import { CalciteAction, CalciteButton, CalciteNavigation, CalciteNavigationLogo, CalciteNavigationUser, CalciteScrim } from "@esri/calcite-components-react";
 import { useSceneListModal } from "~/components/scene-list-modal/scene-list-modal-context";
 import { useAccessorValue } from "~/hooks/reactive";
 import PortalItem from "@arcgis/core/portal/PortalItem";
 import { useSelectionState } from "~/data/selection-store";
 import SelectionTool from "~/components/selection/selection-tool";
 import SelectionGraphic from "~/components/selection/selection-graphic";
+import PointTool from "~/components/arcgis/sketch/tools/point-tool";
+import { SketchTooltip } from "~/components/arcgis/sketch/sketch";
+import { SketchLayer } from "~/components/arcgis/sketch/sketch-layer";
+import { Point } from "@arcgis/core/geometry";
 
 const Selection = lazy(() => import("~/components/selection/selection"));
 const View = lazy(() => import('~/components/arcgis/views/scene-view/scene-view'));
@@ -66,6 +69,24 @@ function Header({ portalItem }: { portalItem: PortalItem }) {
   )
 }
 
+function OriginTool({ onComplete }: { onComplete: (point: Point) => void }) {
+
+  return (
+    <SketchLayer hasZ elevationMode="absolute-height">
+      <PointTool onComplete={onComplete}>
+        {({ start }) => (
+          <>
+            <CalciteButton onClick={start} appearance="outline-fill" scale="l">Set model origin</CalciteButton>
+          </>
+        )}
+      </PointTool>
+      <SketchTooltip
+        inputEnabled
+      />
+    </SketchLayer>
+  )
+}
+
 export default function SceneRoute() {
   const {
     instance
@@ -77,18 +98,19 @@ export default function SceneRoute() {
     <Suspense fallback={<CalciteScrim />}>
       <Scene portalItem={instance}>
         <Header portalItem={instance} />
-        <GraphicsLayer elevationMode="on-the-ground">
-          <View>
-            <Selection>
-              <Search />
-              <Sidebar />
-              <ViewUI position="bottom-left">
+        <View>
+          <Selection>
+            <Search />
+            <Sidebar />
+            <ViewUI position="bottom-left">
+              <div className="flex gap-4">
                 <SelectionTool onChange={polygon => { store.selection = polygon }} />
-              </ViewUI>
+                <OriginTool onComplete={(point) => { store.modelOrigin = point }} />
+              </div>
               <SelectionGraphic />
-            </Selection>
-          </View>
-        </GraphicsLayer>
+            </ViewUI>
+          </Selection>
+        </View>
       </Scene>
     </Suspense>
   );

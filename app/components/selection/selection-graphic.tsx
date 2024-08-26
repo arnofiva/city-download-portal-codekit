@@ -2,18 +2,16 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Point, Polygon, Polyline } from "@arcgis/core/geometry";
 import Graphic from "~/components/arcgis/graphic";
 import { ExtrudeSymbol3DLayer, FillSymbol3DLayer, LineSymbol3D, LineSymbol3DLayer, PolygonSymbol3D } from "@arcgis/core/symbols";
-import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import CoreGraphic from "@arcgis/core/Graphic";
 import WalkthroughPopover from "~/components/selection/walk-through-popover";
 import { RootShellPortal } from "~/components/root-shell";
-import { contains } from "@arcgis/core/geometry/geometryEngine";
 import FeatureFilterHighlights from "./scene-filter-highlights";
 import { useSelectionActor } from "./selection";
 import GraphicsLayer from "../arcgis/graphics-layer";
 import { SymbologyColors } from "~/symbology";
 import { useSelectionStateSelector } from "~/data/selection-store";
-import { useSelectionElevationInfo } from "../../hooks/queries/elevation-query";
-// import Highlights from "./highlights";
+import { useOriginElevationInfo, useSelectionElevationInfo } from "../../hooks/queries/elevation-query";
+import SolidEdges3D from "@arcgis/core/symbols/edges/SolidEdges3D.js";
 
 interface SelectionProps {
   onChange?: (selection: Polygon | null) => void;
@@ -21,8 +19,6 @@ interface SelectionProps {
 function InternalSelectionGraphic({
   onChange
 }: SelectionProps) {
-  const view = useSceneView();
-
   const [state, send] = useSelectionActor();
 
   const isActive = state.matches('creating') || state.matches({ created: 'updating' })
@@ -63,17 +59,8 @@ function InternalSelectionGraphic({
 
   const handleClickOnGraphic = useCallback((graphic: CoreGraphic | null) => {
     if (graphic == null) return;
-
     send({ type: 'graphic-change', graphic });
-    const handle = view.on("click", (event) => {
-      if (contains(graphic.geometry, event.mapPoint)) {
-        event.stopPropagation();
-        send({ type: 'update.start' })
-      }
-    });
-
-    return handle.remove;
-  }, [send, view]);
+  }, [send])
 
   return (
     <>
@@ -103,18 +90,16 @@ function InternalSelectionGraphic({
 }
 
 function Origin() {
-  const polygon = useSelectionStateSelector((store) => store.selection);
-  const elevationQuery = useSelectionElevationInfo()
-  const spatialReference = polygon?.spatialReference;
+  const origin = useOriginElevationInfo().data;
+  const spatialReference = origin?.spatialReference;
 
-  const zmin = useMemo(() => elevationQuery.data?.extent.zmin ?? 0, [elevationQuery.data?.extent.zmin])
-  const zmax = useMemo(() => elevationQuery.data?.extent.zmax ?? 0, [elevationQuery.data?.extent.zmax])
+  const zmin = origin?.z ?? 0
+  const zmax = origin?.z ?? 0
 
   const bufferedZmin = zmin - 100;
   const height = (zmax - bufferedZmin) + 200;
 
-  const ring = polygon?.rings?.[0]
-  const [x, y] = ring?.[0] ?? []
+  const { x, y } = origin ?? {}
 
   const originLine = useMemo(() => {
     if (x == null || y == null) return null;
@@ -142,8 +127,8 @@ function Volume() {
   const polygon = useSelectionStateSelector((store) => store.selection);
   const elevationQuery = useSelectionElevationInfo()
 
-  const zmin = useMemo(() => elevationQuery.data?.extent.zmin ?? 0, [elevationQuery.data?.extent.zmin])
-  const zmax = useMemo(() => elevationQuery.data?.extent.zmax ?? 0, [elevationQuery.data?.extent.zmax])
+  const zmin = elevationQuery.data?.minElevation ?? 0;
+  const zmax = elevationQuery.data?.maxElevation ?? 0;
 
   const bufferedZmin = zmin - 100;
   const height = (zmax - bufferedZmin) + 200;
@@ -153,11 +138,10 @@ function Volume() {
       new ExtrudeSymbol3DLayer({
         size: height,
         castShadows: false,
-        edges: {
-          type: 'solid',
+        edges: new SolidEdges3D({
           color: SymbologyColors.selection(0.85),
           size: 1
-        }
+        })
       })
     ]
   }), [height])
