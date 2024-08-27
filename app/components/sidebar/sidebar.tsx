@@ -8,7 +8,8 @@ import SelectionInfo from "./selection-info";
 import ExportSettings from "./export-settings";
 import { useEffect, useReducer } from "react";
 import { BlockStateReducer, SidebarState } from "./sidebar-state";
-import { useWalkthroughSelector } from "../selection/walk-through-context";
+import { useSelectionState } from "~/data/selection-store";
+import { useAccessorValue } from "~/hooks/reactive";
 
 const initialState = {
   modelOrigin: { mode: 'managed', state: 'closed' },
@@ -19,7 +20,8 @@ const initialState = {
 export default function Sidebar() {
   const isRoot = useIsRoot();
 
-  const walkthroughState = useWalkthroughSelector(store => store.state);
+  const store = useSelectionState()
+  const walkthroughState = useAccessorValue(() => store.walkthroughState);
 
   const [blockState, dispatch] = useReducer(
     BlockStateReducer,
@@ -35,7 +37,7 @@ export default function Sidebar() {
         dispatch([{ block: 'modelOrigin', type: 'open' }]);
         break;
       }
-      case 'confirm': {
+      case 'confirming': {
         dispatch([{ block: 'selection', type: 'open' }]);
         break;
       }

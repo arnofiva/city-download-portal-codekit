@@ -12,9 +12,8 @@ import { useAccessorValue } from "../../hooks/reactive";
 import { Dispatch, useDeferredValue, useEffect, useRef, useState } from "react";
 import { useDownloadQuery } from "../../hooks/queries/download/download-query";
 import { BlockAction, BlockState } from "./sidebar-state";
-import { useSelectionStateSelector } from "~/data/selection-store";
-import { useReferenceElementId, useWalkthrough } from "../selection/walk-through-context";
-import { useSelectionActor } from "../selection/selection";
+import { useSelectionState } from "~/data/selection-store";
+import { useReferenceElementId } from "../selection/walk-through-context";
 import { useToast } from "../toast";
 
 interface ExportSettingsProps {
@@ -22,7 +21,6 @@ interface ExportSettingsProps {
   dispatch: Dispatch<BlockAction[]>;
 }
 export default function ExportSettings({ dispatch, state }: ExportSettingsProps) {
-  const walkthrough = useWalkthrough();
   const scene = useScene();
 
   const title = useAccessorValue(() => {
@@ -31,16 +29,17 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
   });
   const [filename, setFilename] = useState("")
 
-  const [s] = useSelectionActor();
-  const selection = useSelectionStateSelector((store) => store.selection, { initial: true }) ?? null;
+  const store = useSelectionState();
+  const editingState = useAccessorValue(() => store.editingState);
+  const selection = useAccessorValue(() => store.selection)
 
-  const downloadQuery = useDownloadQuery(s.matches({ created: 'idle' }));
+  const downloadQuery = useDownloadQuery(editingState === 'idle');
   const file = downloadQuery.data;
 
   const deferredSelection = useDeferredValue(selection);
 
   const isLoadingWithoutFile = downloadQuery.data == null && downloadQuery.status === 'loading';
-  const canDownload = downloadQuery.data != null && downloadQuery.status === 'success'
+  const canDownload = downloadQuery.data != null && downloadQuery.status === 'success' && editingState === 'idle'
 
   const fileSize = downloadQuery.data?.size;
 
@@ -154,8 +153,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
           if (canDownload) {
             const name = filename || title || 'model';
             downloadFile(name, file!);
-
-            walkthrough.advance('done');
+            store.exportState = 'exported'
           }
         }}
       >

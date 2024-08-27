@@ -1,16 +1,16 @@
 import useInstance from "~/hooks/useInstance";
 import { useGraphicsLayer } from "../graphics-layer";
 import { useSceneView } from "../views/scene-view/scene-view-context";
-import SketchViewModel from "@arcgis/core/widgets/Sketch/SketchViewModel";
 import { ForwardedRef, PropsWithChildren, createContext, useContext, useEffect } from "react";
 import useProvideRef from "~/hooks/useProvideRef";
+import { SketchToolManager } from "./tools/create-tool";
 
 interface SketchProps {
-  ref?: ForwardedRef<SketchViewModel>;
+  ref?: ForwardedRef<SketchToolManager>;
   hasZ?: boolean;
 }
 
-const SketchContext = createContext<SketchViewModel>(null!);
+const SketchContext = createContext<SketchToolManager>(null!);
 export function useSketch() {
   return useContext(SketchContext);
 }
@@ -45,11 +45,11 @@ export function SketchTooltip({
   return null;
 }
 
-export default function Sketch({ ref, children, hasZ }: PropsWithChildren<SketchProps>) {
+export default function Sketch({ ref, children, hasZ: disableZ }: PropsWithChildren<SketchProps>) {
   const view = useSceneView();
   const layer = useGraphicsLayer();
 
-  const sketch = useInstance(() => new SketchViewModel({
+  const sketch = useInstance(() => new SketchToolManager({
     /*
     it's important to not assign the view/layer here in the state initializer
     
@@ -59,25 +59,12 @@ export default function Sketch({ ref, children, hasZ }: PropsWithChildren<Sketch
     */
     defaultCreateOptions: {
       hasZ: false
-    },
-    defaultUpdateOptions: {
-      enableRotation: false,
-      enableScaling: false,
-      enableZ: false,
-      multipleSelectionEnabled: false,
-      toggleToolOnClick: false,
-      tool: 'reshape',
-      reshapeOptions: {
-        edgeOperation: 'offset',
-        shapeOperation: 'none',
-        vertexOperation: 'move'
-      },
-    },
+    }
   }));
 
   useEffect(() => {
-    sketch.defaultCreateOptions.hasZ = hasZ ?? false
-  }, [hasZ, sketch.defaultCreateOptions])
+    sketch.defaultCreateOptions.hasZ = disableZ ?? false
+  }, [disableZ, sketch.defaultCreateOptions])
 
   useProvideRef(sketch, ref);
 

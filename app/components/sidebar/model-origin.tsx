@@ -14,6 +14,8 @@ import { useOriginElevationInfo } from "../../hooks/queries/elevation-query";
 import * as intl from "@arcgis/core/intl.js";
 import * as coordinateFormatter from "@arcgis/core/geometry/coordinateFormatter.js";
 import { useQuery } from "~/hooks/useQuery";
+import { UpdateOriginTool } from "../selection/selection-tools/update-origin-tool";
+import { SketchLayer } from "../arcgis/sketch/sketch-layer";
 
 interface ModelOriginProps {
   state: BlockState['state'];
@@ -144,29 +146,14 @@ export default function ModelOrigin({
           </CalciteLabel>
         </li>
       </ul>
-      <CalciteSplitButton
-        primaryText="Copy to clipboard"
-        width="full"
-        primaryIconStart="copy-to-clipboard"
-        appearance="outline-fill"
-        disabled={origin == null}
-        onCalciteSplitButtonPrimaryClick={() => {
-          if (origin) {
-            try {
-              navigator.clipboard.writeText(coordinateFormatter.toLatitudeLongitude(origin, 'dms', 3))
-            } catch (_) {
-              const { x, y, z } = origin;
-
-              // let text = z == null ? `${x},${y}` : `${x},${y},${z}`;
-              // tooltips don't support pasting values with z when the layer is on-the-ground...
-              const text = z == null ? `${x},${y}` : `${x},${y}`;
-              navigator.clipboard.writeText(text);
-            }
-          }
-        }}
-      >
-        <CalciteDropdownItem
-          onClick={() => {
+      <div className="flex gap-2 flex-row-reverse">
+        <CalciteSplitButton
+          primaryText="Copy to clipboard"
+          width="full"
+          primaryIconStart="copy-to-clipboard"
+          appearance="outline-fill"
+          disabled={origin == null}
+          onCalciteSplitButtonPrimaryClick={() => {
             if (origin) {
               try {
                 navigator.clipboard.writeText(coordinateFormatter.toLatitudeLongitude(origin, 'dms', 3))
@@ -181,25 +168,45 @@ export default function ModelOrigin({
             }
           }}
         >
-          Copy as a latitude, longitude pair
-        </CalciteDropdownItem>
-        <CalciteDropdownItem
-          onClick={() => {
-            if (origin) {
-              const { x, y, latitude, longitude, z } = origin;
+          <CalciteDropdownItem
+            onClick={() => {
+              if (origin) {
+                try {
+                  navigator.clipboard.writeText(coordinateFormatter.toLatitudeLongitude(origin, 'dms', 3))
+                } catch (_) {
+                  const { x, y, z } = origin;
 
-              let wkt = z == null ? `POINT(${x} ${y})` : `POINTZ(${x} ${y} ${z})`;
+                  // let text = z == null ? `${x},${y}` : `${x},${y},${z}`;
+                  // tooltips don't support pasting values with z when the layer is on-the-ground...
+                  const text = z == null ? `${x},${y}` : `${x},${y}`;
+                  navigator.clipboard.writeText(text);
+                }
+              }
+            }}
+          >
+            Copy as a latitude, longitude pair
+          </CalciteDropdownItem>
+          <CalciteDropdownItem
+            onClick={() => {
+              if (origin) {
+                const { x, y, latitude, longitude, z } = origin;
 
-              if (latitude != null && longitude != null)
-                wkt = z == null ? `POINT(${latitude} ${longitude})` : `POINTZ(${latitude} ${longitude} ${z})`;
+                let wkt = z == null ? `POINT(${x} ${y})` : `POINTZ(${x} ${y} ${z})`;
 
-              navigator.clipboard.writeText(wkt);
-            }
-          }}
-        >
-          Copy as WKT
-        </CalciteDropdownItem>
-      </CalciteSplitButton>
+                if (latitude != null && longitude != null)
+                  wkt = z == null ? `POINT(${latitude} ${longitude})` : `POINTZ(${latitude} ${longitude} ${z})`;
+
+                navigator.clipboard.writeText(wkt);
+              }
+            }}
+          >
+            Copy as WKT
+          </CalciteDropdownItem>
+        </CalciteSplitButton>
+        <SketchLayer elevationMode="absolute-height">
+          <UpdateOriginTool />
+        </SketchLayer>
+      </div>
     </CalciteBlock>
   );
 }

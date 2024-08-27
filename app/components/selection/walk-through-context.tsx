@@ -7,24 +7,25 @@ import {
 import Accessor from "@arcgis/core/core/Accessor";
 import { PropsWithChildren, createContext, useContext, useEffect, useId, useRef } from "react";
 import useInstance from "~/hooks/useInstance";
-import { useAccessorValue } from "~/hooks/reactive";
+import { useAccessorValue, useEffectWhen } from "~/hooks/reactive";
+import { useSelectionState, WalkthroughState } from "~/data/selection-store";
 
 const StatePositionMap = {
   'not-started': 0,
   'placing-origin': 1,
   'placing-terminal': 2,
-  'confirm': 3,
+  'confirming': 3,
+  'updating-origin': 3,
   'downloading': 4,
   'done': 5,
   0: 'not-started',
   1: 'placing-origin',
   2: 'placing-terminal',
-  3: 'confirm',
+  3: 'confirming',
   4: 'downloading',
   5: 'done',
 } as const;
 
-type WalkthroughState = Extract<keyof typeof StatePositionMap, string>;
 type WalkthroughPosition = Extract<keyof typeof StatePositionMap, number>;
 
 function isWalkthroughPosition(n: number): n is WalkthroughPosition {
@@ -38,13 +39,11 @@ class WalkthroughStore extends Accessor {
   #referenceElements = new Map<WalkthroughState, ElementReference>();
 
   @property()
-  get state(): WalkthroughState {
-    return StatePositionMap[this._position];
-  }
+  state: WalkthroughState = 'not-started';
 
   @property()
   get position() {
-    return this._position
+    return StatePositionMap[this.state];
   }
 
   @property()
@@ -91,7 +90,12 @@ class WalkthroughStore extends Accessor {
 
 const WalkthroughContext = createContext<WalkthroughStore>(null!);
 export default function WalkthroughStoreProvider({ children }: PropsWithChildren) {
+  const store = useSelectionState();
   const walkthrough = useInstance(() => new WalkthroughStore());
+
+  useEffectWhen(() => store.walkthroughState, (state) => {
+    walkthrough.state = state;
+  })
 
   return (
     <WalkthroughContext.Provider value={walkthrough}>
