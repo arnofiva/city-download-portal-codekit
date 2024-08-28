@@ -10,6 +10,7 @@ import { useEffect, useReducer } from "react";
 import { BlockStateReducer, SidebarState } from "./sidebar-state";
 import { useSelectionState } from "~/data/selection-store";
 import { useAccessorValue } from "~/hooks/reactive";
+import { useReferenceElementId } from "../selection/walk-through-context";
 
 const initialState = {
   modelOrigin: { mode: 'managed', state: 'closed' },
@@ -18,6 +19,7 @@ const initialState = {
 } satisfies SidebarState;
 
 export default function Sidebar() {
+  const id = useReferenceElementId(['confirming', "updating-origin"], 'left');
   const isRoot = useIsRoot();
 
   const store = useSelectionState()
@@ -56,7 +58,7 @@ export default function Sidebar() {
     <CalciteShellPanel slot="panel-end" collapsed={isRoot} style={{
       '--calcite-shell-panel-width': '30vw'
     }}>
-      <CalcitePanel>
+      <CalcitePanel id={id}>
         <ModelOrigin state={blockState.modelOrigin.state} dispatch={dispatch} />
         <SelectionInfo
           state={blockState.selection.state}

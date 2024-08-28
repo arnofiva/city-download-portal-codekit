@@ -6,6 +6,7 @@ import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
 import useInstance from "~/hooks/useInstance";
 import { CreateTool, ToolEvent } from "./create-tool";
 import { PointSymbol3D } from "@arcgis/core/symbols";
+import { useAccessorValue } from "~/hooks/reactive";
 
 interface PointToolProps {
   onStart?: (point: Point) => void;
@@ -13,7 +14,7 @@ interface PointToolProps {
   onComplete?: (point: Point) => void;
   onCancel?: (point: Point) => void;
   createSymbol?: PointSymbol3D;
-  children: ({ start }: { start: () => void, cancel: () => void }) => ReactNode;
+  children: ({ start }: { start: () => void, cancel: () => void, state: CreatePointToolManager['state'] }) => ReactNode;
 }
 
 export default function CreatePointTool({
@@ -37,7 +38,7 @@ export default function CreatePointTool({
         case 'start': return onStart?.(event.graphic.geometry as Point)
         case 'active': return onActive?.(event.graphic.geometry as Point)
         case 'complete': return onComplete?.(event.graphic.geometry as Point)
-        case 'cancel': return onCancel?.(event.graphic.geometry as Point)
+        case 'cancel': return onCancel?.(event.graphic?.geometry as Point)
       }
     }).remove
   }, [onActive, onCancel, onComplete, onStart, t])
@@ -46,9 +47,12 @@ export default function CreatePointTool({
     t.createSymbol = createSymbol
   }, [createSymbol, t])
 
+  const state = useAccessorValue(() => t.state) ?? 'disabled';
+
   return children({
     start: () => t.start(),
     cancel: () => t.cancel(),
+    state
   });
 }
 
@@ -80,7 +84,7 @@ class CreatePointToolManager extends CreateTool {
   }
 
   start = (options?: __esri.SketchViewModelCreateCreateOptions) => {
-    if (this.manager?.state !== 'disabled' && this.manager!.activeToolId == null) {
+    if (this.state === 'ready') {
       this.manager!.pointSymbol = this.createSymbol!;
       this.manager!.activeToolId = this.id;
       this.manager!.create("point", options)
@@ -88,7 +92,14 @@ class CreatePointToolManager extends CreateTool {
   }
 
   cancel = () => {
-    if (this.manager?.activeToolId === this.id) {
+    if (this.state === 'active') {
+      if (this.manager?.state === 'ready') {
+        this.manager!.activeToolId = null!;
+        this.emit(
+          "cancel",
+          { tool: "point", state: 'cancel', graphic: this.manager?.createGraphic, toolEventInfo: null!, type: 'create' }
+        )
+      }
       this.manager!.pointSymbol = null!;
       this.manager!.cancel()
     }

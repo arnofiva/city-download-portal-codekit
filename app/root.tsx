@@ -25,6 +25,8 @@ import SCENES from "~/data/scenes";
 import { LinksFunction } from "@remix-run/node";
 import RootShell from "./components/root-shell";
 import { Toaster } from "./components/toast";
+import { keepPreviousData, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import useInstance from "./hooks/useInstance";
 
 const StoreProvider = lazy(() => import('./data/selection-store'))
 const WalkthroughStoreProvider = lazy(() => import('./components/selection/walk-through-context'))
@@ -124,6 +126,14 @@ export function Layout({ children }: PropsWithChildren<LayoutProps>) {
     defineCustomElements(window);
   }, []);
 
+  const queryClient = useInstance(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        placeholderData: keepPreviousData
+      }
+    }
+  }));
+
   return (
     <html lang="en">
       <head>
@@ -134,18 +144,20 @@ export function Layout({ children }: PropsWithChildren<LayoutProps>) {
       </head>
       <body>
         <Suspense fallback={<CalciteScrim loading />}>
-          <StoreProvider key={params.scene}>
-            <WalkthroughStoreProvider>
-              <RootShell>
-                <SceneListModalProvider>
-                  <Toaster>
-                    {children}
-                  </Toaster>
-                  <SceneListModal />
-                </SceneListModalProvider>
-              </RootShell>
-            </WalkthroughStoreProvider>
-          </StoreProvider>
+          <QueryClientProvider client={queryClient}>
+            <StoreProvider key={params.scene}>
+              <WalkthroughStoreProvider>
+                <RootShell>
+                  <SceneListModalProvider>
+                    <Toaster>
+                      {children}
+                    </Toaster>
+                    <SceneListModal />
+                  </SceneListModalProvider>
+                </RootShell>
+              </WalkthroughStoreProvider>
+            </StoreProvider>
+          </QueryClientProvider>
         </Suspense>
         <ScrollRestoration />
         <Scripts />

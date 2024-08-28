@@ -38,7 +38,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
 
   const deferredSelection = useDeferredValue(selection);
 
-  const isLoadingWithoutFile = downloadQuery.data == null && downloadQuery.status === 'loading';
+  const isLoadingWithoutFile = downloadQuery.data == null && downloadQuery.isFetching;
   const canDownload = downloadQuery.data != null && downloadQuery.status === 'success' && editingState === 'idle'
 
   const fileSize = downloadQuery.data?.size;
@@ -46,7 +46,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
   let fileSizeString = 'unknown'
   if (deferredSelection == null) fileSizeString = 'no selection';
   if (fileSize != null) fileSizeString = `${(fileSize * 1e-6).toFixed(2)} mb`;
-  if (downloadQuery.status === 'loading' && fileSize == null) fileSizeString = 'loading';
+  if (downloadQuery.isFetching && fileSize == null) fileSizeString = 'loading';
 
   const ref = useRef<HTMLCalciteBlockElement>(null);
   useEffect(() => {
@@ -169,3 +169,4 @@ function downloadFile(name: string, blob: Blob) {
   link.href = window.URL.createObjectURL(blob);
   link.click();
 }
+

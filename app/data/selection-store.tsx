@@ -4,9 +4,8 @@ import {
 } from "@arcgis/core/core/accessorSupport/decorators";
 import Accessor from "@arcgis/core/core/Accessor";
 import { Point, Polygon } from "@arcgis/core/geometry";
-import { PropsWithChildren, createContext, useContext, useEffect, useRef } from "react";
+import { PropsWithChildren, createContext, useContext } from "react";
 import useInstance from "~/hooks/useInstance";
-import { useAccessorValue } from "~/hooks/reactive";
 import Graphic from "@arcgis/core/Graphic";
 
 @subclass()
@@ -113,17 +112,6 @@ export function useSelectionState() {
   return useContext(SelectionContext);
 }
 
-export function useSelectionStateSelector<T>(get: (store: SelectionStore) => T, options?: __esri.ReactiveWatchOptions) {
-  const store = useSelectionState()
-
-  const currentGetter = useRef(get);
-  useEffect(() => {
-    currentGetter.current = get;
-  });
-
-  return useAccessorValue(() => currentGetter.current(store), options);
-}
-
 function alignPolygon(next: Polygon, previous: Polygon) {
   const [
     noo,
@@ -152,7 +140,7 @@ function alignPolygon(next: Polygon, previous: Polygon) {
     tt = ntt;
   } else if (nto[0] !== pto[0] || nto[1] !== pto[1]) {
     tt = [nto[0], ptt[1]]
-    oo = [poo[1], nto[1]]
+    oo = [poo[0], nto[1]]
   } else {
     oo = poo;
     tt = ptt;

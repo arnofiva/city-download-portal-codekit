@@ -5,16 +5,18 @@ import { forwardRef, ReactNode, useEffect } from "react";
 import useInstance from "~/hooks/useInstance";
 import Graphic from "@arcgis/core/Graphic";
 import useProvideRef from "~/hooks/useProvideRef";
+import { useAccessorValue } from "~/hooks/reactive";
 
 interface ReshapeToolProps {
   onStart?: (graphics: Graphic[]) => void;
-  onActive?: (graphics: Graphic[]) => void;
+  onActive?: (graphics: Graphic[], event: __esri.SketchViewModelUpdateEvent) => void;
   onComplete?: (graphics: Graphic[]) => void;
   onCancel?: (graphics: Graphic[]) => void;
   children: ({ start }: {
     start: (graphics: Graphic[]) => void
     complete: () => void
     cancel: () => void
+    state: ReshapeToolManager['state']
   }) => ReactNode;
 }
 
@@ -33,22 +35,29 @@ export const ReshapeTool = forwardRef<ReshapeToolManager, ReshapeToolProps>(func
   }, [sketch, manager]);
 
   useEffect(() => {
-    return manager.on(["start", "active", "complete", "cancel"], (event) => {
+    const handle = manager.on(["start", "active", "complete", "cancel"], (event) => {
       switch (event.state) {
         case 'start': return onStart?.(event.graphics)
-        case 'active': return onActive?.(event.graphics)
+        case 'active': return onActive?.(event.graphics, event)
         case 'complete': return onComplete?.(event.graphics)
         case 'cancel': return onCancel?.(event.graphics)
       }
-    }).remove
+    })
+
+    return () => {
+      handle.remove()
+    }
   }, [onActive, onCancel, onComplete, onStart, manager])
 
   useProvideRef(manager, ref);
 
+  const state = useAccessorValue(() => manager.state) ?? 'disabled';
+
   return children({
     start: (graphics: Graphic[]) => manager.start(graphics),
     complete: () => manager.complete(),
-    cancel: () => manager.cancel()
+    cancel: () => manager.cancel(),
+    state
   });
 })
 
@@ -57,7 +66,7 @@ class ReshapeToolManager extends UpdateTool {
   protected readonly type = 'reshape';
 
   start = (graphics: Graphic[]) => {
-    if (this.manager?.activeToolId == null) {
+    if (this.state === 'ready') {
       this.manager!.defaultUpdateOptions = {
         enableRotation: false,
         enableScaling: false,
@@ -77,13 +86,13 @@ class ReshapeToolManager extends UpdateTool {
   }
 
   complete = () => {
-    if (this.manager?.activeToolId === this.id) {
+    if (this.state === 'active') {
       this.manager!.complete()
     }
   }
 
   cancel = () => {
-    if (this.manager?.activeToolId === this.id) {
+    if (this.state === 'active') {
       this.manager!.cancel()
     }
   }

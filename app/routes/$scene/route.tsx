@@ -11,8 +11,10 @@ import PortalItem from "@arcgis/core/portal/PortalItem";
 import SelectionGraphic from "~/components/selection/selection-graphic";
 import { SketchLayer } from "~/components/arcgis/sketch/sketch-layer";
 import { CreateSelectionTool } from "~/components/selection/selection-tools/create-selection-tool";
+import WalkthroughPopover from "~/components/selection/walk-through-popover";
+import { RootShellPortal } from "~/components/root-shell";
 
-const View = lazy(() => import('~/components/arcgis/views/scene-view/scene-view'));
+const SceneView = lazy(() => import('~/components/arcgis/views/scene-view/scene-view'));
 const Scene = lazy(() => import('~/components/arcgis/maps/web-scene/scene'));
 const Search = lazy(() => import('~/components/arcgis/search/search'));
 
@@ -73,8 +75,8 @@ export default function SceneRoute() {
     <Suspense fallback={<CalciteScrim />}>
       <Scene portalItem={instance}>
         <Header portalItem={instance} />
-        <View>
-          <SketchLayer elevationMode="on-the-ground">
+        <SceneView>
+          <SketchLayer disableZ elevationMode="on-the-ground">
             <Search />
             <Sidebar />
             <ViewUI position="bottom-left">
@@ -83,8 +85,11 @@ export default function SceneRoute() {
                 <CreateSelectionTool />
               </div>
             </ViewUI>
+            <RootShellPortal>
+              <WalkthroughPopover />
+            </RootShellPortal>
           </SketchLayer>
-        </View>
+        </SceneView>
       </Scene>
     </Suspense>
   );

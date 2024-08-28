@@ -43,8 +43,7 @@ export async function createMesh({
   scene: WebScene, extent: Extent, features: Mesh[], signal: AbortSignal, origin: Point
 }) {
   const ground = scene.ground;
-  const sr = extent.spatialReference;
-
+  const sr = features.at(0)?.spatialReference ?? extent.spatialReference;
   const projectedExtent = projection.project(extent, sr) as Extent;
   const elevation = await extractElevation(ground, projectedExtent);
 

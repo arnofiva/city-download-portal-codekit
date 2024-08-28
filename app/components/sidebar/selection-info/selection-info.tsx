@@ -14,21 +14,21 @@ import DimensionsLayer from "../../arcgis/dimensions-layer/dimensions-layer";
 import LengthDimension from "../../arcgis/dimensions-layer/length-dimension";
 import { BlockAction, BlockState } from "../sidebar-state";
 import { useSelectionElevationInfo } from "../../../hooks/queries/elevation-query";
-import { useSelectionStateSelector } from "~/data/selection-store";
-import { useReferenceElementId } from "../../selection/walk-through-context";
+import { useSelectionState } from "~/data/selection-store";
 import * as intl from "@arcgis/core/intl";
-import { geodesicArea, planarArea } from "@arcgis/core/geometry/geometryEngine";
+import * as geAsync from "@arcgis/core/geometry/geometryEngineAsync";
 import { useSelectedFeaturesFromLayerViews } from "../../../hooks/queries/feature-query";
 import { UpdateSelectionTool } from "../../selection/selection-tools/update-selectiont-tool";
+import { useQuery } from "@tanstack/react-query";
+import { useAccessorValue } from "~/hooks/reactive";
 
 interface MeasurementsProps {
   state: BlockState['state'];
   dispatch: Dispatch<BlockAction[]>;
 }
 export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
-  const id = useReferenceElementId('confirming', 'left');
-
-  const selection = useSelectionStateSelector((store) => store.selection);
+  const store = useSelectionState();
+  const selection = useAccessorValue(() => store.selection);
 
   const deferredSelection = useDeferredValue(selection);
 
@@ -36,14 +36,23 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
   let northToSouthLength = null;
   let eastToWestLength = null;
 
-  if (deferredSelection) {
-    const calculateArea =
-      deferredSelection.spatialReference.isWGS84 || deferredSelection.spatialReference.isWebMercator
-        ? geodesicArea
-        : planarArea;
+  const areaQuery = useQuery({
+    queryKey: ['selection-info', 'area', deferredSelection?.toJSON()],
+    queryFn: async () => {
+      const calculateArea = deferredSelection!.spatialReference.isWGS84 || deferredSelection!.spatialReference.isWebMercator
+        ? geAsync.geodesicArea
+        : geAsync.planarArea;
 
+      const area = await calculateArea(deferredSelection!);
+
+      return Math.abs(area);
+    },
+    enabled: deferredSelection != null
+  });
+
+  if (areaQuery.data && deferredSelection) {
     area = intl.formatNumber(
-      Math.abs(calculateArea(deferredSelection)),
+      areaQuery.data,
       // intl does not support area units see list of supported units:
       //  https://tc39.es/proposal-unified-intl-numberformat/section6/locales-currencies-tz_proposed_out.html#table-sanctioned-simple-unit-identifiers
       { maximumFractionDigits: 2, style: 'unit', unit: 'meter', unitDisplay: 'short' }
@@ -75,7 +84,6 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
     <>
       <CalciteBlock
         ref={ref}
-        id={id}
         heading="Selection"
         collapsible
         open={state === 'open'}
@@ -130,8 +138,10 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
 }
 
 function Dimensions() {
-  const positionOrigin = useSelectionStateSelector((store) => store.selectionOrigin);
-  const terminal = useSelectionStateSelector((store) => store.selectionTerminal);
+  const store = useSelectionState();
+  const positionOrigin = useAccessorValue(() => store.selectionOrigin);
+  const terminal = useAccessorValue(() => store.selectionTerminal);
+
   const elevationQuery = useSelectionElevationInfo()
 
   if (positionOrigin == null || terminal == null || elevationQuery.data == null) return null;

@@ -9,13 +9,13 @@ import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import { useAccessorValue } from "../../hooks/reactive";
 import { Dispatch, useDeferredValue, useRef } from "react";
 import { BlockAction, BlockState } from "./sidebar-state";
-import { useSelectionStateSelector } from "~/data/selection-store";
+import { useSelectionState } from "~/data/selection-store";
 import { useOriginElevationInfo } from "../../hooks/queries/elevation-query";
 import * as intl from "@arcgis/core/intl.js";
 import * as coordinateFormatter from "@arcgis/core/geometry/coordinateFormatter.js";
-import { useQuery } from "~/hooks/useQuery";
 import { UpdateOriginTool } from "../selection/selection-tools/update-origin-tool";
 import { SketchLayer } from "../arcgis/sketch/sketch-layer";
+import { useQuery } from '@tanstack/react-query';
 
 interface ModelOriginProps {
   state: BlockState['state'];
@@ -29,15 +29,15 @@ export default function ModelOrigin({
   const sr = useAccessorValue(() => (view.spatialReference as any)?.latestWkid ?? view.spatialReference?.wkid);
 
   const query = useQuery({
-    key: ["spatial-reference", { wkid: sr }],
-    callback: async ({ signal }) => {
+    queryKey: ["spatial-reference", { wkid: sr }],
+    queryFn: async ({ signal }) => {
       const data = await fetch(`https://spatialreference.org/ref/epsg/${sr!}/projjson.json`, {
         cache: 'force-cache',
         signal,
       })
         .then(response => response.json())
 
-      return data.name as string;
+      return `${data.name} (${sr})` as string;
     },
     enabled: sr != null,
   })
@@ -47,7 +47,8 @@ export default function ModelOrigin({
   const ele = useOriginElevationInfo();
   const elevationPoint = ele.data;
 
-  const positionOrigin = useSelectionStateSelector((store) => store.modelOrigin ?? store.selectionOrigin);
+  const store = useSelectionState();
+  const positionOrigin = useAccessorValue(() => store.modelOrigin ?? store.selectionOrigin);
   const adjustedOrigin = elevationPoint?.clone() ?? positionOrigin;
   if (positionOrigin) {
     adjustedOrigin!.x = positionOrigin.x;

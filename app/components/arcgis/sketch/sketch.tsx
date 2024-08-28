@@ -1,13 +1,13 @@
 import useInstance from "~/hooks/useInstance";
 import { useGraphicsLayer } from "../graphics-layer";
 import { useSceneView } from "../views/scene-view/scene-view-context";
-import { ForwardedRef, PropsWithChildren, createContext, useContext, useEffect } from "react";
+import { ForwardedRef, PropsWithChildren, createContext, memo, useContext, useEffect } from "react";
 import useProvideRef from "~/hooks/useProvideRef";
 import { SketchToolManager } from "./tools/create-tool";
 
 interface SketchProps {
   ref?: ForwardedRef<SketchToolManager>;
-  hasZ?: boolean;
+  disableZ?: boolean;
 }
 
 const SketchContext = createContext<SketchToolManager>(null!);
@@ -20,32 +20,34 @@ interface SketchTooltipProps {
   helpMessageIcon: string;
   helpMessage: string;
 }
-export function SketchTooltip({
-  helpMessage,
-  helpMessageIcon,
-  inputEnabled = false
-}: Partial<SketchTooltipProps>) {
-  const sketch = useSketch();
+export const SketchTooltip = memo(
+  function SketchTooltip({
+    helpMessage,
+    helpMessageIcon,
+    inputEnabled = false
+  }: Partial<SketchTooltipProps>) {
+    const sketch = useSketch();
 
-  useEffect(() => {
-    sketch.tooltipOptions.enabled = true;
-    sketch.tooltipOptions.inputEnabled = inputEnabled;
+    useEffect(() => {
+      sketch.tooltipOptions.enabled = true;
+      sketch.tooltipOptions.inputEnabled = inputEnabled;
 
-    if (helpMessage) {
-      sketch.tooltipOptions.visibleElements.helpMessage = true;
-      sketch.tooltipOptions.helpMessage = helpMessage;
-      sketch.tooltipOptions.helpMessageIcon = helpMessageIcon!;
-    }
+      if (helpMessage) {
+        sketch.tooltipOptions.visibleElements.helpMessage = true;
+        sketch.tooltipOptions.helpMessage = helpMessage;
+        sketch.tooltipOptions.helpMessageIcon = helpMessageIcon!;
+      }
 
-    return () => {
-      sketch.tooltipOptions.enabled = false;
-    }
-  }, [helpMessage, helpMessageIcon, inputEnabled, sketch.tooltipOptions]);
+      return () => {
+        sketch.tooltipOptions.enabled = false;
+      }
+    }, [helpMessage, helpMessageIcon, inputEnabled, sketch.tooltipOptions]);
 
-  return null;
-}
+    return null;
+  }
+)
 
-export default function Sketch({ ref, children, hasZ: disableZ }: PropsWithChildren<SketchProps>) {
+export default function Sketch({ ref, children, disableZ }: PropsWithChildren<SketchProps>) {
   const view = useSceneView();
   const layer = useGraphicsLayer();
 
@@ -58,12 +60,12 @@ export default function Sketch({ ref, children, hasZ: disableZ }: PropsWithChild
     the second instance should mostly be ignored and eventually destroyed, but if the user interacts with a graphic on the layer before that happens, both svm's will be attempting to control it leading to undefined behavior
     */
     defaultCreateOptions: {
-      hasZ: false
+      hasZ: !disableZ
     }
   }));
 
   useEffect(() => {
-    sketch.defaultCreateOptions.hasZ = disableZ ?? false
+    sketch.defaultCreateOptions.hasZ = !disableZ ?? true
   }, [disableZ, sketch.defaultCreateOptions])
 
   useProvideRef(sketch, ref);

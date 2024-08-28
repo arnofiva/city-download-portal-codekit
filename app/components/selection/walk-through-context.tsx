@@ -26,14 +26,9 @@ const StatePositionMap = {
   5: 'done',
 } as const;
 
-type WalkthroughPosition = Extract<keyof typeof StatePositionMap, number>;
-
-function isWalkthroughPosition(n: number): n is WalkthroughPosition {
-  return n >= 0 && n <= 5;
-}
-
 type ElementReference = { id: string, placement: HTMLCalcitePopoverElement['placement'] };
 
+const shouldRatchet = false;
 @subclass()
 class WalkthroughStore extends Accessor {
   #referenceElements = new Map<WalkthroughState, ElementReference>();
@@ -47,39 +42,8 @@ class WalkthroughStore extends Accessor {
   }
 
   @property()
-  private _position: Extract<keyof typeof StatePositionMap, number> = 0;
-
-  @property()
   get referenceElement() {
     return this.#referenceElements.get(this.state);
-  }
-
-  constructor() {
-    super();
-    if (typeof window !== 'undefined') {
-      let initialPosition: WalkthroughPosition = 0;
-
-      // @ts-expect-error '+null === 0'
-      const storedPosition = +null // +localStorage.getItem('WALKTHROUGH');
-      if (isWalkthroughPosition(storedPosition)) {
-        initialPosition = storedPosition;
-      }
-
-      this._position = initialPosition;
-    }
-  }
-
-  advance(to: WalkthroughState = this.state) {
-    const currentPosition = this._position;
-    const requestedPosition = StatePositionMap[to];
-
-    if (requestedPosition > currentPosition) {
-      this._position = requestedPosition;
-    }
-
-    if (requestedPosition === 5) {
-      // localStorage.setItem('WALKTHROUGH', 'TRUE');
-    }
   }
 
   setAsReferenceElement(state: WalkthroughState, reference: ElementReference) {
@@ -94,7 +58,15 @@ export default function WalkthroughStoreProvider({ children }: PropsWithChildren
   const walkthrough = useInstance(() => new WalkthroughStore());
 
   useEffectWhen(() => store.walkthroughState, (state) => {
-    walkthrough.state = state;
+    if (shouldRatchet) {
+      const nextPosition = StatePositionMap[state];
+      const prevPosition = StatePositionMap[walkthrough.state];
+
+      if (nextPosition > prevPosition) walkthrough.state = state;
+    } else {
+      walkthrough.state = state
+    }
+
   })
 
   return (

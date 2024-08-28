@@ -9,8 +9,7 @@ import { removeSceneLayerClones } from "~/components/selection/scene-filter-high
 import Highlights from "~/components/selection/highlights";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
 import { useSceneLayerViews } from "~/hooks/useSceneLayers";
-import { useQuery } from "~/hooks/useQuery";
-
+import { useQuery } from '@tanstack/react-query';
 
 export default function Search() {
   const view = useSceneView();
@@ -65,7 +64,7 @@ export default function Search() {
 
   const result = useAccessorValue(() => widget.resultGraphic?.geometry);
   const query = useSearchHighlight(result);
-  const highlights = query.status === 'success' ? query.data : undefined
+  const highlights = query.isSuccess ? query.data : undefined
 
   return <Highlights data={highlights} />;
 }
@@ -74,8 +73,8 @@ export default function Search() {
 export function useSearchHighlight(searchGeometry?: Geometry) {
   const sceneLayerViews = useSceneLayerViews();
   const query = useQuery({
-    key: ['search', sceneLayerViews?.map(lv => lv.layer.id), searchGeometry?.toJSON()],
-    callback: async ({ signal }) => {
+    queryKey: ['search', sceneLayerViews?.map(lv => lv.layer.id), searchGeometry?.toJSON()],
+    queryFn: async ({ signal }) => {
       const featureMap = new Map<SceneLayerView, __esri.FeatureSet['features']>();
       const promises: Promise<unknown>[] = [];
       for (const layerView of sceneLayerViews!) {

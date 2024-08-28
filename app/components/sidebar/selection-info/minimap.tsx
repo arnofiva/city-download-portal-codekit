@@ -1,4 +1,4 @@
-import { Suspense, lazy, memo, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, memo, useDeferredValue, useEffect, useRef, useState } from "react";
 import { CalciteScrim } from "@esri/calcite-components-react";
 import GraphicsLayer from "../../arcgis/graphics-layer";
 import Graphic from "../../arcgis/graphic";
@@ -9,13 +9,15 @@ import {
 } from "@arcgis/core/symbols";
 import { useSceneView } from "../../arcgis/views/scene-view/scene-view-context";
 import { useAccessorValue } from "~/hooks/reactive";
-import { useSelectionStateSelector } from "~/data/selection-store";
+import { useSelectionState } from "~/data/selection-store";
 import CoreMapView from "@arcgis/core/views/MapView";
 import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
-import { Geometry, Point, Polygon, Polyline } from "@arcgis/core/geometry";
+import * as geometryEngineAsync from "@arcgis/core/geometry/geometryEngineAsync";
+import { Point, Polygon, Polyline } from "@arcgis/core/geometry";
 import useInstance from "~/hooks/useInstance";
 import { SymbologyColors } from "~/symbology";
 import { useSelectionFootprints } from "../../../hooks/queries/feature-query";
+import { useQuery } from "@tanstack/react-query";
 
 const Map = lazy(() => import('~/components/arcgis/maps/map/map'));
 const MapView = lazy(() => import('~/components/arcgis/views/map-view/map-view'));
@@ -35,7 +37,7 @@ const FootprintSymbol = new SimpleFillSymbol({
 })
 
 const StaleFootprintSymbol = new SimpleFillSymbol({
-  color: SymbologyColors.staleSelection(),
+  color: SymbologyColors.staleSelection(0.8),
   outline: {
     width: 0,
   }
@@ -95,12 +97,12 @@ function SelectionGraphic({ origin, selection }: SelectionGraphicProps) {
         symbol={PolygonSymbol}
       />
       <Graphic
-        index={1}
+        index={2}
         geometry={ooot}
         symbol={LineSymbol}
       />
       <Graphic
-        index={1}
+        index={2}
         geometry={ooto}
         symbol={LineSymbol}
       />
@@ -121,7 +123,7 @@ function Footprint({ selection }: FootprintGraphicProps) {
     <Graphic
       index={0}
       geometry={footprints}
-      symbol={footprintQuery.status === 'loading' ? StaleFootprintSymbol : FootprintSymbol}
+      symbol={footprintQuery.isFetching ? StaleFootprintSymbol : FootprintSymbol}
     />
   )
 }
@@ -160,15 +162,16 @@ function InternalMinimap() {
   }))
 
   const sceneView = useSceneView();
-  const selection = useSelectionStateSelector((state) => state.selection);
-  const origin = useSelectionStateSelector((state) => state.modelOrigin ?? state.selectionOrigin);
+
+  const store = useSelectionState();
+  const origin = useAccessorValue(() => store.modelOrigin ?? store.selectionOrigin);
+  const selection = useAccessorValue(() => store.selection);
 
   const viewExtent = useAccessorValue(() => sceneView.extent);
   const sr = useAccessorValue(() => sceneView.spatialReference?.wkid);
 
-  const deferredOrigin = useDebouncedValue(origin, 200);
-  const deferredSelection = useDebouncedValue(selection, 200);
-
+  const deferredSelection = useDeferredValue(selection);
+  const { selection: debouncedSelection, origin: debouncedOrigin } = useDebouncedValue({ selection, origin }, 200);
 
   const mapRef = useRef<CoreMapView>(null);
 
@@ -178,23 +181,45 @@ function InternalMinimap() {
     }
   })
 
+  const targetQuery = useQuery({
+    queryKey: ['minimap', 'target', debouncedSelection?.toJSON(), debouncedOrigin?.toJSON()],
+    queryFn: async () => {
+      const selection = debouncedSelection!;
+      const origin = debouncedOrigin!;
+
+      const xmax = origin.x > selection.extent.xmax ? origin.x : selection.extent.xmax;
+      const xmin = selection.extent.xmin > origin.x ? origin.x : selection.extent.xmin;
+      const ymax = origin.y > selection.extent.ymax ? origin.y : selection.extent.ymax;
+      const ymin = selection.extent.ymin > origin.y ? origin.y : selection.extent.ymin;
+
+      const polygon = selection.clone();
+      polygon.rings = [
+        [
+          [xmin, ymin],
+          [xmin, ymax],
+          [xmax, ymax],
+          [xmax, ymin],
+          [xmin, ymax],
+        ]
+      ]
+
+      const area = Math.abs(geometryEngine.planarArea(polygon));
+      const buffered = await geometryEngineAsync.buffer(polygon!, Math.sqrt(area) * 0.5) as Polygon;
+
+      return buffered
+    },
+    enabled: viewExtent != null && debouncedSelection != null && debouncedOrigin != null,
+  })
+
   useEffect(() => {
-    if (mapRef.current == null || !isOpen || !ready) return;
+    if (!isOpen || !ready) return;
 
     const controller = new AbortController();
-    let target: Geometry | undefined = viewExtent;
-
-    if (deferredSelection != null) {
-      const area = Math.abs(geometryEngine.planarArea(deferredSelection));
-      const buffered = geometryEngine.buffer(deferredSelection, Math.sqrt(area) * 0.5) as Polygon;
-      if (buffered) target = buffered
+    if (targetQuery.data) {
+      mapRef.current?.goTo({ target: targetQuery.data }, { signal: controller.signal, animate: true }).catch()
+      return () => controller.abort()
     }
-
-    if (target)
-      mapRef.current.goTo({ target }, { signal: controller.signal, animate: true }).catch()
-
-    return () => controller.abort()
-  }, [viewExtent, deferredSelection, isOpen, ready]);
+  }, [isOpen, ready, targetQuery.data])
 
   const disableMapInteractions = "[&_.esri-view-surface]:pointer-events-none"
   return (
@@ -210,20 +235,21 @@ function InternalMinimap() {
         <Suspense fallback={<CalciteScrim loading />}>
           <Map>
             <GraphicsLayer>
-              {deferredOrigin != null ? <Graphic
+              {debouncedOrigin != null ? <Graphic
                 index={1}
-                geometry={deferredOrigin}
+                geometry={debouncedOrigin}
                 symbol={OriginSymbol}
               />
                 : null}
               {
-                deferredOrigin != null && deferredSelection != null ?
-                  (
-                    <>
-                      <SelectionGraphic origin={deferredOrigin} selection={deferredSelection} />
-                      <Footprint selection={deferredSelection} />
-                    </>
-                  ) : null
+                debouncedOrigin != null && debouncedSelection != null
+                  ? <SelectionGraphic origin={debouncedOrigin} selection={debouncedSelection} />
+                  : null
+              }
+              {
+                deferredSelection != null
+                  ? <Footprint selection={deferredSelection} />
+                  : null
               }
             </GraphicsLayer>
             <MapView ref={mapRef} spatialReference={`${sr}`} />

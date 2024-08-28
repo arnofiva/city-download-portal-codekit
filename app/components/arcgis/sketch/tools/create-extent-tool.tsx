@@ -6,13 +6,14 @@ import { CreateTool, ToolEvent } from "./create-tool";
 import { ReactNode, useEffect } from "react";
 import useInstance from "~/hooks/useInstance";
 import { useSketch } from "../sketch";
+import { useAccessorValue } from "~/hooks/reactive";
 
 interface ExtentToolProps {
   onStart?: (point?: Polygon) => void;
   onActive?: (point?: Polygon) => void;
   onComplete?: (point: Polygon) => void;
   onCancel?: (point?: Polygon) => void;
-  children: ({ start }: { start: () => void; cancel: () => void }) => ReactNode;
+  children: ({ start }: { start: () => void; cancel: () => void, state: CreateExtentToolManager['state'] }) => ReactNode;
 }
 
 export default function CreateExtentTool({
@@ -40,11 +41,13 @@ export default function CreateExtentTool({
     }).remove
   }, [onActive, onCancel, onComplete, onStart, manager])
 
+  const state = useAccessorValue(() => manager.state) ?? 'disabled'
 
   return (
     children({
       start: () => manager.start(),
       cancel: () => manager.cancel(),
+      state
     })
   );
 }
@@ -167,14 +170,14 @@ class CreateExtentToolManager extends CreateTool {
   }
 
   start = (options?: __esri.SketchViewModelCreateCreateOptions) => {
-    if (this.manager?.state !== 'disabled' && this.manager!.activeToolId == null) {
+    if (this.state === 'ready') {
       this.manager!.activeToolId = this.id;
       this.manager!.create("point", options)
     }
   }
 
   cancel = () => {
-    if (this.manager?.activeToolId === this.id) {
+    if (this.state === 'active') {
       this.manager!.cancel()
     }
   }

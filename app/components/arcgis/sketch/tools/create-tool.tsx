@@ -23,14 +23,15 @@ export class CreateTool extends Accessor implements Evented {
   @property()
   manager?: SketchToolManager;
 
-
   @property()
   // eslint-disable-next-line @typescript-eslint/ban-types
   createSymbol?: Symbol;
 
   @property()
   get state() {
-    return this.manager?.state ?? "disabled"
+    if (this.manager?.state == null || this.manager?.state === 'disabled') return 'disabled';
+    if (this.manager.activeToolId === this.id) return 'active';
+    return this.manager == null ? 'disabled' : 'ready';
   }
 
   initialize() {

@@ -3,7 +3,7 @@ import { useAccessorValue } from "~/hooks/reactive";
 import { useScene } from "../arcgis/maps/web-scene/scene-context";
 import Layer from "@arcgis/core/layers/Layer";
 import SceneLayer from "@arcgis/core/layers/SceneLayer";
-import { useSelectionStateSelector } from "~/data/selection-store";
+import { useSelectionState } from "~/data/selection-store";
 import { SymbologyColors } from "~/symbology";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer.js";
@@ -27,7 +27,8 @@ const SceneLayerHighlight = memo(
   function SceneLayerHighlight({ layer }: SceneLayerProps) {
     const view = useSceneView()
     const scene = useScene()
-    const polygon = useSelectionStateSelector((store) => store.selection);
+    const store = useSelectionState();
+    const selection = useAccessorValue(() => store.selection);
 
     const id = useAccessorValue(() => layer.id);
     const cloneTitle = SCENE_LAYER_CLONE_PREFIX + id;
@@ -55,14 +56,14 @@ const SceneLayerHighlight = memo(
 
     useEffect(() => {
       if (mainLayerView && cloneLayerView) {
-        if (polygon != null) {
+        if (selection != null) {
           mainLayerView.filter = new FeatureFilter({
-            geometry: polygon,
+            geometry: selection,
             spatialRelationship: 'disjoint'
           })
 
           cloneLayerView.filter = new FeatureFilter({
-            geometry: polygon,
+            geometry: selection,
           });
 
           setTimeout(() => {
@@ -75,7 +76,7 @@ const SceneLayerHighlight = memo(
           cloneLayerView.filter = null!
         }
       }
-    }, [cloneLayerView, mainLayerView, polygon])
+    }, [cloneLayerView, mainLayerView, selection])
 
 
     useEffect(() => {

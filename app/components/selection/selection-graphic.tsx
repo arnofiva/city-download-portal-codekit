@@ -2,12 +2,10 @@ import { memo, useMemo } from "react";
 import { Polygon } from "@arcgis/core/geometry";
 import Graphic from "~/components/arcgis/graphic";
 import { ExtrudeSymbol3DLayer, FillSymbol3DLayer, PolygonSymbol3D } from "@arcgis/core/symbols";
-import WalkthroughPopover from "~/components/selection/walk-through-popover";
-import { RootShellPortal } from "~/components/root-shell";
 import FeatureFilterHighlights from "./scene-filter-highlights";
 import GraphicsLayer from "../arcgis/graphics-layer";
 import { OriginSymbol, SymbologyColors } from "~/symbology";
-import { useSelectionState, useSelectionStateSelector } from "~/data/selection-store";
+import { useSelectionState } from "~/data/selection-store";
 import { useOriginElevationInfo, useSelectionElevationInfo } from "../../hooks/queries/elevation-query";
 import SolidEdges3D from "@arcgis/core/symbols/edges/SolidEdges3D.js";
 import { useAccessorValue } from "~/hooks/reactive";
@@ -33,9 +31,6 @@ function InternalSelectionGraphic() {
         {isIdle ? <Volume /> : null}
         {!isUpdatingOrigin ? <Origin /> : null}
       </GraphicsLayer>
-      <RootShellPortal>
-        <WalkthroughPopover />
-      </RootShellPortal>
       <FeatureFilterHighlights />
     </>
   )
@@ -57,7 +52,8 @@ function Origin() {
 }
 
 function Volume() {
-  const polygon = useSelectionStateSelector((store) => store.selection);
+  const store = useSelectionState();
+  const selection = useAccessorValue(() => store.selection);
   const elevationQuery = useSelectionElevationInfo()
 
   const zmin = elevationQuery.data?.minElevation ?? 0;
@@ -80,16 +76,16 @@ function Volume() {
   }), [height])
 
   const elevatedPolygon = useMemo(() => {
-    if (polygon == null) return null;
+    if (selection == null) return null;
 
-    const ring = polygon.rings[0]
+    const ring = selection.rings[0]
     const elevatedRing = ring.map(([x, y]) => [x, y, bufferedZmin])
 
     return new Polygon({
       rings: [elevatedRing],
-      spatialReference: polygon.spatialReference
+      spatialReference: selection.spatialReference
     })
-  }, [bufferedZmin, polygon])
+  }, [bufferedZmin, selection])
 
   return (
     elevatedPolygon ? (
@@ -109,23 +105,6 @@ const FootprintSymbol = new PolygonSymbol3D({
     })
   ]
 });
-
-// const OriginSymbol = new LineSymbol3D({
-//   symbolLayers: [
-//     new LineSymbol3DLayer({
-//       size: 3,  // points
-//       material: { color: SymbologyColors.measurements() },
-//       cap: "round",
-//       join: "round",
-
-//       marker: {  // autocasts as new LineStyleMarker3D()
-//         type: "style",
-//         style: "diamond",
-//         placement: "end",
-//         color: "red"  // black line with red arrows
-//       }
-//     })]
-// })
 
 const SelectionGraphic = memo(InternalSelectionGraphic);
 export default SelectionGraphic;

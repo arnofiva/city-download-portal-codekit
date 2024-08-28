@@ -1,21 +1,23 @@
 import { useSceneView } from "~/components/arcgis/views/scene-view/scene-view-context";
-import { useSelectionStateSelector } from "~/data/selection-store";
+import { useSelectionState } from "~/data/selection-store";
 import SceneLayer from "@arcgis/core/layers/SceneLayer";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
-import { useQuery } from "~/hooks/useQuery";
 import { useDeferredValue } from "react";
 import { Polygon } from "@arcgis/core/geometry";
 import * as geometryEngineAsync from "@arcgis/core/geometry/geometryEngineAsync";
 import { useSceneLayerViews } from "../useSceneLayers";
+import { useQuery } from '@tanstack/react-query';
+import { useAccessorValue } from "../reactive";
 
 export function useSelectedFeaturesFromLayerViews(key?: string) {
-  const polygon = useSelectionStateSelector((store) => store.selection);
-  const deferredPolygon = useDeferredValue(polygon)
+  const store = useSelectionState();
+  const selection = useAccessorValue(() => store.selection);
+  const deferredPolygon = useDeferredValue(selection)
   const sceneLayerViews = useSceneLayerViews();
 
   const query = useQuery({
-    key: ['selected-features', 'layerviews', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings, key],
-    callback: async ({ signal }) => {
+    queryKey: ['selected-features', 'layerviews', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings, key],
+    queryFn: async ({ signal }) => {
       const featureMap = new Map<SceneLayerView, __esri.FeatureSet['features']>();
       const promises: Promise<unknown>[] = [];
       for (const layerView of sceneLayerViews!) {
@@ -39,13 +41,13 @@ export function useSelectedFeaturesFromLayerViews(key?: string) {
 
 export function useSelectedFeaturesFromLayers(enabled = false) {
   const sceneLayerViews = useSceneLayerViews();
-
-  const polygon = useSelectionStateSelector((store) => store.selection);
-  const deferredPolygon = useDeferredValue(polygon)
+  const store = useSelectionState();
+  const selection = useAccessorValue(() => store.selection);
+  const deferredPolygon = useDeferredValue(selection)
 
   const query = useQuery({
-    key: ['selected-features', 'layers', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings],
-    callback: async ({ signal }) => {
+    queryKey: ['selected-features', 'layers', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings],
+    queryFn: async ({ signal }) => {
       const featureMap = new Map<SceneLayer, __esri.FeatureSet['features']>();
       const promises: Promise<unknown>[] = [];
       for (const { layer } of sceneLayerViews!) {
@@ -75,8 +77,8 @@ export function useSelectionFootprints(selection: Polygon | null) {
   const deferredPolygon = useDeferredValue(selection)
 
   const query = useQuery({
-    key: ['selecion-footprints', 'layers', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings],
-    callback: async ({ signal }) => {
+    queryKey: ['selecion-footprints', 'layers', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings],
+    queryFn: async ({ signal }) => {
       const sceneLayers = sceneLayerViews!.map(lv => lv.layer);
 
       const footprints: Polygon[] = []

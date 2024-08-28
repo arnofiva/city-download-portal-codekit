@@ -1,5 +1,4 @@
 import { useEffect, memo } from "react";
-import { useSelectedFeaturesFromLayerViews } from "../../hooks/queries/feature-query";
 import Graphic from "@arcgis/core/Graphic";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
 
@@ -11,7 +10,6 @@ function InternalHighlight({ data }: HighlightProps) {
     if (data) {
       const handles: IHandle[] = [];
       for (const [layerview, features] of data) {
-        console.log(layerview, features)
         const handle = layerview.highlight(features);
         handles.push(handle);
       }

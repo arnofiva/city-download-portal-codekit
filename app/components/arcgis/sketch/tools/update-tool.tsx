@@ -19,9 +19,10 @@ export class UpdateTool extends Accessor implements Evented {
 
   @property()
   get state() {
-    return this.manager?.state ?? "disabled"
+    if (this.manager?.state == null || this.manager?.state === 'disabled') return 'disabled';
+    if (this.manager.activeToolId === this.id) return 'active';
+    return this.manager == null ? 'disabled' : 'ready';
   }
-
   initialize() {
     this.addHandles([
       reactiveUtils.watch(() => this.manager, (vm) => {

@@ -8,7 +8,9 @@ const WalkthroughContent = [
   `Navigate to an area of interest and select an area for download. You can use the Search widget in the top left corner to navigate to an address or coordinate.\n\nClick here to start making your selection.`,
   `Click on the map to place the origin point.`,
   `Click on the map to complete drawing`,
-  `Here you can see precise information about your selection. You can adjust it if necessary on the map, otherwise click the button to confirm.`,
+  `In the sidebar you can see precise information about your selection. You can adjust the selection as necessary on the map, and change the models origin point by clicking the "Set model origin" button.
+  
+  If you're happy with your selection you can click confirm.`,
   `Now you can download your selection as a 3D model.`,
   "",
   ""
@@ -96,7 +98,7 @@ export default function WalkthroughPopover() {
         onCalcitePopoverClose={() => {
           if (wasClosedByInteraction.current) {
             setForceClose(true);
-            walkthrough.advance('done');
+            walkthrough.state = 'done';
           }
           wasClosedByInteraction.current = false;
         }}

@@ -1,21 +1,21 @@
 import { Polygon } from "@arcgis/core/geometry";
 import { CalciteButton } from "@esri/calcite-components-react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { SketchTooltip } from "~/components/arcgis/sketch/sketch";
 import { ReshapeTool } from "~/components/arcgis/sketch/tools/reshape-tool";
 import { useSelectionState } from "~/data/selection-store";
-import { useAccessorValue, useWatch } from "~/hooks/reactive";
+import { useWatch } from "~/hooks/reactive";
 
 export function UpdateSelectionTool() {
-  const [isActive, setIsActive] = useState(false);
   const store = useSelectionState();
 
-  const isStoreEditing = useAccessorValue(() => store.editingState !== 'idle');
-
   const toolRef = useRef<any>(null)
-  useWatch(() => store.editingState, (next, previous) => {
-    if (next === 'updating-selection' && previous === 'creating' && store.graphic)
+  useWatch(() => store.editingState, (next,) => {
+    if (next === 'updating-selection' && store.graphic) {
       toolRef.current?.start([store.graphic]);
+    } else {
+      toolRef.current?.complete()
+    }
   })
 
   const previousSelection = useRef<Polygon | null>(null);
@@ -25,44 +25,47 @@ export function UpdateSelectionTool() {
       <ReshapeTool
         ref={toolRef}
         onStart={([graphic]) => {
-          setIsActive(true);
           store.editingState = 'updating-selection';
           previousSelection.current = store.selection;
           store.updateSelectionPolygon(graphic.geometry as Polygon)
         }}
-        onActive={([graphic]) => { store.updateSelectionPolygon(graphic.geometry as Polygon) }}
+        onActive={([graphic], event) => {
+          if (event.toolEventInfo?.type === 'vertex-remove') {
+            store.selection = null
+          }
+          else store.updateSelectionPolygon(graphic.geometry as Polygon)
+        }}
         onComplete={([graphic]) => {
-          setIsActive(false);
-          store.editingState = 'idle';
+          if (store.editingState === 'updating-selection') store.editingState = 'idle';
           store.updateSelectionPolygon(graphic.geometry as Polygon)
         }}
         onCancel={() => {
-          setIsActive(false);
-          store.editingState = 'idle';
+          if (store.editingState === 'updating-selection') store.editingState = 'idle';
           store.selection = previousSelection.current;
         }}
-      >{({ start, complete }) => (
-        <CalciteButton
-          onClick={() => {
-            if (store.graphic) {
-              if (!isActive) start([store.graphic])
-              else complete()
-            }
-          }}
-          disabled={!isActive && isStoreEditing}
-          appearance={isActive ? 'solid' : 'outline-fill'}
-          scale="l"
-          iconStart="check"
-        >
-          {isActive ? "Confirm selection" : "Update selection"}
-        </CalciteButton>
-      )
-        }</ReshapeTool >
-      {isActive ? <SketchTooltip
-        helpMessage="Press tab to enter or paste a precise coordinate"
-        helpMessageIcon="information"
-        inputEnabled
-      /> : null}
+      >{({ start, complete, state }) => (
+        <>
+          <CalciteButton
+            onClick={() => {
+              if (store.graphic) {
+                if (state === 'active') {
+                  complete()
+                } else start([store.graphic])
+              }
+            }}
+            appearance={state === 'active' ? 'solid' : 'outline-fill'}
+            scale="l"
+            iconStart="check"
+          >
+            {state === 'active' ? "Confirm selection" : "Update selection"}
+          </CalciteButton>
+          {state === 'active' ? <SketchTooltip
+            helpMessage="Press tab to enter or paste a precise coordinate"
+            helpMessageIcon="information"
+            inputEnabled
+          /> : null}
+        </>
+      )}</ReshapeTool >
     </>
   )
 }
