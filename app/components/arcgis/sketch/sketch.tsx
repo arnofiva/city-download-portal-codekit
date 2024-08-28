@@ -47,7 +47,7 @@ export const SketchTooltip = memo(
   }
 )
 
-export default function Sketch({ ref, children, disableZ }: PropsWithChildren<SketchProps>) {
+export default function Sketch({ ref, children, disableZ = false }: PropsWithChildren<SketchProps>) {
   const view = useSceneView();
   const layer = useGraphicsLayer();
 
@@ -65,7 +65,7 @@ export default function Sketch({ ref, children, disableZ }: PropsWithChildren<Sk
   }));
 
   useEffect(() => {
-    sketch.defaultCreateOptions.hasZ = !disableZ ?? true
+    sketch.defaultCreateOptions.hasZ = !disableZ
   }, [disableZ, sketch.defaultCreateOptions])
 
   useProvideRef(sketch, ref);
