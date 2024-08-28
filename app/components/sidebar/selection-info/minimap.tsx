@@ -1,13 +1,13 @@
 import { Suspense, lazy, memo, useEffect, useRef, useState } from "react";
 import { CalciteScrim } from "@esri/calcite-components-react";
-import GraphicsLayer from "./arcgis/graphics-layer";
-import Graphic from "./arcgis/graphic";
+import GraphicsLayer from "../../arcgis/graphics-layer";
+import Graphic from "../../arcgis/graphic";
 import {
   SimpleFillSymbol,
   SimpleLineSymbol,
   SimpleMarkerSymbol
 } from "@arcgis/core/symbols";
-import { useSceneView } from "./arcgis/views/scene-view/scene-view-context";
+import { useSceneView } from "../../arcgis/views/scene-view/scene-view-context";
 import { useAccessorValue } from "~/hooks/reactive";
 import { useSelectionStateSelector } from "~/data/selection-store";
 import CoreMapView from "@arcgis/core/views/MapView";
@@ -15,7 +15,7 @@ import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
 import { Geometry, Point, Polygon, Polyline } from "@arcgis/core/geometry";
 import useInstance from "~/hooks/useInstance";
 import { SymbologyColors } from "~/symbology";
-import { useSelectionFootprints } from "../hooks/queries/feature-query";
+import { useSelectionFootprints } from "../../../hooks/queries/feature-query";
 
 const Map = lazy(() => import('~/components/arcgis/maps/map/map'));
 const MapView = lazy(() => import('~/components/arcgis/views/map-view/map-view'));

@@ -4,7 +4,7 @@ import {
 } from "@esri/calcite-components-react";
 import useIsRoot from "~/hooks/useIsRoot";
 import ModelOrigin from "./model-origin";
-import SelectionInfo from "./selection-info";
+import SelectionInfo from "./selection-info/selection-info";
 import ExportSettings from "./export-settings";
 import { useEffect, useReducer } from "react";
 import { BlockStateReducer, SidebarState } from "./sidebar-state";

@@ -3,23 +3,23 @@ import {
   CalciteIcon,
   CalciteLabel,
 } from "@esri/calcite-components-react";
-import Minimap from "../minimap";
+import Minimap from "./minimap";
 import {
   Dispatch,
   useDeferredValue,
   useEffect,
   useRef
 } from "react";
-import DimensionsLayer from "../arcgis/dimensions-layer/dimensions-layer";
-import LengthDimension from "../arcgis/dimensions-layer/length-dimension";
-import { BlockAction, BlockState } from "./sidebar-state";
-import { useSelectionElevationInfo } from "../../hooks/queries/elevation-query";
+import DimensionsLayer from "../../arcgis/dimensions-layer/dimensions-layer";
+import LengthDimension from "../../arcgis/dimensions-layer/length-dimension";
+import { BlockAction, BlockState } from "../sidebar-state";
+import { useSelectionElevationInfo } from "../../../hooks/queries/elevation-query";
 import { useSelectionStateSelector } from "~/data/selection-store";
-import { useReferenceElementId } from "../selection/walk-through-context";
+import { useReferenceElementId } from "../../selection/walk-through-context";
 import * as intl from "@arcgis/core/intl";
 import { geodesicArea, planarArea } from "@arcgis/core/geometry/geometryEngine";
-import { useSelectedFeaturesFromLayerViews } from "../../hooks/queries/feature-query";
-import { UpdateSelectionTool } from "../selection/selection-tools/update-selectiont-tool";
+import { useSelectedFeaturesFromLayerViews } from "../../../hooks/queries/feature-query";
+import { UpdateSelectionTool } from "../../selection/selection-tools/update-selectiont-tool";
 
 interface MeasurementsProps {
   state: BlockState['state'];
