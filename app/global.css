@@ -10,3 +10,7 @@ body,
 body:not(.setup) {
   display: none;
 }
+
+calcite-block {
+  overflow: clip;
+}
