@@ -2,23 +2,11 @@ import { useSceneView } from "~/components/arcgis/views/scene-view/scene-view-co
 import { useSelectionStateSelector } from "~/data/selection-store";
 import SceneLayer from "@arcgis/core/layers/SceneLayer";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
-import { useAccessorValue } from "~/hooks/reactive";
 import { useQuery } from "~/hooks/useQuery";
-import { removeSceneLayerClones } from "../../components/selection/scene-filter-highlights";
 import { useDeferredValue } from "react";
 import { Polygon } from "@arcgis/core/geometry";
 import * as geometryEngineAsync from "@arcgis/core/geometry/geometryEngineAsync";
-
-function useSceneLayerViews() {
-  const view = useSceneView()
-
-  const sceneLayerViews = useAccessorValue(() => view.allLayerViews
-    .filter(lv => lv.visible)
-    .filter(lv => removeSceneLayerClones(lv.layer))
-    .filter(lv => lv.layer.type === "scene" && (lv.layer as SceneLayer).geometryType === 'mesh').toArray() as SceneLayerView[])
-
-  return sceneLayerViews;
-}
+import { useSceneLayerViews } from "../useSceneLayers";
 
 export function useSelectedFeaturesFromLayerViews(key?: string) {
   const polygon = useSelectionStateSelector((store) => store.selection);
