@@ -178,6 +178,13 @@ class CreateExtentToolManager extends CreateTool {
 
   cancel = () => {
     if (this.state === 'active') {
+      if (this.manager?.state === 'ready') {
+        this.manager!.activeToolId = null!;
+        this.emit(
+          "cancel",
+          { tool: "point", state: 'cancel', graphic: this.manager?.createGraphic, toolEventInfo: null!, type: 'create' }
+        )
+      }
       this.manager!.cancel()
     }
   }
