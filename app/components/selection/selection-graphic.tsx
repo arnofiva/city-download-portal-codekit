@@ -4,7 +4,7 @@ import Graphic from "~/components/arcgis/graphic";
 import { ExtrudeSymbol3DLayer, FillSymbol3DLayer, PolygonSymbol3D } from "@arcgis/core/symbols";
 import FeatureFilterHighlights from "./scene-filter-highlights";
 import GraphicsLayer from "../arcgis/graphics-layer";
-import { OriginSymbol, SymbologyColors } from "~/symbology";
+import { OriginSymbol, SymbologyColors } from "~/symbology/symbology";
 import { useSelectionState } from "~/data/selection-store";
 import { useOriginElevationInfo, useSelectionElevationInfo } from "../../hooks/queries/elevation-query";
 import SolidEdges3D from "@arcgis/core/symbols/edges/SolidEdges3D.js";

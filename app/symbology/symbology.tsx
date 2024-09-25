@@ -1,5 +1,9 @@
 import Color from "@arcgis/core/Color";
+import { Point } from "@arcgis/core/geometry";
+import Mesh from "@arcgis/core/geometry/Mesh";
+import * as meshUtils from "@arcgis/core/geometry/support/meshUtils";
 import { PointSymbol3D, ObjectSymbol3DLayer } from "@arcgis/core/symbols";
+import Diamond from './diamond.gltf?url';
 
 export const SymbologyColors = {
   selection(alpha = 1) {
@@ -15,13 +19,14 @@ export const SymbologyColors = {
 
 const height = 200;
 const diamondSize = 7.5;
+const cylinderSize = 2;
 export const OriginSymbol = new PointSymbol3D({
   symbolLayers: [
     new ObjectSymbol3DLayer({
       material: { color: SymbologyColors.measurements() },
       resource: { primitive: 'cylinder' },
-      width: 2,
-      depth: 2,
+      width: cylinderSize,
+      depth: cylinderSize,
       height,
     }),
     new ObjectSymbol3DLayer({
@@ -35,3 +40,19 @@ export const OriginSymbol = new PointSymbol3D({
     }),
   ]
 })
+
+export async function createOriginMarker(origin: Point) {
+  const box = (await Mesh.createFromGLTF(origin, Diamond))
+    .scale(diamondSize)
+    .offset(0, 0, height);
+
+  const cylender = Mesh.createCylinder(origin)
+
+  const transform = cylender.transform?.clone() ?? {};
+  transform.scale = [cylinderSize, cylinderSize, height];
+  cylender.transform = transform;
+
+  const mesh = meshUtils.merge([box, cylender]);
+
+  return mesh;
+}

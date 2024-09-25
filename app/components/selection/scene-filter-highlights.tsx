@@ -4,7 +4,7 @@ import { useScene } from "../arcgis/maps/web-scene/scene-context";
 import Layer from "@arcgis/core/layers/Layer";
 import SceneLayer from "@arcgis/core/layers/SceneLayer";
 import { useSelectionState } from "~/data/selection-store";
-import { SymbologyColors } from "~/symbology";
+import { SymbologyColors } from "~/symbology/symbology";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer.js";
 import { FillSymbol3DLayer, MeshSymbol3D } from "@arcgis/core/symbols";

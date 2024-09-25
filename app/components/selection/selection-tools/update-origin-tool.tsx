@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { SketchTooltip } from "~/components/arcgis/sketch/sketch";
 import CreatePointTool from "~/components/arcgis/sketch/tools/create-point-tool";
 import { useSelectionState } from "~/data/selection-store";
-import { OriginSymbol } from "~/symbology";
+import { OriginSymbol } from "~/symbology/symbology";
 
 export function UpdateOriginTool() {
   const store = useSelectionState();

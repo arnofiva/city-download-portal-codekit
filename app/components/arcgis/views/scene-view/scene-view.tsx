@@ -3,7 +3,7 @@ import CoreSceneView from '@arcgis/core/views/SceneView';
 import { SceneViewContext } from "./scene-view-context";
 import { useScene } from "../../maps/web-scene/scene-context";
 import useInstance from "~/hooks/useInstance";
-import { SymbologyColors } from "~/symbology";
+import { SymbologyColors } from "~/symbology/symbology";
 
 function InternalView({ children }: PropsWithChildren) {
   const scene = useScene();

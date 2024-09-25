@@ -112,7 +112,7 @@ export default function ModelOrigin({
         }
       }}
     >
-      <CalciteIcon slot="icon" icon="pin-tear-f" scale="s"></CalciteIcon>
+      <CalciteIcon slot="icon" icon="diamond" scale="s"></CalciteIcon>
       <ul className="grid grid-cols-2 grid-rows-2">
         <li>
           <CalciteLabel scale="s">

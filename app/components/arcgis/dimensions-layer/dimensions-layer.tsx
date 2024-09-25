@@ -5,7 +5,7 @@ import DimensionSimpleStyle from "@arcgis/core/analysis/DimensionSimpleStyle.js"
 import { DimensionsContext } from "./dimensions-context";
 import { useSceneView } from "../views/scene-view/scene-view-context";
 import useInstance from "~/hooks/useInstance";
-import { SymbologyColors } from "~/symbology";
+import { SymbologyColors } from "~/symbology/symbology";
 
 interface DimensionLayerProps {
   fontSize?: number

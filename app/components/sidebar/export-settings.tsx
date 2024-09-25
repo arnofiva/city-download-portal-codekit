@@ -1,16 +1,15 @@
 import {
   CalciteBlock,
   CalciteButton,
+  CalciteCheckbox,
   CalciteIcon,
   CalciteInputText,
   CalciteLabel,
-  // CalciteOption,
-  // CalciteSelect,
 } from "@esri/calcite-components-react";
 import { useScene } from "../arcgis/maps/web-scene/scene-context";
 import { useAccessorValue } from "../../hooks/reactive";
 import { Dispatch, useDeferredValue, useEffect, useRef, useState } from "react";
-import { useDownloadQuery } from "../../hooks/queries/download/download-query";
+import { useExportQuery } from "../../hooks/queries/download/export-query";
 import { BlockAction, BlockState } from "./sidebar-state";
 import { useSelectionState } from "~/data/selection-store";
 import { useReferenceElementId } from "../selection/walk-through-context";
@@ -28,12 +27,16 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
     return title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, "_");
   });
   const [filename, setFilename] = useState("")
+  const [includeOriginMarker, setIncludeOriginMarker] = useState(true);
 
   const store = useSelectionState();
   const editingState = useAccessorValue(() => store.editingState);
   const selection = useAccessorValue(() => store.selection)
 
-  const downloadQuery = useDownloadQuery(editingState === 'idle');
+  const downloadQuery = useExportQuery({
+    includeOriginMarker,
+    enabled: editingState === 'idle'
+  });
   const file = downloadQuery.data;
 
   const deferredSelection = useDeferredValue(selection);
@@ -125,6 +128,12 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
               }}
               suffixText=".glb"
             ></CalciteInputText>
+          </CalciteLabel>
+        </li>
+        <li>
+          <CalciteLabel scale="s" layout="inline">
+            <CalciteCheckbox checked={includeOriginMarker} onCalciteCheckboxChange={() => setIncludeOriginMarker(!includeOriginMarker)} />
+            Include origin marker
           </CalciteLabel>
         </li>
         {/* <li>

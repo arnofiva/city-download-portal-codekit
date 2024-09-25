@@ -8,7 +8,7 @@ import { useOriginElevationInfo } from "../elevation-query";
 import { useQuery } from '@tanstack/react-query';
 import { useAccessorValue } from "~/hooks/reactive";
 
-export function useDownloadQuery(enabled = false) {
+export function useExportQuery({ enabled = false, includeOriginMarker = true }: { enabled?: boolean, includeOriginMarker?: boolean }) {
   const scene = useScene()
   const store = useSelectionState();
   const selection = useAccessorValue(() => store.selection);
@@ -28,7 +28,7 @@ export function useDownloadQuery(enabled = false) {
   }, [enabled, retry])
 
   const query = useQuery({
-    queryKey: ['download', ids, selection?.rings, modelOrigin],
+    queryKey: ['download', ids, selection?.rings, modelOrigin, includeOriginMarker],
     queryFn: async ({ signal }) => {
       if (featureQueryError) {
         throw featureQueryError;
@@ -39,7 +39,8 @@ export function useDownloadQuery(enabled = false) {
         extent: selection!.extent,
         features: meshes,
         signal,
-        origin: modelOrigin!
+        origin: modelOrigin!,
+        includeOriginMarker
       });
 
       const file = await mesh.toBinaryGLTF();

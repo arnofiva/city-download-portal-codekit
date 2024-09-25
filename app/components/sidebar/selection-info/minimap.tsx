@@ -15,7 +15,7 @@ import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
 import * as geometryEngineAsync from "@arcgis/core/geometry/geometryEngineAsync";
 import { Point, Polygon, Polyline } from "@arcgis/core/geometry";
 import useInstance from "~/hooks/useInstance";
-import { SymbologyColors } from "~/symbology";
+import { SymbologyColors } from "~/symbology/symbology";
 import { useSelectionFootprints } from "../../../hooks/queries/feature-query";
 import { useQuery } from "@tanstack/react-query";
 
