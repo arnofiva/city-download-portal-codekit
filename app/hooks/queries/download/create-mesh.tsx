@@ -29,14 +29,22 @@ async function mergeSliceMeshes(
     includeOriginMarker?: boolean,
     signal?: AbortSignal
   }) {
-  const VertexSpace = origin.spatialReference.isWGS84 || origin.spatialReference.isWebMercator
+  const originSpatialReference = origin.spatialReference;
+  const featureSpatialReference = features.at(0)?.spatialReference ?? originSpatialReference;
+
+  let projectedOrigin = origin;
+  if (originSpatialReference.wkid !== featureSpatialReference.wkid) {
+    await projection.load();
+    projectedOrigin = projection.project(origin, featureSpatialReference) as Point;
+  }
+
+  const VertexSpace = projectedOrigin.spatialReference.isWGS84 || projectedOrigin.spatialReference.isWebMercator
     ? MeshLocalVertexSpace
     : MeshGeoreferencedVertexSpace
 
   const vertexSpace = new VertexSpace({
-    origin: [origin.x, origin.y, origin.z],
+    origin: [projectedOrigin.x, projectedOrigin.y, projectedOrigin.z],
   });
-
 
   const meshPromises = features
     .map(async (mesh) => {
@@ -46,11 +54,12 @@ async function mergeSliceMeshes(
     .concat(meshUtils.convertVertexSpace(elevation, vertexSpace, { signal }));
 
   if (includeOriginMarker) {
-    const originMesh = await createOriginMarker(origin);
+    const originMesh = await createOriginMarker(projectedOrigin);
     meshPromises.push(meshUtils.convertVertexSpace(originMesh, vertexSpace, { signal }))
   }
 
   const meshes = await Promise.all(meshPromises)
+
   const slice = meshUtils.merge(meshes.filter((mesh): mesh is Mesh => mesh != null));
 
   return slice;
@@ -67,7 +76,7 @@ export async function createMesh({
   scene: WebScene,
   extent: Extent,
   features: Mesh[],
-  signal: AbortSignal,
+  signal?: AbortSignal,
   origin: Point,
   includeOriginMarker?: boolean
 }) {

@@ -1,4 +1,5 @@
 import {
+  ClientLoaderFunctionArgs,
   Links,
   Meta,
   MetaFunction,
@@ -17,15 +18,15 @@ import globalStyles from "./global.css?url";
 import { defineCustomElements } from "@esri/calcite-components/dist/loader";
 import config from "@arcgis/core/config";
 import { CalciteScrim } from "@esri/calcite-components-react";
-import { PropsWithChildren, Suspense, lazy, useEffect } from "react";
+import { PropsWithChildren, Suspense, lazy, useEffect, useState } from "react";
 import SceneListModal from "./components/scene-list-modal/scene-list-modal";
 import { SceneListModalProvider } from "./components/scene-list-modal/scene-list-modal-context";
 import SCENES from "~/data/scenes";
 
 import { LinksFunction } from "@remix-run/node";
 import RootShell from "./components/root-shell";
-import { Toaster } from "./components/toast";
-import { keepPreviousData, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toast, ToastableError, ToasterProvider, useToast } from "./components/toast";
+import { keepPreviousData, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import useInstance from "./hooks/useInstance";
 
 const StoreProvider = lazy(() => import('./data/selection-store'))
@@ -70,12 +71,14 @@ function setup() {
   hasSetup = true;
 }
 
-export async function clientLoader() {
+export async function clientLoader({ request }: ClientLoaderFunctionArgs) {
   setup();
   /* this should be removed eventually */
   const { OAuthInfo, IdentityManager } = await loadModules();
+  const params = new URL(request.url).searchParams;
 
-  config.portalUrl = "https://zurich.maps.arcgis.com/";
+  const portalUrl = params.get("portal-url") ?? "https://zurich.maps.arcgis.com/";
+  config.portalUrl = portalUrl;
 
   const info = new OAuthInfo({
     appId: "KojZjH6glligLidj",
@@ -86,7 +89,7 @@ export async function clientLoader() {
   IdentityManager.registerOAuthInfos([info]);
 
   try {
-    await IdentityManager.checkSignInStatus("https://zurich.maps.arcgis.com/");
+    await IdentityManager.checkSignInStatus(portalUrl);
   } catch (_error) {
     await IdentityManager.getCredential(info.portalUrl + "/sharing");
   }
@@ -115,24 +118,36 @@ export async function clientLoader() {
   return { scenes, maps, };
 }
 
-interface LayoutProps { }
-
-
-export function Layout({ children }: PropsWithChildren<LayoutProps>) {
-  const params = useParams();
-
-  useEffect(() => {
-    setAssetPath(import.meta.url);
-    defineCustomElements(window);
-  }, []);
+function AppQueryClient(props: PropsWithChildren) {
+  const toast = useToast();
 
   const queryClient = useInstance(() => new QueryClient({
     defaultOptions: {
       queries: {
         placeholderData: keepPreviousData
       }
-    }
+    },
+    queryCache: new QueryCache({
+      onError: (error) => {
+        if (error instanceof ToastableError) {
+          toast(error.toast);
+        }
+      }
+    })
   }));
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {props.children}
+    </QueryClientProvider>
+  )
+}
+
+export function Layout({ children }: PropsWithChildren) {
+  useEffect(() => {
+    setAssetPath(import.meta.url);
+    defineCustomElements(window);
+  }, []);
 
   return (
     <html lang="en">
@@ -143,33 +158,54 @@ export function Layout({ children }: PropsWithChildren<LayoutProps>) {
         <Links />
       </head>
       <body>
-        <Suspense fallback={<CalciteScrim loading />}>
-          <QueryClientProvider client={queryClient}>
-            <StoreProvider key={params.scene}>
-              <WalkthroughStoreProvider>
-                <RootShell>
-                  <SceneListModalProvider>
-                    <Toaster>
-                      {children}
-                    </Toaster>
-                    <SceneListModal />
-                  </SceneListModalProvider>
-                </RootShell>
-              </WalkthroughStoreProvider>
-            </StoreProvider>
-          </QueryClientProvider>
-        </Suspense>
+        <RootShell>
+          <ToasterProvider>
+            <SceneListModalProvider>
+              <Suspense fallback={<CalciteScrim loading />}>
+                {children}
+              </Suspense>
+              <SceneListModal />
+              <Toast />
+            </SceneListModalProvider>
+          </ToasterProvider>
+        </RootShell>
         <ScrollRestoration />
         <Scripts />
       </body>
-    </html>
+    </html >
   );
 }
 
 export default function App() {
-  return <Outlet />;
-}
+  const params = useParams();
 
+  const toast = useToast();
+
+  const queryClient = useInstance(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        placeholderData: keepPreviousData
+      }
+    },
+    queryCache: new QueryCache({
+      onError: (error) => {
+        if (error instanceof ToastableError) {
+          toast(error.toast);
+        }
+      }
+    })
+  }));
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <StoreProvider key={params.scene}>
+        <WalkthroughStoreProvider>
+          <Outlet />
+        </WalkthroughStoreProvider>
+      </StoreProvider>
+    </QueryClientProvider>
+  )
+}
 export function HydrateFallback() {
   return (
     <RootShell>

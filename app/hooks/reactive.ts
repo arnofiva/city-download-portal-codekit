@@ -15,7 +15,7 @@ export function useAccessorValue<Value>(
     currentGetter.current = getValue;
   }, [getValue]);
 
-  const value = useRef<Value | undefined>();
+  const value = useRef<Value | undefined>(getValue());
 
   const subscribe = useCallback(
     (update: () => void) => {

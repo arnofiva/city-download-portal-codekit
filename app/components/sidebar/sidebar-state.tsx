@@ -11,7 +11,8 @@ export function BlockStateReducer(state: SidebarState, actions: BlockAction[]) {
   const next = { ...state, };
   for (const action of actions) {
     const { type, mode = 'managed', block } = action;
-    const blockState = next[block];
+    const blockState = { ...next[block] };
+    next[block] = blockState
 
     if (blockState.mode === "manual") {
       if (mode === 'manual') {

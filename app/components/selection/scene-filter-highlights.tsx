@@ -10,6 +10,7 @@ import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer.js";
 import { FillSymbol3DLayer, MeshSymbol3D } from "@arcgis/core/symbols";
 import FeatureFilter from "@arcgis/core/layers/support/FeatureFilter.js";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
+import { useSceneLayerViews } from "~/hooks/useSceneLayers";
 
 const HighlightRenderer = new SimpleRenderer({
   symbol: new MeshSymbol3D({
@@ -96,15 +97,8 @@ const SceneLayerHighlight = memo(
 )
 
 function InternalFeatureFilterHighlights() {
-  const scene = useScene()
-  const sceneLayers = useAccessorValue(
-    () => scene
-      .allLayers
-      .filter(removeSceneLayerClones)
-      .filter<SceneLayer>((layer): layer is SceneLayer => layer.type === 'scene' && (layer as SceneLayer).geometryType === 'mesh')
-  );
-
-  return (sceneLayers?.map((layer) => <SceneLayerHighlight key={layer.id} layer={layer} />));
+  const sceneLayersViews = useSceneLayerViews();
+  return (sceneLayersViews?.map((lv) => <SceneLayerHighlight key={lv.layer.id} layer={lv.layer} />));
 }
 
 const FeatureFilterHighlights = memo(InternalFeatureFilterHighlights);

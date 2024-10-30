@@ -9,11 +9,13 @@ import {
 import { useScene } from "../arcgis/maps/web-scene/scene-context";
 import { useAccessorValue } from "../../hooks/reactive";
 import { Dispatch, useDeferredValue, useEffect, useRef, useState } from "react";
-import { useExportQuery } from "../../hooks/queries/download/export-query";
+import { useDownloadExportMutation, useExportQuery } from "../../hooks/queries/download/export-query";
 import { BlockAction, BlockState } from "./sidebar-state";
 import { useSelectionState } from "~/data/selection-store";
 import { useReferenceElementId } from "../selection/walk-through-context";
-import { useToast } from "../toast";
+import { useSelectedFeaturesFromLayers } from "~/hooks/queries/feature-query";
+import { useOriginElevationInfo } from "~/hooks/queries/elevation-query";
+import { Mesh } from "@arcgis/core/geometry";
 
 interface ExportSettingsProps {
   state: BlockState['state'];
@@ -32,17 +34,20 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
   const store = useSelectionState();
   const editingState = useAccessorValue(() => store.editingState);
   const selection = useAccessorValue(() => store.selection)
+  const deferredSelection = useDeferredValue(selection);
+
+  const featureQuery = useSelectedFeaturesFromLayers(editingState === 'idle');
+  const features = Array.from(featureQuery.data?.values() ?? []).flat();
+  const modelOrigin = useOriginElevationInfo().data
 
   const downloadQuery = useExportQuery({
     includeOriginMarker,
     enabled: editingState === 'idle'
   });
-  const file = downloadQuery.data;
 
-  const deferredSelection = useDeferredValue(selection);
+  const mutation = useDownloadExportMutation();
 
-  const isLoadingWithoutFile = downloadQuery.data == null && downloadQuery.isFetching;
-  const canDownload = downloadQuery.data != null && downloadQuery.status === 'success' && editingState === 'idle'
+  const canDownload = editingState === 'idle'
 
   const fileSize = downloadQuery.data?.size;
 
@@ -60,32 +65,10 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
 
   const wasClicked = useRef(false);
 
-  const id = useReferenceElementId('downloading', 'left')
-
-  const toast = useToast();
-
-  useEffect(() => {
-    if (downloadQuery.data) {
-      toast({
-        title: 'Model generation complete',
-        message: 'The model is ready for export!',
-        severity: 'success',
-        code: '1'
-      })
-    }
-    if (downloadQuery.error) {
-      toast({
-        title: 'Model generation error',
-        message: 'There was an error while generating the model',
-        severity: 'danger',
-        code: '0'
-      })
-    }
-  }, [downloadQuery.data, downloadQuery.error, toast])
-
+  const blockElementId = useReferenceElementId('downloading', 'left')
   return (
     <CalciteBlock
-      id={id}
+      id={blockElementId}
       heading="Export"
       collapsible
       ref={ref}
@@ -136,15 +119,6 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
             Include origin marker
           </CalciteLabel>
         </li>
-        {/* <li>
-          <CalciteLabel scale="s">
-            File type
-            <CalciteSelect label="File type">
-              <CalciteOption value="glb">Binary GLTF (GLB)</CalciteOption>
-              <CalciteOption value="obj">OBJ</CalciteOption>
-            </CalciteSelect>
-          </CalciteLabel>
-        </li> */}
         <li>
           <CalciteLabel scale="s">
             <p className="font-medium">File size</p>
@@ -156,13 +130,23 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
         scale="l"
         width="full"
         iconStart="download"
-        disabled={!canDownload}
-        loading={isLoadingWithoutFile}
+        disabled={!canDownload || mutation.isPending}
+        loading={mutation.isPending}
         onClick={() => {
           if (canDownload) {
-            const name = filename || title || 'model';
-            downloadFile(name, file!);
-            store.exportState = 'exported'
+            mutation.mutateAsync({
+              scene,
+              extent: selection!.extent,
+              meshes: features.map(f => f.geometry as Mesh),
+              origin: modelOrigin!,
+              includeOriginMarker,
+              filename,
+            })
+              .then(blob => {
+                const name = filename || title || 'model';
+                downloadFile(name, blob);
+                store.exportState = 'exported'
+              })
           }
         }}
       >

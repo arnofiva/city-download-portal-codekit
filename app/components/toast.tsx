@@ -1,38 +1,38 @@
 import Accessor from "@arcgis/core/core/Accessor";
 import { subclass, property } from "@arcgis/core/core/accessorSupport/decorators";
-import Collection from "@arcgis/core/core/Collection";
 import { CalciteAlert } from "@esri/calcite-components-react";
 import { ComponentProps, createContext, PropsWithChildren, useContext } from "react";
 import { useAccessorValue } from "~/hooks/reactive";
 import useInstance from "~/hooks/useInstance";
 
-type ToastMessage = { title: string, message: string, code: string; severity: ComponentProps<typeof CalciteAlert>['kind'] }
+type ToastMessage = { title: string, message: string, key: string; severity: ComponentProps<typeof CalciteAlert>['kind'] }
 
 @subclass()
 class ToastStore extends Accessor {
   @property()
-  messages = new Collection<ToastMessage>()
+  messages = [] as ToastMessage[];
 
   toast = (message: ToastMessage) => {
-    if (this.messages.some(m => m.code === message.code)) return;
-    this.messages.add(message)
+    if (this.messages.some(m => m.key === message.key)) return;
+
+    this.messages = [...this.messages, message];
   }
 
   complete = (message: ToastMessage) => {
-    this.messages.remove(message)
+    this.messages = this.messages.filter(m => m.key !== message.key);
   }
 }
 
+const ToastStoreContext = createContext<ToastStore>(null!);
 const ToastContext = createContext<ToastStore['toast']>(null!);
 
-function Toast({ store }: { store: ToastStore }) {
-  const messages = useAccessorValue(
-    () => store.messages.toArray()) ?? [];
+function InternalToast({ store }: { store: ToastStore }) {
+  const messages = useAccessorValue(() => store.messages) ?? [];
 
   return messages.map(message => (
     <CalciteAlert
       slot="alerts"
-      key={message.code}
+      key={message.key}
       icon
       kind={message.severity}
       label={message.title}
@@ -52,15 +52,47 @@ export function useToast() {
   return useContext(ToastContext);
 }
 
-export function Toaster({ children }: PropsWithChildren) {
-  const store = useInstance(() => new ToastStore());
+export function ToasterProvider({ children }: PropsWithChildren) {
+  const store = useInstance(() => {
+    return new ToastStore();
+  });
 
   return (
-    <>
+    <ToastStoreContext.Provider value={store}>
       <ToastContext.Provider value={store.toast}>
         {children}
       </ToastContext.Provider>
-      <Toast store={store} />
-    </>
+    </ToastStoreContext.Provider>
   )
+}
+
+export function Toast() {
+  const store = useContext(ToastStoreContext);
+  return (
+    <InternalToast store={store} />
+  )
+}
+
+export class ToastableError extends Error {
+  key: string;
+  message: string;
+  title: string;
+  severity: ComponentProps<typeof CalciteAlert>["kind"];
+
+  get toast(): ToastMessage {
+    return {
+      key: this.key,
+      title: this.title,
+      message: this.message,
+      severity: this.severity,
+    }
+  }
+
+  constructor(props: { key: string, message: string, title: string, severity: ComponentProps<typeof CalciteAlert>["kind"] }, options?: ErrorOptions) {
+    super(props.message, options);
+    this.key = props.key;
+    this.message = props.message;
+    this.title = props.title;
+    this.severity = props.severity;
+  }
 }

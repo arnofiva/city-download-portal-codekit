@@ -12,6 +12,7 @@ interface ReshapeToolProps {
   onActive?: (graphics: Graphic[], event: __esri.SketchViewModelUpdateEvent) => void;
   onComplete?: (graphics: Graphic[]) => void;
   onCancel?: (graphics: Graphic[]) => void;
+  onDelete?: (graphics: Graphic[]) => void;
   children: ({ start }: {
     start: (graphics: Graphic[]) => void
     complete: () => void
@@ -25,6 +26,7 @@ export const ReshapeTool = forwardRef<ReshapeToolManager, ReshapeToolProps>(func
   onActive,
   onComplete,
   onCancel,
+  onDelete,
   children
 }: ReshapeToolProps, ref) {
   const sketch = useSketch();
@@ -35,7 +37,8 @@ export const ReshapeTool = forwardRef<ReshapeToolManager, ReshapeToolProps>(func
   }, [sketch, manager]);
 
   useEffect(() => {
-    const handle = manager.on(["start", "active", "complete", "cancel"], (event) => {
+    const handle = manager.on(["start", "active", "complete", "cancel", "delete"], (event) => {
+      if (event.type === 'delete') return onDelete?.(event.graphics);
       switch (event.state) {
         case 'start': return onStart?.(event.graphics)
         case 'active': return onActive?.(event.graphics, event)
@@ -47,7 +50,7 @@ export const ReshapeTool = forwardRef<ReshapeToolManager, ReshapeToolProps>(func
     return () => {
       handle.remove()
     }
-  }, [onActive, onCancel, onComplete, onStart, manager])
+  }, [onActive, onCancel, onComplete, onStart, onDelete, manager])
 
   useProvideRef(manager, ref);
 

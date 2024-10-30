@@ -14,7 +14,6 @@ import CoreMapView from "@arcgis/core/views/MapView";
 import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
 import * as geometryEngineAsync from "@arcgis/core/geometry/geometryEngineAsync";
 import { Point, Polygon, Polyline } from "@arcgis/core/geometry";
-import useInstance from "~/hooks/useInstance";
 import { SymbologyColors } from "~/symbology/symbology";
 import { useSelectionFootprints } from "../../../hooks/queries/feature-query";
 import { useQuery } from "@tanstack/react-query";
@@ -114,7 +113,8 @@ interface FootprintGraphicProps {
   selection: Polygon
 }
 function Footprint({ selection }: FootprintGraphicProps) {
-  const footprintQuery = useSelectionFootprints(selection);
+  const deferredSelection = useDeferredValue(selection);
+  const footprintQuery = useSelectionFootprints(deferredSelection);
   const footprints = footprintQuery.data;
 
   if (footprints == null) return null;
@@ -128,7 +128,7 @@ function Footprint({ selection }: FootprintGraphicProps) {
   )
 }
 
-// useDeferred is "too fast"...
+// useDeferred is too fast...
 function useDebouncedValue<T>(value: T, delay = 500) {
   const [current, setCurrent] = useState(value);
   const [shouldUpdate, setShouldUpdate] = useState(false);
@@ -149,41 +149,28 @@ function useDebouncedValue<T>(value: T, delay = 500) {
 }
 
 function InternalMinimap() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  const observer = useInstance(() => new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      const target = mutation.target;
-      if (target instanceof HTMLElement && target.tagName === 'CALCITE-BLOCK') {
-        setIsOpen((target as HTMLCalciteBlockElement).open)
-      }
-    }
-  }))
-
   const sceneView = useSceneView();
 
   const store = useSelectionState();
   const origin = useAccessorValue(() => store.modelOrigin ?? store.selectionOrigin);
   const selection = useAccessorValue(() => store.selection);
 
-  const viewExtent = useAccessorValue(() => sceneView.extent);
   const sr = useAccessorValue(() => sceneView.spatialReference?.wkid);
-
-  const deferredSelection = useDeferredValue(selection);
-  const { selection: debouncedSelection, origin: debouncedOrigin } = useDebouncedValue({ selection, origin }, 200);
 
   const mapRef = useRef<CoreMapView>(null);
 
   useEffect(() => {
-    if (mapRef.current) {
-      mapRef.current.when(() => setReady(true));
+    if (mapRef.current && !mapRef.current?.ready) {
+      mapRef.current.extent = sceneView.extent;
     }
   })
 
-  const targetQuery = useQuery({
+  const debouncedSelection = useDebouncedValue(selection, 200);
+  const debouncedOrigin = useDebouncedValue(origin, 200);
+
+  useQuery({
     queryKey: ['minimap', 'target', debouncedSelection?.toJSON(), debouncedOrigin?.toJSON()],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const selection = debouncedSelection!;
       const origin = debouncedOrigin!;
 
@@ -206,31 +193,15 @@ function InternalMinimap() {
       const area = Math.abs(geometryEngine.planarArea(polygon));
       const buffered = await geometryEngineAsync.buffer(polygon!, Math.sqrt(area) * 0.5) as Polygon;
 
-      return buffered
+      mapRef.current?.goTo({ target: buffered }, { signal, animate: true }).catch()
+
+      return null
     },
-    enabled: viewExtent != null && debouncedSelection != null && debouncedOrigin != null,
+    enabled: debouncedSelection != null && debouncedOrigin != null,
   })
 
-  useEffect(() => {
-    if (!isOpen || !ready) return;
-
-    const controller = new AbortController();
-    if (targetQuery.data) {
-      mapRef.current?.goTo({ target: targetQuery.data }, { signal: controller.signal, animate: true }).catch()
-      return () => controller.abort()
-    }
-  }, [isOpen, ready, targetQuery.data])
-
-  const disableMapInteractions = "[&_.esri-view-surface]:pointer-events-none"
   return (
-    <div
-      ref={(ref) => {
-        observer.disconnect()
-        const parent = ref?.closest("calcite-block");
-        if (parent) observer.observe(parent, { attributes: true, attributeFilter: ['open'] })
-      }}
-      className={"w-full aspect-[1.5/1] " + disableMapInteractions}
-    >
+    <div className={"w-full aspect-[1.5/1] pointer-events-none "}>
       {sr != null ? (
         <Suspense fallback={<CalciteScrim loading />}>
           <Map>
@@ -247,8 +218,8 @@ function InternalMinimap() {
                   : null
               }
               {
-                deferredSelection != null
-                  ? <Footprint selection={deferredSelection} />
+                selection != null
+                  ? <Footprint selection={selection} />
                   : null
               }
             </GraphicsLayer>

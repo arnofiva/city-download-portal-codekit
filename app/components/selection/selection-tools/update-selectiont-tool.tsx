@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { SketchTooltip } from "~/components/arcgis/sketch/sketch";
 import { ReshapeTool } from "~/components/arcgis/sketch/tools/reshape-tool";
 import { useSelectionState } from "~/data/selection-store";
-import { useWatch } from "~/hooks/reactive";
+import { useAccessorValue, useWatch } from "~/hooks/reactive";
 
 export function UpdateSelectionTool() {
   const store = useSelectionState();
@@ -16,7 +16,9 @@ export function UpdateSelectionTool() {
     } else {
       toolRef.current?.complete()
     }
-  })
+  }, { initial: false })
+
+  const hasSelection = useAccessorValue(() => store.selection != null)
 
   const previousSelection = useRef<Polygon | null>(null);
 
@@ -32,6 +34,7 @@ export function UpdateSelectionTool() {
         onActive={([graphic], event) => {
           if (event.toolEventInfo?.type === 'vertex-remove') {
             store.selection = null
+            toolRef.current.complete()
           }
           else store.updateSelectionPolygon(graphic.geometry as Polygon)
         }}
@@ -43,6 +46,9 @@ export function UpdateSelectionTool() {
           if (store.editingState === 'updating-selection') store.editingState = 'idle';
           store.selection = previousSelection.current;
         }}
+        onDelete={() => {
+          store.selection = null;
+        }}
       >{({ start, complete, state }) => (
         <>
           <CalciteButton
@@ -53,11 +59,16 @@ export function UpdateSelectionTool() {
                 } else start([store.graphic])
               }
             }}
+            disabled={!hasSelection}
             appearance={state === 'active' ? 'solid' : 'outline-fill'}
             scale="l"
             iconStart="check"
           >
-            {state === 'active' ? "Confirm selection" : "Update selection"}
+            {
+              state === 'active'
+                ? "Confirm selection"
+                : "Update selection"
+            }
           </CalciteButton>
           {state === 'active' ? <SketchTooltip
             helpMessage="Press tab to enter or paste a precise coordinate"

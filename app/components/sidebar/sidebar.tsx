@@ -12,11 +12,11 @@ import { useSelectionState } from "~/data/selection-store";
 import { useAccessorValue } from "~/hooks/reactive";
 import { useReferenceElementId } from "../selection/walk-through-context";
 
-const initialState = {
+const createInitialState = () => ({
   modelOrigin: { mode: 'managed', state: 'closed' },
   selection: { mode: 'managed', state: 'closed' },
   exportSettings: { mode: 'managed', state: 'closed' },
-} satisfies SidebarState;
+} satisfies SidebarState);
 
 export default function Sidebar() {
   const id = useReferenceElementId(['confirming', "updating-origin"], 'left');
@@ -27,8 +27,9 @@ export default function Sidebar() {
 
   const [blockState, dispatch] = useReducer(
     BlockStateReducer,
-    initialState
+    createInitialState()
   );
+
   useEffect(() => {
     switch (walkthroughState) {
       case 'not-started':

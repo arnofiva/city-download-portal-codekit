@@ -147,7 +147,10 @@ export default function ModelOrigin({
           </CalciteLabel>
         </li>
       </ul>
-      <div className="flex gap-2 flex-row-reverse">
+      <div className="flex gap-2 flex-col">
+        <SketchLayer elevationMode="absolute-height">
+          <UpdateOriginTool />
+        </SketchLayer>
         <CalciteSplitButton
           primaryText="Copy to clipboard"
           width="full"
@@ -204,9 +207,6 @@ export default function ModelOrigin({
             Copy as WKT
           </CalciteDropdownItem>
         </CalciteSplitButton>
-        <SketchLayer elevationMode="absolute-height">
-          <UpdateOriginTool />
-        </SketchLayer>
       </div>
     </CalciteBlock>
   );
