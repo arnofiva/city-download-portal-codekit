@@ -54,7 +54,12 @@ async function mergeSliceMeshes(
     .concat(meshUtils.convertVertexSpace(elevation, vertexSpace, { signal }));
 
   if (includeOriginMarker) {
-    const originMesh = await createOriginMarker(projectedOrigin);
+    const zmax = features.reduce((max, next) => next.extent.zmax > max ? next.extent.zmax : max, elevation.extent.zmax);
+    const zmin = features.reduce((min, next) => min > next.extent.zmin ? next.extent.zmin : min, elevation.extent.zmin);
+    const height = zmax - zmin;
+
+    console.log({ height })
+    const originMesh = await createOriginMarker(projectedOrigin, height);
     meshPromises.push(meshUtils.convertVertexSpace(originMesh, vertexSpace, { signal }))
   }
 
@@ -92,6 +97,8 @@ export async function createMesh({
     includeOriginMarker,
     signal,
   });
+
+  await slice.load();
 
   return slice;
 }
