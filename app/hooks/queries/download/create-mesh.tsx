@@ -58,7 +58,6 @@ async function mergeSliceMeshes(
     const zmin = features.reduce((min, next) => min > next.extent.zmin ? next.extent.zmin : min, elevation.extent.zmin);
     const height = zmax - zmin;
 
-    console.log({ height })
     const originMesh = await createOriginMarker(projectedOrigin, height);
     meshPromises.push(meshUtils.convertVertexSpace(originMesh, vertexSpace, { signal }))
   }
