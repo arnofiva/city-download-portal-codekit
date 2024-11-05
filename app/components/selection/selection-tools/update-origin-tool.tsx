@@ -23,7 +23,7 @@ export function UpdateOriginTool() {
         store.modelOrigin = point;
       }}
       onComplete={() => {
-        store.editingState = previousEditingState.current;
+        store.editingState = 'updating-selection';
       }}
       onCancel={() => {
         store.editingState = previousEditingState.current;
