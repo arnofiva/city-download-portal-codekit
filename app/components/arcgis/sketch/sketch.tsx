@@ -4,6 +4,18 @@ import { useSceneView } from "../views/scene-view/scene-view-context";
 import { ForwardedRef, PropsWithChildren, createContext, memo, useContext, useEffect } from "react";
 import useProvideRef from "~/hooks/useProvideRef";
 import { SketchToolManager } from "./tools/create-tool";
+import FeatureSnappingLayerSource from "@arcgis/core/views/interactive/snapping/FeatureSnappingLayerSource.js";
+import Layer from "@arcgis/core/layers/Layer";
+import type BuildingSceneLayer from '@arcgis/core/layers/BuildingSceneLayer';
+import type CSVLayer from '@arcgis/core/layers/CSVLayer';
+import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import type GeoJSONLayer from '@arcgis/core/layers/GeoJSONLayer';
+import type GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
+import type MapNotesLayer from '@arcgis/core/layers/MapNotesLayer';
+import type SceneLayer from '@arcgis/core/layers/SceneLayer';
+import type WFSLayer from '@arcgis/core/layers/WFSLayer';
+import { useWatch } from "~/hooks/reactive";
+import Collection from '@arcgis/core/core/Collection';
 
 interface SketchProps {
   ref?: ForwardedRef<SketchToolManager>;
@@ -61,7 +73,11 @@ export default function Sketch({ ref, children, disableZ = false }: PropsWithChi
     */
     defaultCreateOptions: {
       hasZ: !disableZ
-    }
+    },
+    snappingOptions: {
+      featureEnabled: true,
+    },
+    updateOnGraphicClick: false,
   }));
 
   useEffect(() => {
@@ -75,6 +91,18 @@ export default function Sketch({ ref, children, disableZ = false }: PropsWithChi
     sketch.layer = layer;
   }, [view, layer, sketch]);
 
+  useWatch(() => {
+    const layers = view.map.allLayers.filter(layer => isSnappableLayer(layer)) as Collection<SnappableLayer>;
+    const sources = layers.map(layer => new FeatureSnappingLayerSource({
+      layer,
+      enabled: true
+    }))
+
+    return sources
+  }, (layers, previous) => {
+    if (previous) sketch.snappingOptions?.featureSources.removeMany(previous);
+    sketch.snappingOptions?.featureSources.addMany(layers);
+  })
 
   useEffect(() => {
     const handle = sketch.on("create", (event) => {
@@ -91,4 +119,29 @@ export default function Sketch({ ref, children, disableZ = false }: PropsWithChi
       {children}
     </SketchContext.Provider>
   );
+}
+
+const snappableLayerTypes = [
+  "building-scene",
+  "csv",
+  "feature",
+  "geojson",
+  "graphics",
+  "map-notes",
+  "scene",
+  "wfs"
+] as const satisfies Layer['type'][];
+
+type SnappableLayer =
+  | BuildingSceneLayer
+  | CSVLayer
+  | FeatureLayer
+  | GeoJSONLayer
+  | GraphicsLayer
+  | MapNotesLayer
+  | SceneLayer
+  | WFSLayer
+
+function isSnappableLayer(layer: Layer): layer is SnappableLayer {
+  return snappableLayerTypes.includes(layer.type as any);
 }

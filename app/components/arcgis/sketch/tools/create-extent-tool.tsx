@@ -3,10 +3,11 @@ import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
 import { Point, Polygon } from "@arcgis/core/geometry";
 import CoreGraphic from "@arcgis/core/Graphic";
 import { CreateTool, ToolEvent } from "./create-tool";
-import { ReactNode, useEffect } from "react";
+import { forwardRef, ReactNode, useEffect } from "react";
 import useInstance from "~/hooks/useInstance";
 import { useSketch } from "../sketch";
 import { useAccessorValue } from "~/hooks/reactive";
+import useProvideRef from "~/hooks/useProvideRef";
 
 interface ExtentToolProps {
   onStart?: (point?: Polygon) => void;
@@ -16,13 +17,13 @@ interface ExtentToolProps {
   children: ({ start }: { start: () => void; cancel: () => void, state: CreateExtentToolManager['state'] }) => ReactNode;
 }
 
-export default function CreateExtentTool({
+const CreateExtentTool = forwardRef<CreateExtentToolManager, ExtentToolProps>(function CreateExtentTool({
   children,
   onStart,
   onActive,
   onComplete,
   onCancel,
-}: ExtentToolProps) {
+}, ref) {
   const sketch = useSketch();
   const manager = useInstance(() => new CreateExtentToolManager());
 
@@ -43,6 +44,8 @@ export default function CreateExtentTool({
 
   const state = useAccessorValue(() => manager.state) ?? 'disabled'
 
+  useProvideRef(manager, ref);
+
   return (
     children({
       start: () => manager.start(),
@@ -50,7 +53,9 @@ export default function CreateExtentTool({
       state
     })
   );
-}
+})
+
+export default CreateExtentTool;
 
 @subclass()
 class CreateExtentToolManager extends CreateTool {

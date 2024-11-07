@@ -79,6 +79,9 @@ class CreatePointToolManager extends CreateTool {
               "active",
               { tool: "point", state: 'active', graphic: this.manager!.createGraphic!, toolEventInfo: null!, type: 'create' }
             )
+          if (geometry == null && previous != null) {
+            this.manager.snappingOptions.enabled = false;
+          }
         }),
     ])
   }
@@ -87,6 +90,7 @@ class CreatePointToolManager extends CreateTool {
     if (this.state === 'ready') {
       this.manager!.pointSymbol = this.createSymbol!;
       this.manager!.activeToolId = this.id;
+      this.manager!.snappingOptions.enabled = true;
       this.manager!.create("point", options)
     }
   }

@@ -17,17 +17,18 @@ export const SymbologyColors = {
   }
 } as const;
 
-const height = 200;
 const diamondSize = 7.5;
 const cylinderSize = 2;
-export const OriginSymbol = new PointSymbol3D({
-  symbolLayers: [
+
+export function createOriginSymbol(height: number) {
+  const heightWithFallback = height || 50
+  const layers = [
     new ObjectSymbol3DLayer({
       material: { color: SymbologyColors.measurements() },
       resource: { primitive: 'cylinder' },
       width: cylinderSize,
       depth: cylinderSize,
-      height,
+      height: heightWithFallback,
     }),
     new ObjectSymbol3DLayer({
       material: { color: SymbologyColors.measurements() },
@@ -37,19 +38,25 @@ export const OriginSymbol = new PointSymbol3D({
       height: diamondSize,
       anchor: 'relative',
       anchorPosition: { x: 0, y: 0, z: -(height / diamondSize) }
-    }),
+    })
   ]
-})
 
-export async function createOriginMarker(origin: Point) {
+  return new PointSymbol3D({
+    symbolLayers: layers
+  })
+}
+
+export async function createOriginMarker(origin: Point, meshHeight: number) {
+  const markerHeight = meshHeight;
+
   const box = (await Mesh.createFromGLTF(origin, Diamond))
     .scale(diamondSize)
-    .offset(0, 0, height);
+    .offset(0, 0, markerHeight);
 
   const cylender = Mesh.createCylinder(origin)
 
   const transform = cylender.transform?.clone() ?? {};
-  transform.scale = [cylinderSize, cylinderSize, height];
+  transform.scale = [cylinderSize, cylinderSize, markerHeight];
   cylender.transform = transform;
 
   const mesh = meshUtils.merge([box, cylender]);

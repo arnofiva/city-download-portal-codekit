@@ -5,7 +5,7 @@ import { SketchTooltip } from "~/components/arcgis/sketch/sketch"
 import CreateExtentTool from "~/components/arcgis/sketch/tools/create-extent-tool"
 import { useSceneView } from "~/components/arcgis/views/scene-view/scene-view-context"
 import { useSelectionState } from "~/data/selection-store"
-import { useAccessorValue } from "~/hooks/reactive"
+import { useAccessorValue, useWatch } from "~/hooks/reactive"
 import { useReferenceElementId } from "../walk-through-context"
 
 export function CreateSelectionTool() {
@@ -20,11 +20,21 @@ export function CreateSelectionTool() {
 
   const store = useSelectionState();
 
+  const toolRef = useRef<any>(null)
+  useWatch(() => store.editingState, (next,) => {
+    if (next === 'creating') {
+      toolRef.current?.start();
+    } else {
+      toolRef.current?.cancel()
+    }
+  }, { initial: false })
+
   const previousSelection = useRef<Polygon | null>(null);
 
   return (
     <>
       <CreateExtentTool
+        ref={toolRef}
         onStart={() => {
           store.editingState = 'creating'
           previousSelection.current = store.selection;

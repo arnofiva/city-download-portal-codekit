@@ -1,16 +1,50 @@
-import { useSceneView } from "~/components/arcgis/views/scene-view/scene-view-context";
 import { useSelectionState } from "~/data/selection-store";
 import { useAccessorValue } from "~/hooks/reactive";
-import { Multipoint, Point } from "@arcgis/core/geometry";
+import { useSceneView } from "~/components/arcgis/views/scene-view/scene-view-context";
+import { Extent, Multipoint, Point } from "@arcgis/core/geometry";
 import { useQuery } from '@tanstack/react-query';
+import { useSceneLayerViews } from "../useSceneLayers";
+
+export function useSelectionVolumeExtent() {
+  const view = useSceneView();
+  const ground = useAccessorValue(() => view.groundView.elevationSampler)!;
+  const store = useSelectionState();
+  const selection = useAccessorValue(() => store.selection) ?? null
+
+  const lvs = useSceneLayerViews() ?? [];
+
+  const query = useQuery({
+    queryKey: ['selection', 'elevation', selection?.toJSON()],
+    queryFn: async ({ signal }) => {
+      let extent: Extent | null = null;
+      for (const lv of lvs) {
+        const query = lv.createQuery();
+        query.spatialRelationship = 'intersects'
+        query.geometry = selection!.extent;
+
+        const results = await lv.queryExtent(query, { signal });
+        if (results.count > 0) {
+          extent ??= results.extent;
+          extent!.union(results.extent);
+        }
+      }
+
+      return extent;
+    },
+    enabled: ground != null && selection != null,
+  });
+
+  return query;
+}
 
 export function useSelectionElevationInfo() {
   const view = useSceneView();
+
   const ground = useAccessorValue(() => view.map.ground)!;
   const store = useSelectionState();
   const selection = useAccessorValue(() => store.selection) ?? null
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['selection', 'elevation', ground?.toJSON(), selection?.toJSON()],
     queryFn: async ({ signal }) => {
       const multipoint = new Multipoint({
@@ -36,6 +70,8 @@ export function useSelectionElevationInfo() {
     },
     enabled: ground != null && selection != null,
   });
+
+  return query;
 }
 
 export function useOriginElevationInfo() {

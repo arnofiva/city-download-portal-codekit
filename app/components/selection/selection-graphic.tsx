@@ -1,12 +1,12 @@
-import { memo, useMemo } from "react";
+import { memo, useDeferredValue, useMemo } from "react";
 import { Polygon } from "@arcgis/core/geometry";
 import Graphic from "~/components/arcgis/graphic";
 import { ExtrudeSymbol3DLayer, FillSymbol3DLayer, PolygonSymbol3D } from "@arcgis/core/symbols";
 import FeatureFilterHighlights from "./scene-filter-highlights";
 import GraphicsLayer from "../arcgis/graphics-layer";
-import { OriginSymbol, SymbologyColors } from "~/symbology/symbology";
+import { createOriginSymbol, SymbologyColors } from "~/symbology/symbology";
 import { useSelectionState } from "~/data/selection-store";
-import { useOriginElevationInfo, useSelectionElevationInfo } from "../../hooks/queries/elevation-query";
+import { useOriginElevationInfo, useSelectionVolumeExtent } from "../../hooks/queries/elevation-query";
 import SolidEdges3D from "@arcgis/core/symbols/edges/SolidEdges3D.js";
 import { useAccessorValue } from "~/hooks/reactive";
 
@@ -39,14 +39,24 @@ function InternalSelectionGraphic() {
 function Origin() {
   const store = useSelectionState();
   const origin = useAccessorValue(() => store.modelOrigin ?? store.selectionOrigin);
+  const selection = useAccessorValue(() => store.selection);
   const originElevationInfo = useOriginElevationInfo().data;
 
   const elevatedOrigin = origin?.clone();
-  if (originElevationInfo && elevatedOrigin) elevatedOrigin.z = originElevationInfo.z
+  if (originElevationInfo && elevatedOrigin) elevatedOrigin.z = originElevationInfo.z;
+
+  const { data } = useSelectionVolumeExtent();
+
+  const volumeExtent = useDeferredValue(data ?? selection?.extent)
+  const height = (volumeExtent?.zmax ?? 0) - (volumeExtent?.zmin ?? 0);
+  const symbol = useMemo(() => createOriginSymbol(height), [height])
 
   return (
     elevatedOrigin ? (
-      <Graphic geometry={elevatedOrigin} symbol={OriginSymbol} />
+      <Graphic
+        geometry={elevatedOrigin}
+        symbol={symbol}
+      />
     ) : null
   )
 }
@@ -54,13 +64,15 @@ function Origin() {
 function Volume() {
   const store = useSelectionState();
   const selection = useAccessorValue(() => store.selection);
-  const elevationQuery = useSelectionElevationInfo()
 
-  const zmin = elevationQuery.data?.minElevation ?? 0;
-  const zmax = elevationQuery.data?.maxElevation ?? 0;
+  const { data } = useSelectionVolumeExtent();
+
+  const zmin = data?.zmin ?? 0
+  const zmax = data?.zmax ?? 0
 
   const bufferedZmin = zmin - 100;
-  const height = (zmax - bufferedZmin) + 200;
+  const bufferedZmax = zmax + 5;
+  const height = (bufferedZmax - bufferedZmin);
 
   const VolumeSymbol = useMemo(() => new PolygonSymbol3D({
     symbolLayers: [

@@ -1,35 +1,50 @@
 import { Point } from "@arcgis/core/geometry";
 import { CalciteDropdownGroup, CalciteDropdownItem, CalciteSplitButton } from "@esri/calcite-components-react";
-import { useRef } from "react";
+import { useRef, useMemo, useDeferredValue } from "react";
 import { SketchTooltip } from "~/components/arcgis/sketch/sketch";
 import CreatePointTool from "~/components/arcgis/sketch/tools/create-point-tool";
 import { useSelectionState } from "~/data/selection-store";
-import { OriginSymbol } from "~/symbology/symbology";
+import { createOriginSymbol } from "~/symbology/symbology";
+import { useSelectionVolumeExtent } from "~/hooks/queries/elevation-query";
+import { useAccessorValue } from "~/hooks/reactive";
 
 export function UpdateOriginTool() {
   const store = useSelectionState();
-  const previousSelection = useRef<Point | null>(null);
+  const selection = useAccessorValue(() => store.selection);
+  const hasSelection = selection != null;
 
+  const previousOrigin = useRef<Point | null>(null);
   const previousEditingState = useRef(store.editingState);
+
+  const { data } = useSelectionVolumeExtent();
+  // Get elevation info for dynamic symbol height
+
+  const volumeExtent = useDeferredValue(data ?? selection?.extent)
+  const height = (volumeExtent?.zmax ?? 0) - (volumeExtent?.zmin ?? 0);
+  // Create symbol with dynamic height
+  const symbol = useMemo(() => createOriginSymbol(height), [height]);
 
   return (
     <CreatePointTool
       onStart={() => {
+        console.log(store.editingState);
         previousEditingState.current = store.editingState;
-        previousSelection.current = store.modelOrigin;
+        previousOrigin.current = store.modelOrigin;
         store.editingState = 'updating-origin';
       }}
       onActive={(point) => {
         store.modelOrigin = point;
       }}
       onComplete={() => {
-        store.editingState = 'updating-selection';
+        store.editingState = hasSelection
+          ? 'updating-selection'
+          : 'creating'
       }}
       onCancel={() => {
         store.editingState = previousEditingState.current;
-        store.modelOrigin = previousSelection.current;
+        store.modelOrigin = previousOrigin.current;
       }}
-      createSymbol={OriginSymbol}
+      createSymbol={symbol}
     >
       {({ start, cancel, state }) => (
         <>
