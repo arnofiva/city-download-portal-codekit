@@ -6,7 +6,7 @@ import FeatureFilterHighlights from "./scene-filter-highlights";
 import GraphicsLayer from "../arcgis/graphics-layer";
 import { createOriginSymbol, SymbologyColors } from "~/symbology/symbology";
 import { useSelectionState } from "~/data/selection-store";
-import { useOriginElevationInfo, useSelectionVolumeExtent } from "../../hooks/queries/elevation-query";
+import { usePreciseOriginElevationInfo, useSelectionVolumeExtent } from "../../hooks/queries/elevation-query";
 import SolidEdges3D from "@arcgis/core/symbols/edges/SolidEdges3D.js";
 import { useAccessorValue } from "~/hooks/reactive";
 
@@ -40,8 +40,9 @@ function Origin() {
   const store = useSelectionState();
   const origin = useAccessorValue(() => store.modelOrigin ?? store.selectionOrigin);
   const selection = useAccessorValue(() => store.selection);
-  const originElevationInfo = useOriginElevationInfo().data;
+  const originElevationInfo = usePreciseOriginElevationInfo().data;
 
+  /* since the elevation calculations are async they can be quite slow, so using the z enriched origin directly would look choppy. Instead, we just use the current origin, and add the most current elevation info we have to that point */
   const elevatedOrigin = origin?.clone();
   if (originElevationInfo && elevatedOrigin) elevatedOrigin.z = originElevationInfo.z;
 
@@ -74,7 +75,7 @@ function Volume() {
   const bufferedZmax = zmax + 5;
   const height = (bufferedZmax - bufferedZmin);
 
-  const VolumeSymbol = useMemo(() => new PolygonSymbol3D({
+  const volumeSymbol = useMemo(() => new PolygonSymbol3D({
     symbolLayers: [
       new ExtrudeSymbol3DLayer({
         size: height,
@@ -103,7 +104,7 @@ function Volume() {
     elevatedPolygon ? (
       <Graphic
         geometry={elevatedPolygon}
-        symbol={VolumeSymbol}
+        symbol={volumeSymbol}
       />
     ) : null
   )

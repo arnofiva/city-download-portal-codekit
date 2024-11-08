@@ -10,7 +10,7 @@ import { useAccessorValue } from "../../hooks/reactive";
 import { Dispatch, useDeferredValue, useRef } from "react";
 import { BlockAction, BlockState } from "./sidebar-state";
 import { useSelectionState } from "~/data/selection-store";
-import { useOriginElevationInfo } from "../../hooks/queries/elevation-query";
+import { usePreciseOriginElevationInfo } from "../../hooks/queries/elevation-query";
 import * as intl from "@arcgis/core/intl.js";
 import * as coordinateFormatter from "@arcgis/core/geometry/coordinateFormatter.js";
 import { UpdateOriginTool } from "../selection/selection-tools/update-origin-tool";
@@ -44,7 +44,7 @@ export default function ModelOrigin({
 
   const srName = query.data ?? '--'
 
-  const ele = useOriginElevationInfo();
+  const ele = usePreciseOriginElevationInfo();
   const elevationPoint = ele.data;
 
   const store = useSelectionState();

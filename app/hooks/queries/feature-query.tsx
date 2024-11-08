@@ -39,6 +39,41 @@ export function useSelectedFeaturesFromLayerViews(key?: string) {
   return query;
 }
 
+export function useSelectedFeaturesCount() {
+  const store = useSelectionState();
+  const selection = useAccessorValue(() => store.selection);
+  const sceneLayerViews = useSceneLayerViews();
+
+  const queryKey = useDeferredValue(
+    ['selected-features', 'layerviews', sceneLayerViews?.map(lv => lv.layer.id), selection?.rings]
+  )
+
+  const query = useQuery({
+    queryKey,
+    queryFn: async ({ signal }) => {
+      const promises: Promise<unknown>[] = [];
+
+      let count = 0;
+      for (const layerView of sceneLayerViews!) {
+        const query = layerView.createQuery();
+        query.geometry = selection!.extent;
+        query.spatialRelationship = 'intersects'
+
+        const queryPromise = layerView.queryExtent(query, { signal }).then(result => {
+          count += result.count;
+        });
+        promises.push(queryPromise);
+      }
+      await Promise.all(promises)
+
+      return count;
+    },
+    enabled: selection != null && sceneLayerViews != null,
+  })
+
+  return query;
+}
+
 export function useSelectedFeaturesFromLayers(enabled = false) {
   const sceneLayerViews = useSceneLayerViews();
   const store = useSelectionState();

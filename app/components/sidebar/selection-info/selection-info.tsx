@@ -17,7 +17,7 @@ import { useSelectionElevationInfo } from "../../../hooks/queries/elevation-quer
 import { useSelectionState } from "~/data/selection-store";
 import * as intl from "@arcgis/core/intl";
 import * as geAsync from "@arcgis/core/geometry/geometryEngineAsync";
-import { useSelectedFeaturesFromLayerViews } from "../../../hooks/queries/feature-query";
+import { useSelectedFeaturesCount } from "../../../hooks/queries/feature-query";
 import { UpdateSelectionTool } from "../../selection/selection-tools/update-selectiont-tool";
 import { useQuery } from "@tanstack/react-query";
 import { useAccessorValue } from "~/hooks/reactive";
@@ -67,9 +67,7 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
       { maximumFractionDigits: 2, style: 'unit', unit: 'meter', unitDisplay: 'short' }
     )
   }
-
-  const { data } = useSelectedFeaturesFromLayerViews();
-  const featureCount = (data ? Array.from(data.values()) : []).reduce((total, f) => total + f.length, 0)
+  const { data: featureCount = 0 } = useSelectedFeaturesCount();
 
   const ref = useRef<HTMLCalciteBlockElement>(null);
   useEffect(() => {

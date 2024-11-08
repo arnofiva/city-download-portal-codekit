@@ -74,7 +74,7 @@ export function useSelectionElevationInfo() {
   return query;
 }
 
-export function useOriginElevationInfo() {
+export function usePreciseOriginElevationInfo() {
   const view = useSceneView();
   const ground = useAccessorValue(() => view.map.ground)!;
   const store = useSelectionState();

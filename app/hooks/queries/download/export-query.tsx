@@ -3,14 +3,14 @@ import { Extent, Mesh, Point } from "@arcgis/core/geometry";
 import { useScene } from "../../../components/arcgis/maps/web-scene/scene-context";
 import { useSelectionState } from "~/data/selection-store";
 import { useSelectedFeaturesFromLayers } from "../feature-query";
-import { useEffect } from "react";
-import { useOriginElevationInfo } from "../elevation-query";
+import { useDeferredValue, useEffect } from "react";
+import { usePreciseOriginElevationInfo } from "../elevation-query";
 import { useIsMutating, useMutation, useQuery } from '@tanstack/react-query';
 import { useAccessorValue } from "~/hooks/reactive";
 import { ToastableError, useToast } from "~/components/toast";
 import WebScene from "@arcgis/core/WebScene";
 
-export function useExportQuery({ enabled = false, includeOriginMarker = true }: { enabled?: boolean, includeOriginMarker?: boolean }) {
+export function useExportSizeQuery({ enabled = false, includeOriginMarker = true }: { enabled?: boolean, includeOriginMarker?: boolean }) {
   const scene = useScene()
   const store = useSelectionState();
   const selection = useAccessorValue(() => store.selection);
@@ -19,7 +19,7 @@ export function useExportQuery({ enabled = false, includeOriginMarker = true }: 
   const featureQueryError = featureQuery.error;
   const features = Array.from(featureQuery.data?.values() ?? []).flat();
 
-  const modelOrigin = useOriginElevationInfo().data
+  const modelOrigin = usePreciseOriginElevationInfo().data
 
   useEffect(() => {
     if (enabled) {
@@ -29,32 +29,48 @@ export function useExportQuery({ enabled = false, includeOriginMarker = true }: 
 
   const isDownloading = useIsMutating({ mutationKey: ['export-download'] }) > 0
 
+  const isEnabled =
+    enabled &&
+    !isDownloading &&
+    scene != null &&
+    selection != null &&
+    featureQueryError == null &&
+    modelOrigin != null;
+
+  const queryKey = useDeferredValue([
+    'export',
+    'size',
+    features.map(f => f.getObjectId()),
+    selection?.extent?.toJSON(),
+    modelOrigin?.toJSON(),
+    includeOriginMarker
+  ]);
+
   const query = useQuery({
-    queryKey: [
-      'download',
-      features.map(f => f.getObjectId()),
-      selection?.extent?.toJSON(),
-      modelOrigin?.toJSON(),
-      includeOriginMarker
-    ],
+    queryKey,
     queryFn: async ({ signal }) => {
       if (featureQueryError) {
         throw featureQueryError;
       }
 
-      const blob = await createModelBlob({
-        scene,
-        extent: selection!.extent,
-        meshes: features.map(f => f.geometry as Mesh),
-        signal,
-        origin: modelOrigin!,
-        includeOriginMarker,
-        filename: "unknown",
-      })
+      try {
+        const blob = await createModelBlob({
+          scene,
+          extent: selection!.extent,
+          meshes: features.map(f => f.geometry as Mesh),
+          signal,
+          origin: modelOrigin!,
+          includeOriginMarker,
+          filename: "unknown",
+        })
 
-      return blob;
+        return blob.size;
+      } catch (error) {
+        if (error instanceof ToastableError) return null;
+      }
     },
-    enabled: !isDownloading && enabled && scene != null && selection != null && featureQueryError == null && modelOrigin != null,
+    enabled: isEnabled,
+    placeholderData: null
   })
 
   return query;
@@ -114,6 +130,15 @@ async function createModelBlob(args: {
     signal
   } = args;
 
+  if (meshes.length > 100) {
+    throw new ToastableError({
+      key: 'too-many-features',
+      message: 'Too many features have been selected',
+      severity: 'danger',
+      title: 'Too many features in selection'
+    })
+  }
+
   try {
     // eslint-disable-next-line no-var
     var mesh = await createMesh({
@@ -124,7 +149,6 @@ async function createModelBlob(args: {
       includeOriginMarker,
       signal,
     });
-    // throw new Error('errrorororor');
   } catch (_error) {
     throw new ToastableError({
       key: 'mesh-creation-failed',

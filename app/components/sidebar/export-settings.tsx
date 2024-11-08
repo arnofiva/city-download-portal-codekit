@@ -9,12 +9,12 @@ import {
 import { useScene } from "../arcgis/maps/web-scene/scene-context";
 import { useAccessorValue } from "../../hooks/reactive";
 import { Dispatch, useDeferredValue, useEffect, useRef, useState } from "react";
-import { useDownloadExportMutation, useExportQuery } from "../../hooks/queries/download/export-query";
+import { useDownloadExportMutation, useExportSizeQuery } from "../../hooks/queries/download/export-query";
 import { BlockAction, BlockState } from "./sidebar-state";
 import { useSelectionState } from "~/data/selection-store";
 import { useReferenceElementId } from "../selection/walk-through-context";
-import { useSelectedFeaturesFromLayers } from "~/hooks/queries/feature-query";
-import { useOriginElevationInfo } from "~/hooks/queries/elevation-query";
+import { useSelectedFeaturesCount, useSelectedFeaturesFromLayers } from "~/hooks/queries/feature-query";
+import { usePreciseOriginElevationInfo } from "~/hooks/queries/elevation-query";
 import { Mesh } from "@arcgis/core/geometry";
 
 interface ExportSettingsProps {
@@ -36,25 +36,30 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
   const selection = useAccessorValue(() => store.selection)
   const deferredSelection = useDeferredValue(selection);
 
+
   const featureQuery = useSelectedFeaturesFromLayers(editingState === 'idle');
   const features = Array.from(featureQuery.data?.values() ?? []).flat();
-  const modelOrigin = useOriginElevationInfo().data
+  const modelOrigin = usePreciseOriginElevationInfo().data;
 
-  const downloadQuery = useExportQuery({
+  const { data: featureCount = 0 } = useSelectedFeaturesCount();
+  const hasTooManyFeatures = featureCount > 100
+
+  const downloadQuery = useExportSizeQuery({
     includeOriginMarker,
-    enabled: editingState === 'idle'
+    enabled: editingState === 'idle' && !hasTooManyFeatures
   });
 
   const mutation = useDownloadExportMutation();
 
-  const canDownload = editingState === 'idle'
+  const canDownload = editingState === 'idle' && !hasTooManyFeatures
 
-  const fileSize = downloadQuery.data?.size;
+  const fileSize = downloadQuery.data;
 
   let fileSizeString = 'unknown'
   if (deferredSelection == null) fileSizeString = 'no selection';
   if (fileSize != null) fileSizeString = `${(fileSize * 1e-6).toFixed(2)} mb`;
-  if (downloadQuery.isFetching && fileSize == null) fileSizeString = 'loading';
+  if ((downloadQuery.isFetching && fileSize == null) || editingState !== 'idle') fileSizeString = 'loading';
+  if (hasTooManyFeatures) fileSizeString = 'unavailable - too many features'
 
   const ref = useRef<HTMLCalciteBlockElement>(null);
   useEffect(() => {
