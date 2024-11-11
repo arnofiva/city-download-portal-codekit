@@ -17,7 +17,7 @@ Built with the Arcgis Maps SDK for Javascript, React, Remix, and Tailwind CSS.
 To set up the project, clone the repository and install the dependencies:
 
 ```shell
-git clone https://github.com/your-username/city-download-portal.git
+git clone git@github.com:gunnnnii/city-download-portal.git
 cd city-download-portal
 npm install
 ```
