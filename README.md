@@ -7,7 +7,9 @@ Built with the Arcgis Maps SDK for Javascript, React, Remix, and Tailwind CSS.
 
 ## Features
 
-- list of features
+- Select an area to generate a mesh with using interactive tools, or by providing your own georeferencing data
+- Export your selection to a `.glb` file for consumption in other programs
+- View georeferencing and measurment data about the selected area
 
 ## Instructions
 
