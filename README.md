@@ -1,51 +1,81 @@
-# templates/spa
+# City Download Portal
 
-This template leverages [Remix SPA Mode](https://remix.run/docs/en/main/guides/spa-mode) to build your app as a Single-Page Application using [Client Data](https://remix.run/docs/en/main/guides/client-data) for all of your data loads and mutations.
+Built with the Arcgis Maps SDK for Javascript, React, Remix, and Tailwind CSS.
 
-## Setup
+[View it live](https://gunnnnii.github.io/city-download-portal/)
 
-```shellscript
-npx create-remix@latest --template remix-run/remix/templates/spa
+![App](missing-image)
+
+## Features
+
+- list of features
+
+## Instructions
+
+To set up the project, clone the repository and install the dependencies:
+
+```shell
+git clone https://github.com/your-username/city-download-portal.git
+cd city-download-portal
+npm install
 ```
+
+This will install all the necessary dependencies required for the project.
+
+## Requirements
+
+- A text-editor
+- A web browser with access to the internet
+
+## Resources
+
+- [ArcGIS Maps SDK for JavaScript - Developer documentation](https://developers.arcgis.com/javascript/latest/)
+- [ArcGIS Blog](http://blogs.esri.com/esri/arcgis/)
 
 ## Development
 
-You can develop your SPA app just like you would a normal Remix app, via:
+You can develop your SPA app just like you would a normal Remix app. Start the development server with:
 
-```shellscript
+```shell
 npm run dev
 ```
 
-## Production
+This will start the development server and watch for changes in your source files. Any changes you make to the source files will automatically reload the app in the browser.
 
-When you are ready to build a production version of your app, `npm run build` will generate your assets and an `index.html` for the SPA.
+## Deployment
 
-```shellscript
+The project can be automatically deployed to GitHub Pages using GitHub Actions. The deployment workflow is defined in `.github/workflows/build-deploy.yml`.
+
+To deploy manually, you can build the project and host it anywhere:
+
+```shell
 npm run build
 ```
 
-### Preview
+This will generate a `build` directory containing the production-ready files. You can then serve these files using any static site hosting service.
 
-You can preview the build locally with [vite preview](https://vitejs.dev/guide/cli#vite-preview) to serve all routes via the single `index.html` file:
+## Issues
 
-```shellscript
-npm run preview
-```
+Find a bug or want to request a new feature? Please let us know by submitting an issue.
 
-> [!IMPORTANT]
->
-> `vite preview` is not designed for use as a production server
+## Contributing
 
-### Deployment
+Esri welcomes contributions from anyone and everyone. Please see our [guidelines for contributing](https://github.com/esri/contributing).
 
-You can then serve your app from any HTTP server of your choosing. The server should be configured to serve multiple paths from a single root `/index.html` file (commonly called "SPA fallback"). Other steps may be required if the server doesn't directly support this functionality.
+## Licensing
 
-For a simple example, you could use [sirv-cli](https://www.npmjs.com/package/sirv-cli):
+Copyright 2024 Esri
 
-```shellscript
-npx sirv-cli build/client/ --single
-```
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-## Styling
+http://www.apache.org/licenses/LICENSE-2.0
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever css framework you prefer. See the [Vite docs on css](https://vitejs.dev/guide/features.html#css) for more information.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+A copy of the license is available in the repository's [license.txt](https://raw.github.com/Esri/quickstart-map-js/master/license.txt) file.
