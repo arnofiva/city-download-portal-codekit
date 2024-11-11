@@ -33,6 +33,9 @@ This will install all the necessary dependencies required for the project.
 
 - [ArcGIS Maps SDK for JavaScript - Developer documentation](https://developers.arcgis.com/javascript/latest/)
 - [ArcGIS Blog](http://blogs.esri.com/esri/arcgis/)
+- [Remix](https://remix.run/)
+- [React](https://react.dev/)
+- [Tanstack Query](https://tanstack.com/query/latest)
 
 ## Development
 
