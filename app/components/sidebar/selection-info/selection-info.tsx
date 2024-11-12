@@ -17,7 +17,7 @@ import {
   CalciteIcon,
   CalciteLabel,
 } from "@esri/calcite-components-react";
-import Minimap from "./minimap";
+import Minimap from "./selection-footprint/footprint-view";
 import {
   Dispatch,
   useDeferredValue,

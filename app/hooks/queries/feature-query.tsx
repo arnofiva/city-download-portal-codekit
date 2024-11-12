@@ -16,12 +16,13 @@ import { useSceneView } from "~/components/arcgis/views/scene-view/scene-view-co
 import { useSelectionState } from "~/data/selection-store";
 import SceneLayer from "@arcgis/core/layers/SceneLayer";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
-import { useDeferredValue } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { Polygon } from "@arcgis/core/geometry";
 import * as geometryEngineAsync from "@arcgis/core/geometry/geometryEngineAsync";
 import { useSceneLayerViews } from "../useSceneLayers";
 import { useQuery } from '@tanstack/react-query';
 import { useAccessorValue } from "../reactive";
+import { useDebouncedValue } from "../useDebouncedValue";
 
 export function useSelectedFeaturesFromLayerViews(key?: string) {
   const store = useSelectionState();
@@ -123,10 +124,14 @@ export function useSelectionFootprints(selection: Polygon | null) {
   const view = useSceneView()
   const sceneLayerViews = useSceneLayerViews();
 
-  const deferredPolygon = useDeferredValue(selection)
+  const deferredPolygon = useDebouncedValue(selection)
 
   const query = useQuery({
-    queryKey: ['selecion-footprints', 'layers', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings],
+    queryKey: [
+      'selecion-footprints',
+      'layers',
+      sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings
+    ],
     queryFn: async ({ signal }) => {
       const sceneLayers = sceneLayerViews!.map(lv => lv.layer);
 
@@ -160,4 +165,3 @@ export function useSelectionFootprints(selection: Polygon | null) {
 
   return query;
 }
-
