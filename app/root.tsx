@@ -87,7 +87,6 @@ function setup() {
 
 export async function clientLoader({ request }: ClientLoaderFunctionArgs) {
   setup();
-  /* this should be removed eventually */
   const { OAuthInfo, IdentityManager } = await loadModules();
   const params = new URL(request.url).searchParams;
 
@@ -101,13 +100,6 @@ export async function clientLoader({ request }: ClientLoaderFunctionArgs) {
   });
 
   IdentityManager.registerOAuthInfos([info]);
-
-  try {
-    await IdentityManager.checkSignInStatus(portalUrl);
-  } catch (_error) {
-    await IdentityManager.getCredential(info.portalUrl + "/sharing");
-  }
-  /* this should be removed eventually */
 
   const scenes = await Promise.all(
     Array.from(SCENES.values())
@@ -130,31 +122,6 @@ export async function clientLoader({ request }: ClientLoaderFunctionArgs) {
   }));
 
   return { scenes, maps, };
-}
-
-function AppQueryClient(props: PropsWithChildren) {
-  const toast = useToast();
-
-  const queryClient = useInstance(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        placeholderData: keepPreviousData
-      }
-    },
-    queryCache: new QueryCache({
-      onError: (error) => {
-        if (error instanceof ToastableError) {
-          toast(error.toast);
-        }
-      }
-    })
-  }));
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      {props.children}
-    </QueryClientProvider>
-  )
 }
 
 export function Layout({ children }: PropsWithChildren) {

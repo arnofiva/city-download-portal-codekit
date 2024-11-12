@@ -18,7 +18,7 @@ import { redirect, useLoaderData, useRouteError } from "@remix-run/react";
 import Sidebar from "~/components/sidebar/sidebar";
 import invariant from "tiny-invariant";
 import { ViewUI } from "~/components/arcgis/views/scene-view/scene-view-ui";
-import { CalciteAction, CalciteNavigation, CalciteNavigationLogo, CalciteNavigationUser, CalciteScrim } from "@esri/calcite-components-react";
+import { CalciteAction, CalciteNavigation, CalciteNavigationLogo, CalciteNavigationUser, CalcitePopover, CalciteScrim } from "@esri/calcite-components-react";
 import { useSceneListModal } from "~/components/scene-list-modal/scene-list-modal-context";
 import { useAccessorValue } from "~/hooks/reactive";
 import PortalItem from "@arcgis/core/portal/PortalItem";
@@ -27,6 +27,7 @@ import { SketchLayer } from "~/components/arcgis/sketch/sketch-layer";
 import { CreateSelectionTool } from "~/components/selection/selection-tools/create-selection-tool";
 import WalkthroughPopover from "~/components/selection/walk-through-popover";
 import { RootShellPortal } from "~/components/root-shell";
+import { useMutation } from "@tanstack/react-query";
 
 const SceneView = lazy(() => import('~/components/arcgis/views/scene-view/scene-view'));
 const Scene = lazy(() => import('~/components/arcgis/maps/web-scene/scene'));
@@ -64,9 +65,25 @@ export async function clientLoader({ params }: LoaderFunctionArgs) {
 function Header({ portalItem }: { portalItem: PortalItem }) {
   const [, setOpen] = useSceneListModal();
 
-  const fullName = useAccessorValue(() => portalItem.portal.user.fullName);
-  const username = useAccessorValue(() => portalItem.portal.user.username);
-  const avatar = useAccessorValue(() => portalItem.portal.user.thumbnailUrl)
+  const identityMutation = useMutation({
+    mutationFn: async ({ portalUrl }: { portalUrl: string }) => {
+      const { default: IdentityManager } = await import('@arcgis/core/identity/IdentityManager');
+      try {
+        await IdentityManager.checkSignInStatus(portalUrl)
+        IdentityManager.destroyCredentials();
+
+        // signing out does not clear the userinfo from the portalItem
+        // so we reload the entire page to clear all the user info
+        location.reload();
+      } catch (_error) {
+        return await IdentityManager.getCredential(portalUrl + "/sharing");
+      }
+    }
+  })
+
+  const fullName = useAccessorValue(() => portalItem.portal.user?.fullName);
+  const username = useAccessorValue(() => portalItem.portal.user?.username);
+  const avatar = useAccessorValue(() => portalItem.portal.user?.thumbnailUrl)
 
   const title = useAccessorValue(() => portalItem.title);
   const description = useAccessorValue(() => portalItem.description);
@@ -74,7 +91,39 @@ function Header({ portalItem }: { portalItem: PortalItem }) {
   return (
     <CalciteNavigation slot="header">
       <CalciteNavigationLogo slot="logo" heading={title} description={description} />
-      <CalciteNavigationUser slot="user" full-name={fullName} username={username} thumbnail={avatar} />
+      <div slot="content-end">
+        <CalciteNavigationUser
+          className="h-full"
+          id="user-menu"
+          full-name={fullName}
+          username={username}
+          thumbnail={avatar}
+        />
+        <CalcitePopover
+          label="Sign in settings"
+          referenceElement="user-menu"
+          placement="bottom-end"
+          offsetDistance={0}
+          pointer-disabled
+          autoClose
+          triggerDisabled={identityMutation.isPending}
+        >
+          <CalciteAction
+            text={fullName == null ? "Sign in" : "Sign out"}
+            label={fullName == null ? "Sign in" : "Sign out"}
+            textEnabled
+            scale="l"
+            disabled={identityMutation.isPending}
+            onClick={() => {
+              identityMutation.mutate({
+                portalUrl: portalItem.portal.url,
+              });
+            }}
+          >
+            {fullName == null ? "Sign in" : "Sign out"}
+          </CalciteAction>
+        </CalcitePopover>
+      </div>
       <CalciteAction slot="navigation-action" text={""} icon="hamburger" onClick={() => setOpen(true)} />
     </CalciteNavigation>
   )
