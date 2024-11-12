@@ -16,7 +16,7 @@ import { createMesh } from "./create-mesh";
 import { Extent, Mesh, Point } from "@arcgis/core/geometry";
 import { useScene } from "../../../components/arcgis/maps/web-scene/scene-context";
 import { useSelectionState } from "~/data/selection-store";
-import { useSelectedFeaturesFromLayers } from "../feature-query";
+import { MAX_FEATURES, useSelectedFeaturesFromLayers } from "../feature-query";
 import { useDeferredValue, useEffect } from "react";
 import { usePreciseOriginElevationInfo } from "../elevation-query";
 import { useIsMutating, useMutation, useQuery } from '@tanstack/react-query';
@@ -144,7 +144,7 @@ async function createModelBlob(args: {
     signal
   } = args;
 
-  if (meshes.length > 100) {
+  if (meshes.length > MAX_FEATURES) {
     throw new ToastableError({
       key: 'too-many-features',
       message: 'Too many features have been selected',

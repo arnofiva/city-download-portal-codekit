@@ -16,6 +16,7 @@ import {
   CalciteBlock,
   CalciteIcon,
   CalciteLabel,
+  CalciteNotice,
 } from "@esri/calcite-components-react";
 import Minimap from "./selection-footprint/footprint-view";
 import {
@@ -31,11 +32,10 @@ import { useSelectionElevationInfo } from "../../../hooks/queries/elevation-quer
 import { useSelectionState } from "~/data/selection-store";
 import * as intl from "@arcgis/core/intl";
 import * as geAsync from "@arcgis/core/geometry/geometryEngineAsync";
-import { useSelectedFeaturesCount } from "../../../hooks/queries/feature-query";
+import { useHasTooManyFeatures, useSelectedFeaturesCount } from "../../../hooks/queries/feature-query";
 import { UpdateSelectionTool } from "../../selection/selection-tools/update-selectiont-tool";
 import { useQuery } from "@tanstack/react-query";
 import { useAccessorValue } from "~/hooks/reactive";
-
 interface MeasurementsProps {
   state: BlockState['state'];
   dispatch: Dispatch<BlockAction[]>;
@@ -45,6 +45,8 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
   const selection = useAccessorValue(() => store.selection);
 
   const deferredSelection = useDeferredValue(selection);
+
+  const hasTooManyFeatures = useHasTooManyFeatures();
 
   let area = null;
   let northToSouthLength = null;
@@ -141,7 +143,12 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
               <MeasurementValue icon="urban-model" label="Selected features" value={featureCount} />
             </li>
           </ul>
-          <UpdateSelectionTool />
+          <UpdateSelectionTool invalid={hasTooManyFeatures} />
+          <CalciteNotice kind="warning" open={hasTooManyFeatures}>
+            <p className="p-2 text-xs" slot="message">
+              The selection has too many features. Please reduce the size of the selected area or adjust its location.
+            </p>
+          </CalciteNotice>
         </div>
       </CalciteBlock>
       <Dimensions />

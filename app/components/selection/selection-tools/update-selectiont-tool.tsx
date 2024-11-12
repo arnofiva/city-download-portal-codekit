@@ -20,7 +20,7 @@ import { ReshapeTool } from "~/components/arcgis/sketch/tools/reshape-tool";
 import { useSelectionState } from "~/data/selection-store";
 import { useAccessorValue, useWatch } from "~/hooks/reactive";
 
-export function UpdateSelectionTool() {
+export function UpdateSelectionTool(props: { invalid?: boolean }) {
   const store = useSelectionState();
 
   const toolRef = useRef<any>(null)
@@ -73,7 +73,7 @@ export function UpdateSelectionTool() {
                 } else start([store.graphic])
               }
             }}
-            disabled={!hasSelection}
+            disabled={!hasSelection || state === 'active' && props.invalid}
             appearance={state === 'active' ? 'solid' : 'outline-fill'}
             scale="l"
             iconStart="check"

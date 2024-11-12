@@ -23,12 +23,14 @@ import { useSelectionState } from "~/data/selection-store";
 import { usePreciseOriginElevationInfo, useSelectionVolumeExtent } from "../../hooks/queries/elevation-query";
 import SolidEdges3D from "@arcgis/core/symbols/edges/SolidEdges3D.js";
 import { useAccessorValue } from "~/hooks/reactive";
+import { useHasTooManyFeatures } from "~/hooks/queries/feature-query";
 
 function InternalSelectionGraphic() {
   const store = useSelectionState();
   const isIdle = useAccessorValue(() => store.editingState === 'idle');
   const isUpdatingOrigin = useAccessorValue(() => store.editingState === 'updating-origin');
   const selection = useAccessorValue(() => store.selection)
+  const hasTooManyFeatures = useHasTooManyFeatures()
 
   return (
     <>
@@ -38,7 +40,7 @@ function InternalSelectionGraphic() {
             store.graphic = graphic
           }}
           geometry={selection}
-          symbol={FootprintSymbol}
+          symbol={!hasTooManyFeatures ? FootprintSymbol : InvalidFootprintSymbol}
         />
       ) : null}
       <GraphicsLayer elevationMode="absolute-height">
@@ -129,6 +131,16 @@ const FootprintSymbol = new PolygonSymbol3D({
     new FillSymbol3DLayer({
       material: { color: SymbologyColors.selection(0.25) },
       outline: { color: SymbologyColors.selection() },
+    })
+  ]
+});
+
+
+const InvalidFootprintSymbol = new PolygonSymbol3D({
+  symbolLayers: [
+    new FillSymbol3DLayer({
+      material: { color: SymbologyColors.invalidSelection(0.1) },
+      outline: { color: SymbologyColors.invalidSelection() },
     })
   ]
 });

@@ -27,7 +27,7 @@ import { useDownloadExportMutation, useExportSizeQuery } from "../../hooks/queri
 import { BlockAction, BlockState } from "./sidebar-state";
 import { useSelectionState } from "~/data/selection-store";
 import { useReferenceElementId } from "../selection/walk-through-context";
-import { useSelectedFeaturesCount, useSelectedFeaturesFromLayers } from "~/hooks/queries/feature-query";
+import { useHasTooManyFeatures, useSelectedFeaturesFromLayers } from "~/hooks/queries/feature-query";
 import { usePreciseOriginElevationInfo } from "~/hooks/queries/elevation-query";
 import { Mesh } from "@arcgis/core/geometry";
 
@@ -55,8 +55,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
   const features = Array.from(featureQuery.data?.values() ?? []).flat();
   const modelOrigin = usePreciseOriginElevationInfo().data;
 
-  const { data: featureCount = 0 } = useSelectedFeaturesCount();
-  const hasTooManyFeatures = featureCount > 100
+  const hasTooManyFeatures = useHasTooManyFeatures();
 
   const downloadQuery = useExportSizeQuery({
     includeOriginMarker,

@@ -14,9 +14,7 @@
  */
 import Graphic from "../../../arcgis/graphic";
 import {
-  SimpleFillSymbol,
-  SimpleLineSymbol,
-  SimpleMarkerSymbol
+  SimpleFillSymbol
 } from "@arcgis/core/symbols";
 import { Polygon } from "@arcgis/core/geometry";
 import { SymbologyColors } from "~/symbology/symbology";
@@ -31,22 +29,24 @@ export function FootprintGraphic({ selection }: FootprintGraphicProps) {
 
   if (footprints == null) return null;
 
-  return (
-    <Graphic
-      index={0}
-      geometry={footprints}
-      symbol={footprintQuery.isFetching ? StaleFootprintSymbol : FootprintSymbol}
-    />
-  )
-}
-
-
-const PolygonSymbol = new SimpleFillSymbol({
-  color: SymbologyColors.selection(0.25),
-  outline: {
-    color: SymbologyColors.selection()
+  if (footprintQuery.isSuccess) {
+    return (
+      <Graphic
+        index={0}
+        geometry={footprints}
+        symbol={FootprintSymbol}
+      />
+    )
+  } else {
+    return (
+      <Graphic
+        index={0}
+        geometry={footprints}
+        symbol={StaleFootprintSymbol}
+      />
+    )
   }
-})
+}
 
 const FootprintSymbol = new SimpleFillSymbol({
   color: SymbologyColors.selection(),
@@ -60,21 +60,4 @@ const StaleFootprintSymbol = new SimpleFillSymbol({
   outline: {
     width: 0,
   }
-})
-
-const LineSymbol = new SimpleLineSymbol({
-  width: 3,
-  color: SymbologyColors.measurements(),
-  cap: 'square',
-  marker: {
-    color: SymbologyColors.measurements(),
-    placement: "end",
-    style: "arrow"
-  }
-})
-
-const OriginSymbol = new SimpleMarkerSymbol({
-  color: SymbologyColors.measurements(),
-  style: 'diamond',
-  outline: null!
 })

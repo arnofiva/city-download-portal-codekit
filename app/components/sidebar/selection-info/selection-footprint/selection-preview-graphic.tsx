@@ -15,11 +15,11 @@
 import Graphic from "../../../arcgis/graphic";
 import {
   SimpleFillSymbol,
-  SimpleLineSymbol,
-  SimpleMarkerSymbol
+  SimpleLineSymbol
 } from "@arcgis/core/symbols";
 import { Point, Polygon, Polyline } from "@arcgis/core/geometry";
 import { SymbologyColors } from "~/symbology/symbology";
+import { useHasTooManyFeatures } from "~/hooks/queries/feature-query";
 
 interface SelectionGraphicProps {
   origin: Point
@@ -27,6 +27,8 @@ interface SelectionGraphicProps {
 }
 
 export function SelectionPreviewGraphic({ origin, selection }: SelectionGraphicProps) {
+  const hasTooManyFeatures = useHasTooManyFeatures();
+
   if (selection == null || origin == null) return null;
 
   const [
@@ -56,7 +58,7 @@ export function SelectionPreviewGraphic({ origin, selection }: SelectionGraphicP
       <Graphic
         index={0}
         geometry={selection}
-        symbol={PolygonSymbol}
+        symbol={!hasTooManyFeatures ? SelectionSymbol : InvalidSelectionSymbol}
       />
       <Graphic
         index={2}
@@ -72,12 +74,20 @@ export function SelectionPreviewGraphic({ origin, selection }: SelectionGraphicP
   )
 }
 
-const PolygonSymbol = new SimpleFillSymbol({
+const SelectionSymbol = new SimpleFillSymbol({
   color: SymbologyColors.selection(0.25),
   outline: {
     color: SymbologyColors.selection()
   }
 })
+
+const InvalidSelectionSymbol = new SimpleFillSymbol({
+  color: SymbologyColors.invalidSelection(0.1),
+  outline: {
+    color: SymbologyColors.invalidSelection()
+  }
+})
+
 
 const LineSymbol = new SimpleLineSymbol({
   width: 3,
@@ -88,10 +98,4 @@ const LineSymbol = new SimpleLineSymbol({
     placement: "end",
     style: "arrow"
   }
-})
-
-const OriginSymbol = new SimpleMarkerSymbol({
-  color: SymbologyColors.measurements(),
-  style: 'diamond',
-  outline: null!
 })

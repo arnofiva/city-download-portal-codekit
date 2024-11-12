@@ -26,6 +26,9 @@ export const SymbologyColors = {
   staleSelection(alpha = 1) {
     return new Color([157, 201, 238, alpha])
   },
+  invalidSelection(alpha = 1) {
+    return new Color([255, 0, 0, alpha])
+  },
   measurements(alpha = 1) {
     return new Color([255, 0, 0, alpha])
   }

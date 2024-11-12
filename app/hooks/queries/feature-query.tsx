@@ -16,7 +16,7 @@ import { useSceneView } from "~/components/arcgis/views/scene-view/scene-view-co
 import { useSelectionState } from "~/data/selection-store";
 import SceneLayer from "@arcgis/core/layers/SceneLayer";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue } from "react";
 import { Polygon } from "@arcgis/core/geometry";
 import * as geometryEngineAsync from "@arcgis/core/geometry/geometryEngineAsync";
 import { useSceneLayerViews } from "../useSceneLayers";
@@ -89,6 +89,15 @@ export function useSelectedFeaturesCount() {
   return query;
 }
 
+export const MAX_FEATURES = 100;
+
+export function useHasTooManyFeatures() {
+  const { data: featureCount = 0 } = useSelectedFeaturesCount();
+  const hasTooManyFeatures = featureCount > MAX_FEATURES
+
+  return hasTooManyFeatures;
+}
+
 export function useSelectedFeaturesFromLayers(enabled = false) {
   const sceneLayerViews = useSceneLayerViews();
   const store = useSelectionState();
@@ -123,6 +132,7 @@ export function useSelectedFeaturesFromLayers(enabled = false) {
 export function useSelectionFootprints(selection: Polygon | null) {
   const view = useSceneView()
   const sceneLayerViews = useSceneLayerViews();
+  const hasTooManyFeatures = useHasTooManyFeatures();
 
   const deferredPolygon = useDebouncedValue(selection)
 
@@ -157,10 +167,11 @@ export function useSelectionFootprints(selection: Polygon | null) {
       }
 
       const fpUnion = await geometryEngineAsync.union(footprints) as Polygon
+
       if (fpUnion != null) return fpUnion
       else throw new Error('failed to combine footprints');
     },
-    enabled: deferredPolygon != null && sceneLayerViews != null,
+    enabled: !hasTooManyFeatures && deferredPolygon != null && sceneLayerViews != null,
   })
 
   return query;
