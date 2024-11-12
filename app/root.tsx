@@ -165,7 +165,8 @@ export default function App() {
   const queryClient = useInstance(() => new QueryClient({
     defaultOptions: {
       queries: {
-        placeholderData: keepPreviousData
+        placeholderData: keepPreviousData,
+        staleTime: 1000 * 60 * 5,
       }
     },
     queryCache: new QueryCache({
