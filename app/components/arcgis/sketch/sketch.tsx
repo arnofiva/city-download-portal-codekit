@@ -62,6 +62,8 @@ export const SketchTooltip = memo(
         sketch.tooltipOptions.visibleElements.helpMessage = true;
         sketch.tooltipOptions.helpMessage = helpMessage;
         sketch.tooltipOptions.helpMessageIcon = helpMessageIcon!;
+      } else {
+        sketch.tooltipOptions.visibleElements.helpMessage = false;
       }
 
       return () => {

@@ -84,11 +84,7 @@ export function UpdateSelectionTool() {
                 : "Update selection"
             }
           </CalciteButton>
-          {state === 'active' ? <SketchTooltip
-            helpMessage="Press tab to enter or paste a precise coordinate"
-            helpMessageIcon="information"
-            inputEnabled
-          /> : null}
+          {state === 'active' ? <SketchTooltip /> : null}
         </>
       )}</ReshapeTool >
     </>
