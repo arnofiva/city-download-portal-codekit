@@ -48,21 +48,35 @@ export default function Sidebar() {
     switch (walkthroughState) {
       case 'not-started':
       case 'done': break;
-
-      case 'placing-origin':
+      case 'placing-origin': {
+        dispatch([
+          { block: 'modelOrigin', type: 'open', },
+          { block: 'selection', type: 'close' },
+          { block: 'exportSettings', type: 'close' },
+        ]);
+        break;
+      }
       case 'placing-terminal': {
-        dispatch([{ block: 'modelOrigin', type: 'open' }]);
+        dispatch([
+          { block: 'modelOrigin', type: 'open' },
+          { block: 'selection', type: 'open' },
+          { block: 'exportSettings', type: 'close' },
+        ]);
         break;
       }
       case 'confirming': {
-        dispatch([{ block: 'selection', type: 'open' }]);
+        dispatch([
+          { block: 'modelOrigin', type: 'close' },
+          { block: 'selection', type: 'open' },
+          { block: 'exportSettings', type: 'close' },
+        ]);
         break;
       }
       case 'downloading': {
         dispatch([
-          { block: 'exportSettings', type: 'open' },
           { block: 'modelOrigin', type: 'close' },
-          { block: 'selection', type: 'close' }
+          { block: 'selection', type: 'close' },
+          { block: 'exportSettings', type: 'open' },
         ]);
         break;
       }

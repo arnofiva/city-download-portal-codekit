@@ -84,6 +84,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
   const wasClicked = useRef(false);
 
   const blockElementId = useReferenceElementId('downloading', 'left')
+
   return (
     <CalciteBlock
       id={blockElementId}
@@ -98,7 +99,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
         }, 150)
       }}
       onCalciteBlockClose={() => {
-        if (wasClicked) {
+        if (wasClicked.current) {
           dispatch([{
             type: 'close',
             mode: 'manual',
@@ -107,7 +108,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
         }
       }}
       onCalciteBlockOpen={() => {
-        if (wasClicked) {
+        if (wasClicked.current) {
           dispatch([{
             type: 'open',
             mode: 'manual',
@@ -163,7 +164,6 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
               .then(blob => {
                 const name = filename || title || 'model';
                 downloadFile(name, blob);
-                store.exportState = 'exported'
               })
           }
         }}
