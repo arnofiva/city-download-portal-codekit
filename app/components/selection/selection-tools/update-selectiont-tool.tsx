@@ -22,6 +22,7 @@ import { useAccessorValue, useWatch } from "~/hooks/reactive";
 
 export function UpdateSelectionTool(props: { invalid?: boolean }) {
   const store = useSelectionState();
+  const editingState = useAccessorValue(() => store.editingState);
 
   const toolRef = useRef<any>(null)
   useWatch(() => store.editingState, (next,) => {
@@ -73,7 +74,12 @@ export function UpdateSelectionTool(props: { invalid?: boolean }) {
                 } else start([store.graphic])
               }
             }}
-            disabled={!hasSelection || state === 'active' && props.invalid}
+            disabled={
+              !hasSelection
+              || state === 'active' && props.invalid
+              || editingState === 'creating'
+              || editingState === 'updating-origin'
+            }
             appearance={state === 'active' ? 'solid' : 'outline-fill'}
             scale="l"
             iconStart="check"
