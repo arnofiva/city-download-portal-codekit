@@ -54,10 +54,18 @@ export function UpdateSelectionTool(props: { invalid?: boolean }) {
           else store.updateSelectionPolygon(graphic.geometry as Polygon)
         }}
         onComplete={([graphic]) => {
+          if (props.invalid) {
+            return queueMicrotask(() => toolRef.current.start([store.graphic]))
+          }
+
           if (store.editingState === 'updating-selection') store.editingState = 'idle';
           store.updateSelectionPolygon(graphic.geometry as Polygon)
         }}
         onCancel={() => {
+          if (props.invalid) {
+            return queueMicrotask(() => toolRef.current.start([store.graphic]))
+          }
+
           if (store.editingState === 'updating-selection') store.editingState = 'idle';
           store.selection = previousSelection.current;
         }}
