@@ -17,19 +17,18 @@ import {
   SimpleFillSymbol,
   SimpleLineSymbol
 } from "@arcgis/core/symbols";
-import { Point, Polygon, Polyline } from "@arcgis/core/geometry";
+import { Point, Polygon, Polyline, SpatialReference } from "@arcgis/core/geometry";
 import { SymbologyColors } from "~/symbology/symbology";
 import { useHasTooManyFeatures } from "~/hooks/queries/feature-query";
+import { memo, useMemo } from "react";
 
 interface SelectionGraphicProps {
   origin: Point
   selection: Polygon
 }
 
-export function SelectionPreviewGraphic({ origin, selection }: SelectionGraphicProps) {
+export const SelectionPreviewGraphic = memo(function SelectionPreviewGraphic({ origin, selection }: SelectionGraphicProps) {
   const hasTooManyFeatures = useHasTooManyFeatures();
-
-  if (selection == null || origin == null) return null;
 
   const [
     oo,
@@ -37,21 +36,32 @@ export function SelectionPreviewGraphic({ origin, selection }: SelectionGraphicP
     _tt,
     to,
   ] = selection.rings[0];
-  const ooot = new Polyline({
+  const wkid = selection?.spatialReference.wkid;
+  const sr = useMemo(() =>
+    wkid != null
+      ?
+      new SpatialReference({
+        wkid
+      })
+      : null, [wkid])
+
+  const ooot = useMemo(() => new Polyline({
     paths: [[
       oo,
       ot
     ]],
-    spatialReference: selection.spatialReference
-  })
+    spatialReference: sr!
+  }), [oo, ot, sr])
 
-  const ooto = new Polyline({
+  const ooto = useMemo(() => new Polyline({
     paths: [[
       oo,
       to
     ]],
-    spatialReference: selection.spatialReference
-  })
+    spatialReference: sr!
+  }), [oo, sr, to])
+
+  if (selection == null || origin == null) return null;
 
   return (
     <>
@@ -72,7 +82,7 @@ export function SelectionPreviewGraphic({ origin, selection }: SelectionGraphicP
       />
     </>
   )
-}
+})
 
 const SelectionSymbol = new SimpleFillSymbol({
   color: SymbologyColors.selection(0.25),
@@ -87,7 +97,6 @@ const InvalidSelectionSymbol = new SimpleFillSymbol({
     color: SymbologyColors.invalidSelection()
   }
 })
-
 
 const LineSymbol = new SimpleLineSymbol({
   width: 3,

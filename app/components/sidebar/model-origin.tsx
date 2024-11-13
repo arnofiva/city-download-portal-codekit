@@ -21,7 +21,7 @@ import {
 } from "@esri/calcite-components-react";
 import { useSceneView } from "../arcgis/views/scene-view/scene-view-context";
 import { useAccessorValue } from "../../hooks/reactive";
-import { Dispatch, useDeferredValue, useRef } from "react";
+import { Dispatch, memo, useDeferredValue, useRef } from "react";
 import { BlockAction, BlockState } from "./sidebar-state";
 import { useSelectionState } from "~/data/selection-store";
 import { usePreciseOriginElevationInfo } from "../../hooks/queries/elevation-query";
@@ -35,7 +35,7 @@ interface ModelOriginProps {
   state: BlockState['state'];
   dispatch: Dispatch<BlockAction[]>;
 }
-export default function ModelOrigin({
+const ModelOrigin = memo(function ModelOrigin({
   state,
   dispatch,
 }: ModelOriginProps) {
@@ -62,7 +62,7 @@ export default function ModelOrigin({
   const elevationPoint = ele.data;
 
   const store = useSelectionState();
-  const positionOrigin = useAccessorValue(() => store.modelOrigin ?? store.selectionOrigin);
+  const positionOrigin = useAccessorValue(() => store.origin);
   const adjustedOrigin = elevationPoint?.clone() ?? positionOrigin;
   if (positionOrigin) {
     adjustedOrigin!.x = positionOrigin.x;
@@ -224,4 +224,6 @@ export default function ModelOrigin({
       </div>
     </CalciteBlock>
   );
-}
+})
+
+export default ModelOrigin;

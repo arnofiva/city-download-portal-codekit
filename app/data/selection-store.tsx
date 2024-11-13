@@ -89,6 +89,21 @@ class SelectionStore extends Accessor {
     }
   }
 
+  #previousOrigin = null as Point | null;
+  @property()
+  get origin(): Point | null {
+    this.#previousOrigin ??= this.modelOrigin ?? this.selectionOrigin;
+
+    if (this.#previousOrigin == null) return null;
+
+    if (this.#previousOrigin?.equals((this.modelOrigin ?? this.selectionOrigin)!)) {
+      return this.#previousOrigin;
+    } else {
+      this.#previousOrigin ??= this.modelOrigin ?? this.selectionOrigin;
+      return this.modelOrigin ?? this.selectionOrigin;
+    }
+  }
+
   @property()
   get selectionTerminal(): Point | null {
     const selection = this.selection;

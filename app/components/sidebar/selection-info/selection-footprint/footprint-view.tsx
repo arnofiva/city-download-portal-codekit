@@ -80,7 +80,7 @@ function InternalMinimap() {
   const sceneView = useSceneView();
 
   const store = useSelectionState();
-  const origin = useAccessorValue(() => store.modelOrigin ?? store.selectionOrigin);
+  const origin = useAccessorValue(() => store.origin);
   const selection = useAccessorValue(() => store.selection);
 
   const spatialReference = useAccessorValue(() => sceneView.spatialReference?.wkid);

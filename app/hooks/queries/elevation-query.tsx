@@ -92,7 +92,7 @@ export function usePreciseOriginElevationInfo() {
   const view = useSceneView();
   const ground = useAccessorValue(() => view.map.ground)!;
   const store = useSelectionState();
-  const origin = useAccessorValue(() => store.modelOrigin ?? store.selectionOrigin);
+  const origin = useAccessorValue(() => store.origin);
 
   return useQuery({
     queryKey: ['origin', 'elevation', ground?.toJSON(), origin?.toJSON()],
