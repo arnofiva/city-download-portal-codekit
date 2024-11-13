@@ -17,9 +17,9 @@ import { ComponentProps, PropsWithChildren } from "react";
 import Sketch from "./sketch";
 
 interface SketchLayerProps extends ComponentProps<typeof Sketch>, ComponentProps<typeof GraphicsLayer> { }
-export function SketchLayer({ ref, elevationMode, children, disableZ }: PropsWithChildren<SketchLayerProps>) {
+export function SketchLayer({ ref, elevationMode, children, disableZ, title }: PropsWithChildren<SketchLayerProps>) {
   return (
-    <GraphicsLayer elevationMode={elevationMode}>
+    <GraphicsLayer elevationMode={elevationMode} title={title}>
       <Sketch ref={ref} disableZ={disableZ}>
         {children}
       </Sketch>

@@ -75,7 +75,8 @@ export const SketchTooltip = memo(
   }
 )
 
-export default function Sketch({ ref, children, disableZ = false }: PropsWithChildren<SketchProps>) {
+export default function Sketch(props: PropsWithChildren<SketchProps>) {
+  const { ref, children, disableZ = false } = props;
   const view = useSceneView();
   const layer = useGraphicsLayer();
 
@@ -108,16 +109,15 @@ export default function Sketch({ ref, children, disableZ = false }: PropsWithChi
   }, [view, layer, sketch]);
 
   useWatch(() => {
-    const layers = view.map.allLayers.filter(layer => isSnappableLayer(layer)) as Collection<SnappableLayer>;
-    const sources = layers.map(layer => new FeatureSnappingLayerSource({
-      layer,
-      enabled: true
-    }))
-
-    return sources
-  }, (layers, previous) => {
-    if (previous) sketch.snappingOptions?.featureSources.removeMany(previous);
-    sketch.snappingOptions?.featureSources.addMany(layers);
+    const l = view.map.allLayers.find(layer => layer.title === "selection-graphics-layer") as GraphicsLayer | undefined;
+    return l;
+  }, (layer) => {
+    sketch.snappingOptions.featureSources = [
+      new FeatureSnappingLayerSource({
+        layer,
+        enabled: true
+      })
+    ]
   })
 
   useEffect(() => {

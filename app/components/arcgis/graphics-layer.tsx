@@ -25,12 +25,15 @@ export function useGraphicsLayer() {
 
 interface GraphicsLayerProps {
   elevationMode?: CoreGraphicsLayer['elevationInfo']['mode']
+  title?: string;
 }
-export default function GraphicsLayer({ children, elevationMode = 'on-the-ground' }: PropsWithChildren<GraphicsLayerProps>) {
+export default function GraphicsLayer({ children, elevationMode = 'on-the-ground', title }: PropsWithChildren<GraphicsLayerProps>) {
   const scene = useScene();
   const map = useMap();
 
-  const [layer] = useState(() => new CoreGraphicsLayer({ elevationInfo: { mode: elevationMode } }));
+  const [layer] = useState(() => new CoreGraphicsLayer({
+    elevationInfo: { mode: elevationMode },
+  }));
 
   useEffect(() => {
     if (map) map.add(layer);
@@ -43,7 +46,8 @@ export default function GraphicsLayer({ children, elevationMode = 'on-the-ground
 
   useEffect(() => {
     layer.elevationInfo.mode = elevationMode;
-  }, [elevationMode, layer.elevationInfo])
+    if (title) layer.title = title;
+  }, [elevationMode, title, layer, layer.elevationInfo])
 
   return (
     <GraphicsLayerContext.Provider value={layer}>

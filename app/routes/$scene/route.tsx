@@ -139,7 +139,7 @@ export default function SceneRoute() {
       <Scene portalItem={instance}>
         <Header portalItem={instance} />
         <SceneView>
-          <SketchLayer disableZ elevationMode="on-the-ground">
+          <SketchLayer disableZ elevationMode="on-the-ground" title="selection-graphics-layer">
             <Search />
             <Sidebar />
             <ViewUI position="bottom-left">
