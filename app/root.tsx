@@ -21,6 +21,7 @@ import {
   Scripts,
   ScrollRestoration,
   useParams,
+  useRouteError,
 } from "@remix-run/react";
 import { setAssetPath } from "@esri/calcite-components/dist/components";
 
@@ -31,7 +32,7 @@ import globalStyles from "./global.css?url";
 
 import { defineCustomElements } from "@esri/calcite-components/dist/loader";
 import config from "@arcgis/core/config";
-import { CalciteScrim } from "@esri/calcite-components-react";
+import { CalciteAction, CalciteAlert, CalciteNotice, CalciteScrim } from "@esri/calcite-components-react";
 import { PropsWithChildren, Suspense, lazy, useEffect, useState } from "react";
 import SceneListModal from "./components/scene-list-modal/scene-list-modal";
 import { SceneListModalProvider } from "./components/scene-list-modal/scene-list-modal-context";
@@ -87,41 +88,47 @@ function setup() {
 
 export async function clientLoader({ request }: ClientLoaderFunctionArgs) {
   setup();
-  const { OAuthInfo, IdentityManager } = await loadModules();
-  const params = new URL(request.url).searchParams;
 
-  const portalUrl = params.get("portal-url") ?? "https://zurich.maps.arcgis.com/";
-  config.portalUrl = portalUrl;
+  try {
+    const { OAuthInfo, IdentityManager } = await loadModules();
+    const params = new URL(request.url).searchParams;
 
-  const info = new OAuthInfo({
-    appId: "KojZjH6glligLidj",
-    popup: false,
-    popupCallbackUrl: `${document.location.origin}${import.meta.env.BASE_URL}oauth-callback-api.html`,
-  });
+    const portalUrl = params.get("portal-url") ?? "https://zurich.maps.arcgis.com/";
+    config.portalUrl = portalUrl;
 
-  IdentityManager.registerOAuthInfos([info]);
-
-  const scenes = await Promise.all(
-    Array.from(SCENES.values())
-      .map(async scene => {
-        await scene.item.load();
-        return scene.item;
-      })
-  );
-
-  const maps = await Promise.all(scenes.map(async scene => {
-    const WebScene = await import('@arcgis/core/WebScene').then(mod => mod.default);
-
-    const ws = new WebScene({
-      portalItem: scene
+    const info = new OAuthInfo({
+      appId: "KojZjH6glligLidj",
+      popup: false,
+      popupCallbackUrl: `${document.location.origin}${import.meta.env.BASE_URL}oauth-callback-api.html`,
     });
 
-    await ws.load();
+    IdentityManager.registerOAuthInfos([info]);
 
-    return ws;
-  }));
+    const scenes = await Promise.all(
+      Array.from(SCENES.values())
+        .map(async scene => {
+          await scene.item.load();
+          return scene.item;
+        })
+    );
 
-  return { scenes, maps, };
+    const maps = await Promise.all(scenes.map(async scene => {
+      const WebScene = await import('@arcgis/core/WebScene').then(mod => mod.default);
+
+      const ws = new WebScene({
+        portalItem: scene
+      });
+
+      await ws.load();
+
+      return ws;
+    }));
+
+    return { scenes, maps, };
+  } catch (error) {
+    console.error('client loader error', error);
+    throw error;
+  }
 }
 
 export function Layout({ children }: PropsWithChildren) {
@@ -138,7 +145,7 @@ export function Layout({ children }: PropsWithChildren) {
         <Meta />
         <Links />
       </head>
-      <body>
+      <body className={hasSetup ? "setup" : ""}>
         <RootShell>
           <ToasterProvider>
             <SceneListModalProvider>
@@ -188,10 +195,33 @@ export default function App() {
     </QueryClientProvider>
   )
 }
+
 export function HydrateFallback() {
   return (
-    <RootShell>
-      <CalciteScrim loading />
-    </RootShell>
+    <CalciteScrim loading>
+      <CalciteNotice>
+        <div slot="message">Failed to load portal</div>
+      </CalciteNotice>
+    </CalciteScrim>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+
+  return (
+    <>
+      <CalciteAlert slot="alerts" kind="danger" ref={ref => {
+        if (ref) {
+          ref.open = true;
+        }
+      }} label={""}>
+        <div slot="title">Error</div>
+        <div slot="message">The application failed to load</div>
+        <CalciteAction slot="actions-end" text="Reload" icon="refresh" onClick={() => {
+          window.location.reload();
+        }} />
+      </CalciteAlert>
+    </>
   );
 }
