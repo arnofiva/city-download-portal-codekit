@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 import { useEffect } from "react";
-import { useSceneView } from "../components/views/scene-view/scene-view-context";
+import { useSceneView } from "../views/scene-view/scene-view-context";
 import SearchWidget from "@arcgis/core/widgets/Search.js";
-import { useScene } from "../components/maps/web-scene/scene-context";
+import { useScene } from "../maps/web-scene/scene-context";
 import Geometry from "@arcgis/core/geometry/Geometry";
 import { useAccessorValue } from "~/arcgis/reactive-hooks";
 import useInstance from "~/hooks/useInstance";
