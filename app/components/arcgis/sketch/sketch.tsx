@@ -109,15 +109,29 @@ export default function Sketch(props: PropsWithChildren<SketchProps>) {
   }, [view, layer, sketch]);
 
   useWatch(() => {
-    const l = view.map.allLayers.find(layer => layer.title === "selection-graphics-layer") as GraphicsLayer | undefined;
-    return l;
-  }, (layer) => {
-    sketch.snappingOptions.featureSources = [
-      new FeatureSnappingLayerSource({
+    const snappableLayers = view.map.allLayers
+      .filter(layer => isSnappableLayer(layer))
+      .filter(layer => layer.type !== 'graphics' || layer.title === "selection-graphics-layer") as Collection<SnappableLayer>;
+
+    return snappableLayers;
+  }, (layer, previous) => {
+    if (previous) {
+      for (const layer of previous) {
+        const fs = sketch
+          .snappingOptions
+          .featureSources
+          .find(source => source.layer === layer);
+
+        if (fs) sketch.snappingOptions.featureSources.remove(fs);
+      }
+    }
+
+    sketch.snappingOptions
+      .featureSources
+      .addMany(layer.map(layer => new FeatureSnappingLayerSource({
         layer,
         enabled: true
-      })
-    ]
+      })))
   })
 
   useEffect(() => {
