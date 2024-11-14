@@ -54,7 +54,7 @@ export function createOriginSymbol(height: number) {
       depth: diamondSize,
       height: diamondSize,
       anchor: 'relative',
-      anchorPosition: { x: 0, y: 0, z: -(height / diamondSize) }
+      anchorPosition: { x: 0, y: 0, z: -(heightWithFallback / diamondSize) }
     })
   ]
 
