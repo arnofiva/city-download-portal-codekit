@@ -49,6 +49,18 @@ const styles = [
 ]
 
 export const links: LinksFunction = () => [
+  {
+    rel: "icon",
+    type: "image/svg",
+    sizes: "32x32",
+    href: "favicon-32x32.svg",
+  },
+  {
+    rel: "icon",
+    type: "image/svg",
+    sizes: "64x364",
+    href: "favicon-64x64.svg",
+  },
   ...styles.map(stylesheet => ({ rel: 'stylesheet', href: stylesheet }))
 ]
 
