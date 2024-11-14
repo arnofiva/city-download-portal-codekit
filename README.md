@@ -12,7 +12,7 @@ Built with the Arcgis Maps SDK for Javascript, React, Remix, and Tailwind CSS.
 - Export your selection to a `.glb` file for consumption in other programs
 - View georeferencing and measurment data about the selected area
 
-## Instructions
+## Setting up
 
 To set up the project, clone the repository and install the dependencies:
 
@@ -23,19 +23,6 @@ npm install
 ```
 
 This will install all the necessary dependencies required for the project.
-
-## Requirements
-
-- A text-editor
-- A web browser with access to the internet
-
-## Resources
-
-- [ArcGIS Maps SDK for JavaScript - Developer documentation](https://developers.arcgis.com/javascript/latest/)
-- [ArcGIS Blog](http://blogs.esri.com/esri/arcgis/)
-- [Remix](https://remix.run/)
-- [React](https://react.dev/)
-- [Tanstack Query](https://tanstack.com/query/latest)
 
 ## Development
 
@@ -58,6 +45,61 @@ npm run build
 ```
 
 This will generate a `build` directory containing the production-ready files. You can then serve these files using any static site hosting service.
+
+## Project structure
+
+This project is set up using [React Remix](https://remix.run/) and follows a file-based routing convention. Below you can see a description of some important files and directories.
+
+```
+app
+├── arcgis
+|   ├── components
+|   |   └── # various component wrappers around the @arcgis/core sdk
+|   └── reactive-hooks.tsx
+|       └── # hooks to allow usage of reactiveUtils in react components
+├── components
+|   └── # shared components that don't belong to a particular route
+├── hooks
+|   ├── # various shared utility hooks
+│   └── queries
+|       └── # queries and mutations to handle asynchronous state
+├── routes
+|   ├── _root
+|   |   └── # contains components that define the root layout of the application (most notably the main calcite-shell)
+│   ├── _root._index
+|   |   └── # index is a simple splash page to catch traffic to the root url. This is where you could set up a landing page
+│   └── _root.$scene
+|       |   sidebar
+|       |   └── # the markup for the sidebar UI
+│       └── selection
+|           └── # components, utilities and state to manage and visualize the users selection
+└── symbology
+    └── # shared symbols and colors used over the application
+```
+
+Most of the applications functionality is implemented in the the `_root.$scene` route. This is where you will find the logic for creating and visualizing the selection. `hooks/queries` also contains the logic to query the scene for features and construct the final mesh based on the selection.
+
+Symbology contains some useful shared symbols, and color definitions.
+
+## Loading scenes
+
+There are two ways to load arbitrary scenes into the application.
+
+### `data/scene-settings.json`
+
+You can modify the `scene-settings.json` file for your deployment to add or remove web scenes from the list of items the app displays. You can optionally specify a portal URL, if you do not it will use the Maps SDK's default portal url.
+
+### Through the url
+
+You can also simply send a link to an arbitrary scene id. The application will try to load it and ask the user to authenticate if necessary. You can configure the items portal url by passing a search parameter. For example `https://city-download.com/YOUR_SCENE_ID?portal-url=https%3A%2F%2Fzurich.maps.arcgis.com%2F` will load the portal item with id `YOUR_SCENE_ID` in the `https://zurich.maps.arcgis.com/` portal.
+
+## Resources
+
+- [ArcGIS Maps SDK for JavaScript - Developer documentation](https://developers.arcgis.com/javascript/latest/)
+- [ArcGIS Blog](http://blogs.esri.com/esri/arcgis/)
+- [Remix](https://remix.run/)
+- [React](https://react.dev/)
+- [Tanstack Query](https://tanstack.com/query/latest)
 
 ## Issues
 

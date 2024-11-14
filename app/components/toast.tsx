@@ -16,7 +16,7 @@ import Accessor from "@arcgis/core/core/Accessor";
 import { subclass, property } from "@arcgis/core/core/accessorSupport/decorators";
 import { CalciteAlert } from "@esri/calcite-components-react";
 import { ComponentProps, createContext, PropsWithChildren, useContext } from "react";
-import { useAccessorValue } from "~/hooks/reactive";
+import { useAccessorValue } from "~/arcgis/reactive-hooks";
 import useInstance from "~/hooks/useInstance";
 
 type ToastMessage = { title: string, message: string, key: string; severity: ComponentProps<typeof CalciteAlert>['kind'] }

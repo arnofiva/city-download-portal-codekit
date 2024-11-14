@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { useSceneView } from "~/components/arcgis/views/scene-view/scene-view-context";
-import { useSelectionState } from "~/data/selection-store";
+import { useSceneView } from "~/arcgis/components/views/scene-view/scene-view-context";
+import { useSelectionState } from "~/routes/_root.$scene/selection/selection-store";
 import SceneLayer from "@arcgis/core/layers/SceneLayer";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
 import { useDeferredValue } from "react";
@@ -21,7 +21,7 @@ import { Polygon } from "@arcgis/core/geometry";
 import * as geometryEngineAsync from "@arcgis/core/geometry/geometryEngineAsync";
 import { useSceneLayerViews } from "../useSceneLayers";
 import { useQuery } from '@tanstack/react-query';
-import { useAccessorValue } from "../reactive";
+import { useAccessorValue } from "../../arcgis/reactive-hooks";
 import { useDebouncedValue } from "../useDebouncedValue";
 
 export function useSelectedFeaturesFromLayerViews(key?: string) {

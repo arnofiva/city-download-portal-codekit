@@ -14,13 +14,13 @@
  */
 import { createMesh } from "./create-mesh";
 import { Extent, Mesh, Point } from "@arcgis/core/geometry";
-import { useScene } from "../../../components/arcgis/maps/web-scene/scene-context";
-import { useSelectionState } from "~/data/selection-store";
+import { useScene } from "~/arcgis/components/maps/web-scene/scene-context";
+import { useSelectionState } from "~/routes/_root.$scene/selection/selection-store";
 import { MAX_FEATURES, useSelectedFeaturesFromLayers } from "../feature-query";
 import { useDeferredValue, useEffect } from "react";
 import { usePreciseOriginElevationInfo } from "../elevation-query";
 import { useIsMutating, useMutation, useQuery } from '@tanstack/react-query';
-import { useAccessorValue } from "~/hooks/reactive";
+import { useAccessorValue } from "~/arcgis/reactive-hooks";
 import { ToastableError, useToast } from "~/components/toast";
 import WebScene from "@arcgis/core/WebScene";
 

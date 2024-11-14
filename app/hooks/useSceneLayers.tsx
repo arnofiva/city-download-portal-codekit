@@ -14,9 +14,9 @@
  */
 import SceneLayer from "@arcgis/core/layers/SceneLayer";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
-import { useSceneView } from "~/components/arcgis/views/scene-view/scene-view-context";
-import { removeSceneLayerClones } from "~/components/selection/scene-filter-highlights";
-import { useAccessorValue } from "./reactive";
+import { useSceneView } from "~/arcgis/components/views/scene-view/scene-view-context";
+import { removeSceneLayerClones } from "~/routes/_root.$scene/selection/scene-filter-highlights";
+import { useAccessorValue } from "../arcgis/reactive-hooks";
 import SceneView from "@arcgis/core/views/SceneView";
 import Map from "@arcgis/core/Map";
 

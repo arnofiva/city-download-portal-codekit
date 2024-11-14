@@ -12,9 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { useSelectionState } from "~/data/selection-store";
-import { useAccessorValue } from "~/hooks/reactive";
-import { useSceneView } from "~/components/arcgis/views/scene-view/scene-view-context";
+import { useSelectionState } from "~/routes/_root.$scene/selection/selection-store";
+import { useAccessorValue } from "~/arcgis/reactive-hooks";
+import { useSceneView } from "~/arcgis/components/views/scene-view/scene-view-context";
 import { Extent, Multipoint, Point } from "@arcgis/core/geometry";
 import { useQuery } from '@tanstack/react-query';
 import { useSceneLayerViews } from "../useSceneLayers";
