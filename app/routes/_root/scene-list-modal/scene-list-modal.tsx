@@ -48,7 +48,7 @@ function SceneCard({ title, description, thumbnail, viewingMode, selected }: Sce
     >
       <img slot="thumbnail" alt="Screenshot of the web scene" src={thumbnail} style={{
         backgroundColor: "var(--calcite-color-foreground-2)",
-      }} className="w-[250px] h-[165px]" />
+      }} className="w-[250px] h-[165px] object-cover" />
       <span slot="heading">{title}</span>
       <span slot="description">{sceneDescription}</span>
       <div slot="footer-start">
@@ -108,7 +108,6 @@ export default function SceneListModal() {
   const isRoot = useIsRoot();
 
   const data = useRouteLoaderData<typeof RootClientLoader>("routes/_root");
-  data?.scenes
 
   const currentScene = useParams().scene;
 
@@ -127,7 +126,7 @@ export default function SceneListModal() {
     >
       <p slot="header">City download portal - Choose a city</p>
       <p slot="content-top">Choose a city to download your 3D model from.</p>
-      <CalciteCardGroup slot="content" label="City Download Portal">
+      <div slot="content" className="grid grid-cols-3 grid-flow-dense gap-4">
         {scenes?.map((scene, index) => (
           <Link
             key={scene.id}
@@ -144,7 +143,7 @@ export default function SceneListModal() {
         {scenes == null || scenes.length === 0 ? (
           <LoadCard />
         ) : null}
-      </CalciteCardGroup>
+      </div>
     </CalciteModal>
   )
 }
