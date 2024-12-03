@@ -1,5 +1,7 @@
 # City Download Portal
 
+The city download portal lets you extract 3D data from a webscene, and download it as a mesh to work with in other software.
+
 Built with the Arcgis Maps SDK for Javascript, React, Remix, and Tailwind CSS.
 
 [View it live](https://esri.github.io/city-download-portal/)
@@ -8,7 +10,7 @@ Built with the Arcgis Maps SDK for Javascript, React, Remix, and Tailwind CSS.
 
 ## Features
 
-- Select an area to generate a mesh with using interactive tools, or by providing your own georeferencing data
+- Select an area to generate a mesh using interactive tools, or by providing your own georeferencing data
 - Export your selection to a `.glb` file for consumption in other programs
 - View georeferencing and measurment data about the selected area
 
