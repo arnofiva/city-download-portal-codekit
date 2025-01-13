@@ -23,6 +23,7 @@ import { useIsMutating, useMutation, useQuery } from '@tanstack/react-query';
 import { useAccessorValue } from "~/arcgis/reactive-hooks";
 import { ToastableError, useToast } from "~/components/toast";
 import WebScene from "@arcgis/core/WebScene";
+import type Graphic from "@arcgis/core/Graphic";
 
 export function useExportSizeQuery({ enabled = false, includeOriginMarker = true }: { enabled?: boolean, includeOriginMarker?: boolean }) {
   const scene = useScene()
@@ -71,7 +72,7 @@ export function useExportSizeQuery({ enabled = false, includeOriginMarker = true
         const blob = await createModelBlob({
           scene,
           extent: selection!.extent,
-          meshes: features.map(f => f.geometry as Mesh),
+          features: featureQuery.data!,
           signal,
           origin: modelOrigin!,
           includeOriginMarker,
@@ -101,7 +102,7 @@ export function useDownloadExportMutation() {
       filename: string,
       scene: WebScene,
       extent: Extent,
-      meshes: Mesh[],
+      features: Map<__esri.SceneLayer, MeshGraphic[]>
       origin: Point,
       signal?: AbortSignal
     }) => {
@@ -131,7 +132,7 @@ async function createModelBlob(args: {
   filename: string,
   scene: WebScene,
   extent: Extent,
-  meshes: Mesh[],
+  features: Map<__esri.SceneLayer, MeshGraphic[]>
   origin: Point,
   signal?: AbortSignal
 }) {
@@ -139,12 +140,13 @@ async function createModelBlob(args: {
     includeOriginMarker = false,
     scene,
     extent,
-    meshes,
+    features,
     origin,
     signal
   } = args;
 
-  if (meshes.length > MAX_FEATURES) {
+  const featureCount = Array.from(features.values()).flat().length;
+  if (featureCount > MAX_FEATURES) {
     throw new ToastableError({
       key: 'too-many-features',
       message: 'Too many features have been selected',
@@ -157,22 +159,28 @@ async function createModelBlob(args: {
     // eslint-disable-next-line no-var
     var mesh = await createMesh({
       scene,
-      extent: extent,
-      features: meshes,
+      extent,
+      features,
       origin,
       includeOriginMarker,
       signal,
     });
-  } catch (_error) {
+  } catch (error) {
     throw new ToastableError({
       key: 'mesh-creation-failed',
       message: 'Failed to create mesh',
       title: 'Export error',
       severity: 'danger',
+      originalError: error
     })
   }
 
   const file = await mesh.toBinaryGLTF();
   const blob = new Blob([file], { type: 'model/gltf-binary' });
   return blob
+}
+
+export type MeshGraphic = Omit<Graphic, 'geometry'> & { geometry: Mesh }
+export function filterMeshGraphicsFromFeatureSet(featureSet: __esri.FeatureSet): MeshGraphic[] {
+  return featureSet.features.filter(feature => feature.geometry.type === "mesh") as any as MeshGraphic[]
 }

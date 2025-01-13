@@ -26,7 +26,11 @@ class ToastStore extends Accessor {
   @property()
   messages = [] as ToastMessage[];
 
-  toast = (message: ToastMessage) => {
+  toast = (message: ToastMessage | ToastableError) => {
+    if (message instanceof ToastableError && message.originalError) {
+      console.error(message.originalError);
+    }
+
     if (this.messages.some(m => m.key === message.key)) return;
 
     this.messages = [...this.messages, message];
@@ -92,6 +96,7 @@ export class ToastableError extends Error {
   message: string;
   title: string;
   severity: ComponentProps<typeof CalciteAlert>["kind"];
+  originalError?: unknown
 
   get toast(): ToastMessage {
     return {
@@ -102,11 +107,18 @@ export class ToastableError extends Error {
     }
   }
 
-  constructor(props: { key: string, message: string, title: string, severity: ComponentProps<typeof CalciteAlert>["kind"] }, options?: ErrorOptions) {
+  constructor(props: {
+    key: string,
+    message: string,
+    title: string,
+    severity: ComponentProps<typeof CalciteAlert>["kind"],
+    originalError?: unknown
+  }, options?: ErrorOptions) {
     super(props.message, options);
     this.key = props.key;
     this.message = props.message;
     this.title = props.title;
     this.severity = props.severity;
+    this.originalError = props.originalError;
   }
 }

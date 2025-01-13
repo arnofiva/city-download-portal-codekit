@@ -18,6 +18,8 @@ import Mesh from "@arcgis/core/geometry/Mesh";
 import * as meshUtils from "@arcgis/core/geometry/support/meshUtils";
 import { PointSymbol3D, ObjectSymbol3DLayer } from "@arcgis/core/symbols";
 import Diamond from './diamond.gltf?url';
+import MeshMaterial from "@arcgis/core/geometry/support/MeshMaterial";
+import MeshMaterialMetallicRoughness from "@arcgis/core/geometry/support/MeshMaterialMetallicRoughness.js";
 
 export const SymbologyColors = {
   selection(alpha = 1) {
@@ -33,6 +35,18 @@ export const SymbologyColors = {
     return new Color([255, 0, 0, alpha])
   }
 } as const;
+
+export const ExportColors = {
+  terrain(alpha = 1) {
+    return new Color([106, 106, 106, alpha])
+  },
+  feature(alpha = 1) {
+    return new Color([210, 210, 210, alpha])
+  },
+  marker(alpha = 1) {
+    return new Color([255, 0, 0, alpha])
+  }
+}
 
 const diamondSize = 7.5;
 const cylinderSize = 2;
@@ -64,19 +78,27 @@ export function createOriginSymbol(height: number) {
 }
 
 export async function createOriginMarker(origin: Point, meshHeight: number) {
+  const material = new MeshMaterial({
+    color: ExportColors.marker(1)
+  });
   const markerHeight = meshHeight;
-
+  new MeshMaterialMetallicRoughness
   const box = (await Mesh.createFromGLTF(origin, Diamond))
     .scale(diamondSize)
     .offset(0, 0, markerHeight);
 
-  const cylender = Mesh.createCylinder(origin)
+  const cylender = Mesh.createCylinder(origin);
 
   const transform = cylender.transform?.clone() ?? {};
   transform.scale = [cylinderSize, cylinderSize, markerHeight];
   cylender.transform = transform;
 
   const mesh = meshUtils.merge([box, cylender]);
+
+  for (const component of mesh.components) {
+    component.name = "origin-point";
+    component.material = material
+  }
 
   return mesh;
 }

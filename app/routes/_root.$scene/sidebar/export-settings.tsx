@@ -29,7 +29,6 @@ import { useSelectionState } from "~/routes/_root.$scene/selection/selection-sto
 import { useReferenceElementId } from "../selection/walk-through-context";
 import { useHasTooManyFeatures, useSelectedFeaturesFromLayers } from "~/hooks/queries/feature-query";
 import { usePreciseOriginElevationInfo } from "~/hooks/queries/elevation-query";
-import { Mesh } from "@arcgis/core/geometry";
 
 interface ExportSettingsProps {
   state: BlockState['state'];
@@ -52,7 +51,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
 
 
   const featureQuery = useSelectedFeaturesFromLayers(editingState === 'idle');
-  const features = Array.from(featureQuery.data?.values() ?? []).flat();
+
   const modelOrigin = usePreciseOriginElevationInfo().data;
 
   const hasTooManyFeatures = useHasTooManyFeatures();
@@ -156,7 +155,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
             mutation.mutateAsync({
               scene,
               extent: selection!.extent,
-              meshes: features.map(f => f.geometry as Mesh),
+              features: featureQuery.data!,
               origin: modelOrigin!,
               includeOriginMarker,
               filename,

@@ -23,6 +23,7 @@ import { useSceneLayerViews } from "../useSceneLayers";
 import { useQuery } from '@tanstack/react-query';
 import { useAccessorValue } from "../../arcgis/reactive-hooks";
 import { useDebouncedValue } from "../useDebouncedValue";
+import { filterMeshGraphicsFromFeatureSet, type MeshGraphic } from "./download/export-query";
 
 export function useSelectedFeaturesFromLayerViews(key?: string) {
   const store = useSelectionState();
@@ -107,7 +108,7 @@ export function useSelectedFeaturesFromLayers(enabled = false) {
   const query = useQuery({
     queryKey: ['selected-features', 'layers', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings],
     queryFn: async ({ signal }) => {
-      const featureMap = new Map<SceneLayer, __esri.FeatureSet['features']>();
+      const featureMap = new Map<SceneLayer, MeshGraphic[]>();
       const promises: Promise<unknown>[] = [];
       for (const { layer } of sceneLayerViews!) {
         const query = layer.createQuery();
@@ -115,7 +116,7 @@ export function useSelectedFeaturesFromLayers(enabled = false) {
         query.spatialRelationship = 'intersects'
         const queryPromise = layer.queryFeatures(query, { signal })
           .then((featureSet) => {
-            featureMap.set(layer, featureSet.features)
+            featureMap.set(layer, filterMeshGraphicsFromFeatureSet(featureSet))
           });
         promises.push(queryPromise);
       }
