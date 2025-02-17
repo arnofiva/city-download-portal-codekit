@@ -156,12 +156,18 @@ export async function createMesh({
     projectedExtent = projection.project(extent, sr) as Extent;
   }
 
+  let projectedOrigin = origin;
+  if (origin.spatialReference.wkid !== sr.wkid) {
+    await projection.load();
+    projectedOrigin = projection.project(origin, sr) as Point;
+  }
+
   const elevation = await extractElevation(ground, projectedExtent);
 
   const slice = await mergeSliceMeshes({
     elevation,
     features: features,
-    origin,
+    origin: projectedOrigin,
     includeOriginMarker,
     spatialReference: sr,
     signal,
