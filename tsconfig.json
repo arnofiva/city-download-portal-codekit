@@ -1,7 +1,7 @@
 {
   "include": ["env.d.ts", "**/*.ts", "**/*.tsx", "app/utility-types.mts"],
   "compilerOptions": {
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "types": ["@remix-run/node", "vite/client"],
     "experimentalDecorators": true,
     "useDefineForClassFields": false,

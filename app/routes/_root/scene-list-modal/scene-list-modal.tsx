@@ -12,13 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CalciteCard, CalciteCardGroup, CalciteChip, CalciteModal } from "@esri/calcite-components-react";
+import { CalciteCard, CalciteChip, CalciteModal } from "@esri/calcite-components-react";
 import { Link, useParams, useRouteLoaderData } from "@remix-run/react";
 import useIsRoot from "~/hooks/useIsRoot";
 import type PortalItem from "@arcgis/core/portal/PortalItem";
 import type WebScene from "@arcgis/core/WebScene";
 import { useId } from "react";
-import { clientLoader as RootClientLoader } from "../../../root";
+import { clientLoader as RootClientLoader } from "../route";
 import { useSceneListModal } from "./scene-list-modal-context";
 import webSceneLocal from './web-scene-local.svg';
 import webSceneGlobal from './web-scene-global.svg';
