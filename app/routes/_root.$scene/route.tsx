@@ -142,7 +142,7 @@ export default function SceneRoute() {
         <SceneView>
           <SketchLayer disableZ elevationMode="on-the-ground" title="selection-graphics-layer">
             <Search />
-            <Sidebar />
+            <Sidebar key={"sidebar" + instance.id} />
             <ViewUI position="bottom-left">
               <div className="flex gap-4">
                 <SelectionGraphic />
