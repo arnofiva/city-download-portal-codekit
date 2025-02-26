@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { useSceneView } from "~/arcgis/components/views/scene-view/scene-view-context";
 import { useSelectionState } from "~/routes/_root.$scene/selection/selection-store";
 import SceneLayer from "@arcgis/core/layers/SceneLayer";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
@@ -25,6 +24,99 @@ import { useAccessorValue } from "../../arcgis/reactive-hooks";
 import { useDebouncedValue } from "../useDebouncedValue";
 import { filterMeshGraphicsFromFeatureSet, type MeshGraphic } from "./download/export-query";
 
+/**
+ * This function performs a client side query on the layer views, to find features that intersect with the given boundary.
+ * This is very fast and is useful to keep track of the selected features during interaction, but the query does not return any geometries.
+ */
+async function queryFeaturesWithoutGeometries(sceneLayerViews: SceneLayerView[], boundary: Polygon, signal: AbortSignal) {
+  const featureMap = new Map<SceneLayerView, __esri.FeatureSet['features']>();
+  const promises: Promise<unknown>[] = [];
+
+  for (const layerView of sceneLayerViews!) {
+    const query = layerView.createQuery();
+    query.geometry = boundary.extent;
+    query.spatialRelationship = 'intersects'
+    const queryPromise = layerView.queryFeatures(query, { signal })
+      .then((featureSet) => featureMap.set(layerView, featureSet.features));
+    promises.push(queryPromise);
+  }
+
+  await Promise.all(promises)
+
+  return featureMap;
+}
+
+/**
+ * This function performs a server side query on the layers, to find features that intersect with the given boundary.
+ * This is slower than the client side query, but it returns the geometries of the features and is useful for exporting.
+ */
+async function queryFeaturesWithGeometries(sceneLayerViews: SceneLayerView[], boundary: Polygon, signal: AbortSignal) {
+  const featureMap = new Map<SceneLayer, MeshGraphic[]>();
+  const promises: Promise<unknown>[] = [];
+  for (const { layer } of sceneLayerViews!) {
+    const query = layer.createQuery();
+    query.geometry = boundary.extent;
+    query.spatialRelationship = 'intersects'
+    const queryPromise = layer.queryFeatures(query, { signal })
+      .then((featureSet) => {
+        featureMap.set(layer, filterMeshGraphicsFromFeatureSet(featureSet))
+      });
+    promises.push(queryPromise);
+  }
+  await Promise.all(promises)
+
+  return featureMap;
+}
+
+async function countFeatures(sceneLayerViews: SceneLayerView[], boundary: Polygon, signal: AbortSignal) {
+  const promises: Promise<unknown>[] = [];
+
+  let count = 0;
+  for (const layerView of sceneLayerViews!) {
+    const query = layerView.createQuery();
+    query.geometry = boundary.extent;
+    query.spatialRelationship = 'intersects'
+
+    const queryPromise = layerView.queryExtent(query, { signal }).then(result => {
+      count += result.count;
+    });
+    promises.push(queryPromise);
+  }
+  await Promise.all(promises)
+
+  return count;
+}
+
+async function queryFootprints(sceneLayerViews: SceneLayerView[], boundary: Polygon, signal: AbortSignal) {
+  const sceneLayers = sceneLayerViews!.map(lv => lv.layer);
+
+  const footprints: Polygon[] = []
+
+  for (const layer of sceneLayers) {
+    const footprintQuery = layer.createQuery()
+    footprintQuery.multipatchOption = "xyFootprint";
+    footprintQuery.returnGeometry = true;
+    footprintQuery.geometry = boundary.extent
+    footprintQuery.outSpatialReference = boundary.spatialReference;
+    footprintQuery.spatialRelationship = "intersects";
+
+    const results = await layer.queryFeatures(footprintQuery, { signal });
+    const layerFootprints = await Promise.all(results.features
+      .map(f => f.geometry as Polygon)
+      .filter(Boolean)
+      // the footprints are often quite sharp directly from the query,
+      // so we add a little bit of a buffer to smooth them out
+      .map(f => geometryEngineAsync.buffer(f, 0.5, 'meters') as Promise<Polygon>)
+    )
+    footprints.push(...layerFootprints)
+  }
+
+  const fpUnion = await geometryEngineAsync.union(footprints) as Polygon
+
+  if (fpUnion != null) return fpUnion
+  else throw new Error('failed to combine footprints');
+}
+
 export function useSelectedFeaturesFromLayerViews(key?: string) {
   const store = useSelectionState();
   const selection = useAccessorValue(() => store.selection);
@@ -33,22 +125,7 @@ export function useSelectedFeaturesFromLayerViews(key?: string) {
 
   const query = useQuery({
     queryKey: ['selected-features', 'layerviews', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings, key],
-    queryFn: async ({ signal }) => {
-      const featureMap = new Map<SceneLayerView, __esri.FeatureSet['features']>();
-      const promises: Promise<unknown>[] = [];
-      for (const layerView of sceneLayerViews!) {
-        const query = layerView.createQuery();
-        query.geometry = deferredPolygon!.extent;
-        query.spatialRelationship = 'intersects'
-        const queryPromise = layerView.queryFeatures(query, { signal })
-          .then((featureSet) => featureMap.set(layerView, featureSet.features));
-        promises.push(queryPromise);
-      }
-
-      await Promise.all(promises)
-
-      return featureMap;
-    },
+    queryFn: async ({ signal }) => await queryFeaturesWithoutGeometries(sceneLayerViews ?? [], deferredPolygon!, signal),
     enabled: deferredPolygon != null && sceneLayerViews != null,
   })
 
@@ -66,24 +143,7 @@ export function useSelectedFeaturesCount() {
 
   const query = useQuery({
     queryKey,
-    queryFn: async ({ signal }) => {
-      const promises: Promise<unknown>[] = [];
-
-      let count = 0;
-      for (const layerView of sceneLayerViews!) {
-        const query = layerView.createQuery();
-        query.geometry = selection!.extent;
-        query.spatialRelationship = 'intersects'
-
-        const queryPromise = layerView.queryExtent(query, { signal }).then(result => {
-          count += result.count;
-        });
-        promises.push(queryPromise);
-      }
-      await Promise.all(promises)
-
-      return count;
-    },
+    queryFn: async ({ signal }) => await countFeatures(sceneLayerViews ?? [], selection!, signal),
     enabled: selection != null && sceneLayerViews != null,
   })
 
@@ -107,23 +167,7 @@ export function useSelectedFeaturesFromLayers(enabled = false) {
 
   const query = useQuery({
     queryKey: ['selected-features', 'layers', sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings],
-    queryFn: async ({ signal }) => {
-      const featureMap = new Map<SceneLayer, MeshGraphic[]>();
-      const promises: Promise<unknown>[] = [];
-      for (const { layer } of sceneLayerViews!) {
-        const query = layer.createQuery();
-        query.geometry = deferredPolygon!.extent;
-        query.spatialRelationship = 'intersects'
-        const queryPromise = layer.queryFeatures(query, { signal })
-          .then((featureSet) => {
-            featureMap.set(layer, filterMeshGraphicsFromFeatureSet(featureSet))
-          });
-        promises.push(queryPromise);
-      }
-      await Promise.all(promises)
-
-      return featureMap;
-    },
+    queryFn: async ({ signal }) => await queryFeaturesWithGeometries(sceneLayerViews ?? [], deferredPolygon!, signal),
     enabled: enabled && deferredPolygon != null && sceneLayerViews != null,
   })
 
@@ -131,7 +175,6 @@ export function useSelectedFeaturesFromLayers(enabled = false) {
 }
 
 export function useSelectionFootprints(selection: Polygon | null) {
-  const view = useSceneView()
   const sceneLayerViews = useSceneLayerViews();
   const hasTooManyFeatures = useHasTooManyFeatures();
 
@@ -143,35 +186,7 @@ export function useSelectionFootprints(selection: Polygon | null) {
       'layers',
       sceneLayerViews?.map(lv => lv.layer.id), deferredPolygon?.rings
     ],
-    queryFn: async ({ signal }) => {
-      const sceneLayers = sceneLayerViews!.map(lv => lv.layer);
-
-      const footprints: Polygon[] = []
-
-      for (const layer of sceneLayers) {
-        const footprintQuery = layer.createQuery()
-        footprintQuery.multipatchOption = "xyFootprint";
-        footprintQuery.returnGeometry = true;
-        footprintQuery.geometry = deferredPolygon!;
-        footprintQuery.outSpatialReference = view.spatialReference;
-        footprintQuery.spatialRelationship = "intersects";
-
-        const results = await layer.queryFeatures(footprintQuery, { signal });
-        const layerFootprints = await Promise.all(results.features
-          .map(f => f.geometry as Polygon)
-          .filter(Boolean)
-          // the footprints are often quite sharp directly from the query,
-          // so we add a little bit of a buffer to smooth them out
-          .map(f => geometryEngineAsync.buffer(f, 0.5, 'meters') as Promise<Polygon>)
-        )
-        footprints.push(...layerFootprints)
-      }
-
-      const fpUnion = await geometryEngineAsync.union(footprints) as Polygon
-
-      if (fpUnion != null) return fpUnion
-      else throw new Error('failed to combine footprints');
-    },
+    queryFn: async ({ signal }) => await queryFootprints(sceneLayerViews ?? [], deferredPolygon!, signal),
     enabled: !hasTooManyFeatures && deferredPolygon != null && sceneLayerViews != null,
   })
 

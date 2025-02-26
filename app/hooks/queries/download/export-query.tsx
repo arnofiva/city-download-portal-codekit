@@ -97,18 +97,7 @@ export function useDownloadExportMutation() {
 
   return useMutation({
     mutationKey: ['export-download'],
-    mutationFn: async (args: {
-      includeOriginMarker?: boolean,
-      filename: string,
-      scene: WebScene,
-      extent: Extent,
-      features: Map<__esri.SceneLayer, MeshGraphic[]>
-      origin: Point,
-      signal?: AbortSignal
-    }) => {
-      const blob = await createModelBlob(args);
-      return blob
-    },
+    mutationFn: createModelBlob,
     onSuccess: () => {
       store.exportState = 'exported'
     },

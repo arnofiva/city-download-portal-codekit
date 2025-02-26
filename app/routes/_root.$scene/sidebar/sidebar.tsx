@@ -21,16 +21,43 @@ import ModelOrigin from "./model-origin";
 import SelectionInfo from "./selection-info/selection-info";
 import ExportSettings from "./export-settings";
 import { useEffect, useReducer } from "react";
-import { BlockStateReducer, SidebarState } from "./sidebar-state";
 import { useSelectionState } from "~/routes/_root.$scene/selection/selection-store";
 import { useAccessorValue } from "~/arcgis/reactive-hooks";
 import { useReferenceElementId } from "../selection/walk-through-context";
 
-const createInitialState = () => ({
+type BlockAction = { mode?: 'managed' | 'manual', type: 'open' | 'close', block: keyof SidebarState }
+
+interface BlockState { mode: 'managed' | 'manual', state: 'closed' | 'open' }
+interface SidebarState {
+  modelOrigin: BlockState;
+  selection: BlockState;
+  exportSettings: BlockState;
+}
+function BlockStateReducer(state: SidebarState, actions: BlockAction[]) {
+  const next = { ...state, };
+  for (const action of actions) {
+    const { type, mode = 'managed', block } = action;
+    const blockState = { ...next[block] };
+    next[block] = blockState
+
+    if (blockState.mode === "manual") {
+      if (mode === 'manual') {
+        blockState.state = type === 'open' ? 'open' : 'closed';
+      }
+    } else {
+      blockState.mode = mode;
+      blockState.state = type === 'open' ? 'open' : 'closed';
+    }
+  }
+
+  return next;
+}
+
+const createInitialState: SidebarState = {
   modelOrigin: { mode: 'managed', state: 'closed' },
   selection: { mode: 'managed', state: 'closed' },
   exportSettings: { mode: 'managed', state: 'closed' },
-} satisfies SidebarState);
+};
 
 export default function Sidebar() {
   const id = useReferenceElementId(['confirming', "updating-origin"], 'left');
@@ -41,7 +68,7 @@ export default function Sidebar() {
 
   const [blockState, dispatch] = useReducer(
     BlockStateReducer,
-    createInitialState()
+    createInitialState
   );
 
   useEffect(() => {
