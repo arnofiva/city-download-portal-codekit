@@ -116,7 +116,7 @@ class CreateExtentToolManager extends CreateTool {
         this.graphic!.geometry = polygon!;
       }, { sync: true }),
       reactiveUtils.watch(() => this.manager?.createGraphic?.geometry as Point | null,
-        (geometry: Point | null, previous: Point | null) => {
+        (geometry: Point | nullish, previous: Point | nullish) => {
           if (this.manager?.activeToolId !== this.id) return;
 
           if (geometry != null && previous == null) { // here we are starting to place a new point
@@ -201,7 +201,7 @@ class CreateExtentToolManager extends CreateTool {
         this.manager!.activeToolId = null!;
         this.emit(
           "cancel",
-          { tool: "point", state: 'cancel', graphic: this.manager?.createGraphic, toolEventInfo: null!, type: 'create' }
+          { tool: "point", state: 'cancel', graphic: this.manager?.createGraphic ?? undefined!, toolEventInfo: null!, type: 'create' }
         )
       }
       this.manager!.cancel()

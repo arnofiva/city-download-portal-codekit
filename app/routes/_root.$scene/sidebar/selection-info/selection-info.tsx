@@ -12,6 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import '@esri/calcite-components/dist/components/calcite-block';
+import '@esri/calcite-components/dist/components/calcite-icon';
+import '@esri/calcite-components/dist/components/calcite-label';
+import '@esri/calcite-components/dist/components/calcite-notice';
 import {
   CalciteBlock,
   CalciteIcon,
@@ -27,7 +31,6 @@ import {
 } from "react";
 import DimensionsLayer from "~/arcgis/components/dimensions-layer/dimensions-layer";
 import LengthDimension from "~/arcgis/components/dimensions-layer/length-dimension";
-import { BlockAction, BlockState } from "../sidebar-state";
 import { useSelectionElevationInfo } from "~/hooks/queries/elevation-query";
 import { useSelectionState } from "~/routes/_root.$scene/selection/selection-store";
 import * as intl from "@arcgis/core/intl";
@@ -36,6 +39,7 @@ import { useHasTooManyFeatures, useSelectedFeaturesCount } from "~/hooks/queries
 import { UpdateSelectionTool } from "../../selection/selection-tools/update-selectiont-tool";
 import { useQuery } from "@tanstack/react-query";
 import { useAccessorValue } from "~/arcgis/reactive-hooks";
+import type { BlockAction, BlockState } from '../sidebar';
 interface MeasurementsProps {
   state: BlockState['state'];
   dispatch: Dispatch<BlockAction[]>;
@@ -66,7 +70,7 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
     enabled: deferredSelection != null
   });
 
-  if (areaQuery.data && deferredSelection) {
+  if (areaQuery.data && deferredSelection?.extent) {
     area = intl.formatNumber(
       areaQuery.data,
       // intl does not support area units see list of supported units:
@@ -100,7 +104,7 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
         ref={ref}
         heading="Selection"
         collapsible
-        open={state === 'open'}
+        expanded={state === 'open'}
         onClick={() => {
           wasClicked.current = true
           setTimeout(() => {
@@ -165,8 +169,8 @@ function Dimensions() {
 
   if (positionOrigin == null || terminal == null || elevationQuery.data == null) return null;
 
-  const otz = elevationQuery.data.selectionPoints.ot.z;
-  const toz = elevationQuery.data.selectionPoints.to.z;
+  const otz = elevationQuery.data.selectionPoints.ot?.z ?? 0;
+  const toz = elevationQuery.data.selectionPoints.to?.z ?? 0;
 
   // the elevation origin is updated async, so the dimensions will look choppy if we use that directly
   // instead we take the last available elevation, but use the x and y from the synchronously updating origin
@@ -174,17 +178,17 @@ function Dimensions() {
   const origin = positionOrigin.clone();
   origin.x = positionOrigin.x;
   origin.y = positionOrigin.y;
-  origin.z = elevationQuery.data.selectionPoints.oo.z
+  origin.z = elevationQuery.data.selectionPoints.oo?.z
 
   const widthStart = origin.clone();
   const widthEnd = widthStart.clone();
   widthEnd.y = terminal?.y;
-  widthEnd.z = Math.min(otz ?? widthEnd.z, widthEnd.z);
+  widthEnd.z = Math.min(otz ?? widthEnd.z, widthEnd.z ?? Infinity);
 
   const heightStart = origin.clone();
   const heightEnd = heightStart.clone();
   heightEnd.x = terminal?.x;
-  heightEnd.z = Math.min(toz ?? heightEnd.z, heightEnd.z);
+  heightEnd.z = Math.min(toz ?? heightEnd.z, heightEnd.z ?? Infinity);
 
   return (
     <DimensionsLayer fontSize={12}>

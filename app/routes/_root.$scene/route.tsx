@@ -18,6 +18,11 @@ import { redirect, useLoaderData, useRouteError } from "@remix-run/react";
 import Sidebar from "~/routes/_root.$scene/sidebar/sidebar";
 import invariant from "tiny-invariant";
 import { ViewUI } from "~/arcgis/components/views/scene-view/scene-view-ui";
+import '@esri/calcite-components/dist/components/calcite-action';
+import '@esri/calcite-components/dist/components/calcite-navigation';
+import '@esri/calcite-components/dist/components/calcite-navigation-logo';
+import '@esri/calcite-components/dist/components/calcite-navigation-user';
+import '@esri/calcite-components/dist/components/calcite-popover';
 import { CalciteAction, CalciteNavigation, CalciteNavigationLogo, CalciteNavigationUser, CalcitePopover } from "@esri/calcite-components-react";
 import { useSceneListModal } from "~/routes/_root/scene-list-modal/scene-list-modal-context";
 import { useAccessorValue } from "~/arcgis/reactive-hooks";
@@ -91,14 +96,14 @@ function Header({ portalItem }: { portalItem: PortalItem }) {
 
   return (
     <CalciteNavigation slot="header">
-      <CalciteNavigationLogo slot="logo" heading={title} description={description} />
+      <CalciteNavigationLogo slot="logo" heading={title ?? 'Untitled'} description={description ?? ""} />
       <div slot="content-end">
         <CalciteNavigationUser
           className="h-full"
           id="user-menu"
           full-name={fullName}
           username={username}
-          thumbnail={avatar}
+          thumbnail={avatar ?? ""}
         />
         <CalcitePopover
           label="Sign in settings"

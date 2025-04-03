@@ -115,7 +115,7 @@ class CreatePointToolManager extends CreateTool {
         this.manager!.activeToolId = null!;
         this.emit(
           "cancel",
-          { tool: "point", state: 'cancel', graphic: this.manager?.createGraphic, toolEventInfo: null!, type: 'create' }
+          { tool: "point", state: 'cancel', graphic: this.manager?.createGraphic ?? undefined!, toolEventInfo: null!, type: 'create' }
         )
       }
       this.manager!.pointSymbol = null!;

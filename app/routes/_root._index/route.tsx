@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import '@esri/calcite-components/dist/components/calcite-scrim';
 import { CalciteScrim } from "@esri/calcite-components-react";
 import type { MetaFunction } from "@remix-run/node";
 

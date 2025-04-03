@@ -12,7 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CalciteCard, CalciteChip, CalciteModal } from "@esri/calcite-components-react";
+import '@esri/calcite-components/dist/components/calcite-card';
+import '@esri/calcite-components/dist/components/calcite-chip';
+import '@esri/calcite-components/dist/components/calcite-dialog';
+import { CalciteCard, CalciteChip, CalciteDialog } from "@esri/calcite-components-react";
 import { Link, useParams, useRouteLoaderData } from "@remix-run/react";
 import useIsRoot from "~/hooks/useIsRoot";
 import type PortalItem from "@arcgis/core/portal/PortalItem";
@@ -115,26 +118,27 @@ export default function SceneListModal() {
   const maps = data?.maps as WebScene[] | undefined;
 
   return (
-    <CalciteModal
+    <CalciteDialog
       slot="modals"
       open={isRoot || open}
-      closeButtonDisabled={isRoot}
+      modal
+      closeDisabled={isRoot}
       escapeDisabled={isRoot}
       outsideCloseDisabled={isRoot}
-      onCalciteModalOpen={() => setOpen(true)}
-      onCalciteModalClose={() => setOpen(false)}
+      onCalciteDialogOpen={() => setOpen(true)}
+      onCalciteDialogClose={() => setOpen(false)}
     >
-      <p slot="header">City download portal - Choose a city</p>
+      <p slot="header-content">City download portal - Choose a city</p>
       <p slot="content-top">Choose a city to download your 3D model from.</p>
-      <div slot="content" className="grid grid-cols-3 grid-flow-dense gap-4">
+      <div className="grid grid-cols-3 grid-flow-dense gap-4">
         {scenes?.map((scene, index) => (
           <Link
             key={scene.id}
             to={`/${scene.id}`}>
             <SceneCard
-              title={scene.title}
-              description={scene.description}
-              thumbnail={scene.thumbnailUrl}
+              title={scene.title ?? "untitled"}
+              description={scene.description ?? ""}
+              thumbnail={scene.thumbnailUrl ?? ""}
               viewingMode={(maps![index] as any).viewingMode}
               selected={scene.id === currentScene}
             />
@@ -144,6 +148,6 @@ export default function SceneListModal() {
           <LoadCard />
         ) : null}
       </div>
-    </CalciteModal>
+    </CalciteDialog>
   )
 }

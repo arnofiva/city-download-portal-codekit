@@ -28,7 +28,9 @@ import arcgisStyles from '@arcgis/core/assets/esri/themes/light/main.css?url'
 import tailwindStyles from "./global-styles/tailwind.css?url";
 import globalStyles from "./global-styles/global.css?url";
 
-import { defineCustomElements } from "@esri/calcite-components/dist/loader";
+import '@esri/calcite-components/dist/components/calcite-action';
+import '@esri/calcite-components/dist/components/calcite-alert';
+import '@esri/calcite-components/dist/components/calcite-scrim';
 import { CalciteAction, CalciteAlert, CalciteScrim } from "@esri/calcite-components-react";
 import { PropsWithChildren } from "react";
 
@@ -64,12 +66,14 @@ export const links: LinksFunction = () => [
   ...styles.map(stylesheet => ({ rel: 'stylesheet', href: stylesheet }))
 ]
 
-let hasSetup = false;
-function setup() {
-  if (hasSetup) return;
+if (typeof window !== 'undefined') {
+  // defineCustomElements(window);
+}
 
-  setAssetPath(import.meta.url);
-  defineCustomElements(window);
+let hasSetup = false;
+async function setup() {
+  if (hasSetup) return;
+  setAssetPath(import.meta.resolve('/'));
   document.body.classList.toggle('setup')
   hasSetup = true;
 }
@@ -102,6 +106,7 @@ export default function App() {
 }
 
 export function HydrateFallback() {
+  return null;
   return (
     <CalciteScrim loading />
   )

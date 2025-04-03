@@ -12,6 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import '@esri/calcite-components/dist/components/calcite-block';
+import '@esri/calcite-components/dist/components/calcite-dropdown-item';
+import '@esri/calcite-components/dist/components/calcite-icon';
+import '@esri/calcite-components/dist/components/calcite-label';
+import '@esri/calcite-components/dist/components/calcite-split-button';
 import {
   CalciteBlock,
   CalciteDropdownItem,
@@ -22,7 +27,7 @@ import {
 import { useSceneView } from "~/arcgis/components/views/scene-view/scene-view-context";
 import { useAccessorValue } from "~/arcgis/reactive-hooks";
 import { Dispatch, memo, useDeferredValue, useRef } from "react";
-import { BlockAction, BlockState } from "./sidebar-state";
+import { BlockAction, BlockState } from "./sidebar";
 import { useSelectionState } from "~/routes/_root.$scene/selection/selection-store";
 import { usePreciseOriginElevationInfo } from "~/hooks/queries/elevation-query";
 import * as intl from "@arcgis/core/intl.js";
@@ -99,7 +104,7 @@ const ModelOrigin = memo(function ModelOrigin({
       id="modelOrigin"
       heading="Model origin"
       collapsible
-      open={state === 'open'}
+      expanded={state === 'open'}
       onClick={() => {
         wasClicked.current = true;
 
@@ -174,7 +179,9 @@ const ModelOrigin = memo(function ModelOrigin({
           onCalciteSplitButtonPrimaryClick={() => {
             if (origin) {
               try {
-                navigator.clipboard.writeText(coordinateFormatter.toLatitudeLongitude(origin, 'dms', 3))
+                const text = coordinateFormatter.toLatitudeLongitude(origin, 'dms', 3);
+
+                if (text) navigator.clipboard.writeText(text)
               } catch (_) {
                 const { x, y, z } = origin;
 
@@ -190,7 +197,8 @@ const ModelOrigin = memo(function ModelOrigin({
             onClick={() => {
               if (origin) {
                 try {
-                  navigator.clipboard.writeText(coordinateFormatter.toLatitudeLongitude(origin, 'dms', 3))
+                  const text = coordinateFormatter.toLatitudeLongitude(origin, 'dms', 3);
+                  if (text) navigator.clipboard.writeText(text)
                 } catch (_) {
                   const { x, y, z } = origin;
 

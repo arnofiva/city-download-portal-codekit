@@ -1,4 +1,6 @@
 import config from "@arcgis/core/config";
+import '@esri/calcite-components/dist/components/calcite-action';
+import '@esri/calcite-components/dist/components/calcite-alert';
 import { CalciteAction, CalciteAlert } from "@esri/calcite-components-react";
 import { Outlet, useParams, useRouteError, type ClientLoaderFunctionArgs } from "@remix-run/react";
 import { QueryClient, keepPreviousData, QueryCache, QueryClientProvider } from "@tanstack/react-query";

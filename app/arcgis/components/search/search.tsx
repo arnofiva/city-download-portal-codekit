@@ -16,10 +16,9 @@ import { useEffect } from "react";
 import { useSceneView } from "../views/scene-view/scene-view-context";
 import SearchWidget from "@arcgis/core/widgets/Search.js";
 import { useScene } from "../maps/web-scene/scene-context";
-import Geometry from "@arcgis/core/geometry/Geometry";
+import { GeometryUnion } from "@arcgis/core/unionTypes";
 import { useAccessorValue } from "~/arcgis/reactive-hooks";
 import useInstance from "~/hooks/useInstance";
-import { removeSceneLayerClones } from "~/routes/_root.$scene/selection/scene-filter-highlights";
 import Highlights from "~/routes/_root.$scene/selection/highlights";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
 import { useSceneLayerViews } from "~/hooks/useSceneLayers";
@@ -41,12 +40,15 @@ export default function Search() {
   const extent = useAccessorValue(
     () => {
       const layers = scene.allLayers
-        .filter(removeSceneLayerClones)
         .filter(layer => layer.type === 'scene' && layer.fullExtent != null)
 
       if (layers.length > 0) {
         const extents = layers
-          .reduce((extent, layer) => layer.fullExtent.union(extent), layers.at(0).fullExtent)
+          .reduce((extent, layer) => {
+            if (extent == null) return layer.fullExtent!;
+            if (layer.fullExtent == null) return extent;
+            return layer.fullExtent.union(extent)
+          }, layers.at(0)!.fullExtent)
 
         return extents;
       }
@@ -80,11 +82,10 @@ export default function Search() {
   const query = useSearchHighlight(result);
   const highlights = query.isSuccess ? query.data : undefined
 
-  return <Highlights data={highlights} />;
+  return <Highlights name="search-result" data={highlights} />;
 }
 
-
-export function useSearchHighlight(searchGeometry?: Geometry) {
+export function useSearchHighlight(searchGeometry?: GeometryUnion | nullish) {
   const sceneLayerViews = useSceneLayerViews();
   const query = useQuery({
     queryKey: ['search', sceneLayerViews?.map(lv => lv.layer.id), searchGeometry?.toJSON()],

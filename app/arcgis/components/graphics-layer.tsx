@@ -17,6 +17,8 @@ import { PropsWithChildren, createContext, useContext, useEffect, useState } fro
 import { useScene } from './maps/web-scene/scene-context';
 import { useMap } from './maps/map/map-context';
 
+type GraphicsLayerElevationInfo = Exclude<CoreGraphicsLayer['elevationInfo'], nullish>;
+
 const GraphicsLayerContext = createContext<CoreGraphicsLayer>(null!);
 
 export function useGraphicsLayer() {
@@ -24,7 +26,7 @@ export function useGraphicsLayer() {
 }
 
 interface GraphicsLayerProps {
-  elevationMode?: CoreGraphicsLayer['elevationInfo']['mode']
+  elevationMode?: GraphicsLayerElevationInfo['mode']
   title?: string;
 }
 export default function GraphicsLayer({ children, elevationMode = 'on-the-ground', title }: PropsWithChildren<GraphicsLayerProps>) {
@@ -45,7 +47,8 @@ export default function GraphicsLayer({ children, elevationMode = 'on-the-ground
   }, [layer, map, scene]);
 
   useEffect(() => {
-    layer.elevationInfo.mode = elevationMode;
+    layer.elevationInfo ??= {}
+    layer.elevationInfo!.mode = elevationMode;
     if (title) layer.title = title;
   }, [elevationMode, title, layer, layer.elevationInfo])
 

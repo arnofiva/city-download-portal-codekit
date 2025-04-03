@@ -12,6 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import '@esri/calcite-components/dist/components/calcite-block';
+import '@esri/calcite-components/dist/components/calcite-button';
+import '@esri/calcite-components/dist/components/calcite-checkbox';
+import '@esri/calcite-components/dist/components/calcite-icon';
+import '@esri/calcite-components/dist/components/calcite-input-text';
+import '@esri/calcite-components/dist/components/calcite-label';
 import {
   CalciteBlock,
   CalciteButton,
@@ -24,7 +30,7 @@ import { useScene } from "../../../arcgis/components/maps/web-scene/scene-contex
 import { useAccessorValue } from "../../../arcgis/reactive-hooks";
 import { Dispatch, useDeferredValue, useEffect, useRef, useState } from "react";
 import { useDownloadExportMutation, useExportSizeQuery } from "../../../hooks/queries/download/export-query";
-import { BlockAction, BlockState } from "./sidebar-state";
+import { BlockAction, BlockState } from "./sidebar";
 import { useSelectionState } from "~/routes/_root.$scene/selection/selection-store";
 import { useReferenceElementId } from "../selection/walk-through-context";
 import { useHasTooManyFeatures, useSelectedFeaturesFromLayers } from "~/hooks/queries/feature-query";
@@ -38,7 +44,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
   const scene = useScene();
 
   const title = useAccessorValue(() => {
-    const title = scene.portalItem.title;
+    const title = scene.portalItem?.title ?? "Untitled";
     return title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, "_");
   });
   const [filename, setFilename] = useState("")
@@ -63,7 +69,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
 
   const mutation = useDownloadExportMutation();
 
-  const canDownload = editingState === 'idle' && !hasTooManyFeatures
+  const canDownload = editingState === 'idle' && !hasTooManyFeatures && selection?.extent && featureQuery.data
 
   const fileSize = downloadQuery.data;
 
@@ -90,7 +96,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
       heading="Export"
       collapsible
       ref={ref}
-      open={state === 'open'}
+      expanded={state === 'open'}
       onClick={() => {
         wasClicked.current = true
         setTimeout(() => {
@@ -154,7 +160,7 @@ export default function ExportSettings({ dispatch, state }: ExportSettingsProps)
           if (canDownload) {
             mutation.mutateAsync({
               scene,
-              extent: selection!.extent,
+              extent: selection!.extent!,
               features: featureQuery.data!,
               origin: modelOrigin!,
               includeOriginMarker,

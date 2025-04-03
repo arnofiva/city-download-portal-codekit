@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 import { Polygon } from "@arcgis/core/geometry";
+import '@esri/calcite-components/dist/components/calcite-button';
 import { CalciteButton } from "@esri/calcite-components-react";
 import { useRef } from "react";
 import { SketchTooltip } from "~/arcgis/components/sketch/sketch";

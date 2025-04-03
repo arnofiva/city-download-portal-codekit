@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 import { Suspense, lazy, memo, useDeferredValue, useEffect, useRef } from "react";
+import '@esri/calcite-components/dist/components/calcite-scrim';
 import { CalciteScrim } from "@esri/calcite-components-react";
 import GraphicsLayer from "~/arcgis/components/graphics-layer";
 import Graphic from "~/arcgis/components/graphic";
@@ -49,6 +50,7 @@ function useGoToSelection() {
       signal: AbortSignal
     }) => {
       const { view, selection, origin, signal } = vars;
+      if (selection.extent == null) return;
 
       const xmax = origin.x > selection.extent.xmax ? origin.x : selection.extent.xmax;
       const xmin = selection.extent.xmin > origin.x ? origin.x : selection.extent.xmin;

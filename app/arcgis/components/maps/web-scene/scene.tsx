@@ -12,10 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { PropsWithChildren, Suspense, memo, useEffect, useMemo, useState } from "react";
+import { PropsWithChildren, memo, useEffect, useMemo, useState } from "react";
 import CoreWebScene from '@arcgis/core/WebScene';
 import PortalItem from '@arcgis/core/portal/PortalItem';
-import { CalciteScrim } from "@esri/calcite-components-react";
 import { useSceneListModal } from "~/routes/_root/scene-list-modal/scene-list-modal-context";
 import { SceneContext } from "./scene-context";
 import { useAccessorValue } from "~/arcgis/reactive-hooks";

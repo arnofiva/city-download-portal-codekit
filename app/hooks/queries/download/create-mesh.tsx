@@ -19,7 +19,6 @@ import * as meshUtils from "@arcgis/core/geometry/support/meshUtils";
 import type Ground from '@arcgis/core/Ground';
 import { type Extent, Point, type SpatialReference } from "@arcgis/core/geometry";
 import type WebScene from "@arcgis/core/WebScene";
-// import convertGLBToOBJ from "./obj-conversion";
 import * as projection from "@arcgis/core/geometry/projection";
 import { createOriginMarker, ExportColors } from "~/symbology/symbology";
 import MeshMaterial from "@arcgis/core/geometry/support/MeshMaterial.js";
@@ -30,7 +29,7 @@ async function extractElevation(ground: Ground, extent: __esri.Extent) {
     demResolution: "finest-contiguous"
   });
 
-  for (const component of mesh.components) {
+  for (const component of mesh.components ?? []) {
     component.name = "elevation";
     component.material ??= new MeshMaterial({
       color: ExportColors.terrain()
@@ -93,7 +92,7 @@ async function mergeSliceMeshes(
     : MeshGeoreferencedVertexSpace
 
   const vertexSpace = new VertexSpace({
-    origin: [origin.x, origin.y, origin.z],
+    origin: [origin.x, origin.y, origin.z ?? 0],
   });
 
   const promises: Promise<Mesh[] | Mesh>[] = [];
@@ -116,8 +115,8 @@ async function mergeSliceMeshes(
 
   if (includeOriginMarker) {
     const features = Array.from(featureMap.values()).flat();
-    const zmax = features.reduce((max, { geometry: next }) => next.extent.zmax > max ? next.extent.zmax : max, elevation.extent.zmax);
-    const zmin = features.reduce((min, { geometry: next }) => min > next.extent.zmin ? next.extent.zmin : min, elevation.extent.zmin);
+    const zmax = features.reduce((max, { geometry: next }) => next.extent.zmax > max ? next.extent.zmax : max, elevation.extent.zmax ?? -Infinity);
+    const zmin = features.reduce((min, { geometry: next }) => min > next.extent.zmin ? next.extent.zmin : min, elevation.extent.zmin ?? Infinity);
     const height = zmax - zmin;
 
     const originMesh = await createOriginMarker(origin, height);
@@ -173,7 +172,7 @@ export async function createMesh({
     signal,
   });
 
-  await slice.load();
+  await slice!.load();
 
   return slice;
 }

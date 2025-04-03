@@ -12,19 +12,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { useEffect, memo } from "react";
+import { useEffect, memo, useMemo } from "react";
 import Graphic from "@arcgis/core/Graphic";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
+import { useSceneView } from "~/arcgis/components/views/scene-view/scene-view-context";
+import HighlightOptions from "@arcgis/core/views/support/HighlightOptions.js";
+import Color from "@arcgis/core/Color";
 
 interface HighlightProps {
+  name: string;
+  color?: Color;
   data?: Map<SceneLayerView, Graphic[]>
 }
-function InternalHighlight({ data }: HighlightProps) {
+function InternalHighlight({ name, color, data }: HighlightProps) {
+  const view = useSceneView();
+  const highlight = useMemo(
+    () => new HighlightOptions({ name, color, haloOpacity: 0.8, fillOpacity: 0.3 }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [name]
+  );
+
+  useEffect(() => {
+    highlight.color = color!;
+  }, [color, highlight])
+
+  useEffect(() => {
+    view.highlights.add(highlight);
+    return () => {
+      view.highlights.remove(highlight);
+    }
+  }, [highlight, view.highlights])
+
   useEffect(() => {
     if (data) {
       const handles: IHandle[] = [];
       for (const [layerview, features] of data) {
-        const handle = layerview.highlight(features);
+        const handle = layerview.highlight(features, { name });
         handles.push(handle);
       }
 
@@ -32,7 +55,7 @@ function InternalHighlight({ data }: HighlightProps) {
         for (const handle of handles) handle.remove();
       }
     }
-  }, [data]);
+  }, [data, name, view]);
 
   return null;
 }

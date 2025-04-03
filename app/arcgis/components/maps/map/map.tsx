@@ -14,6 +14,7 @@
  */
 import { PropsWithChildren, Suspense, memo, useEffect } from "react";
 import CoreMap from '@arcgis/core/Map';
+import '@esri/calcite-components/dist/components/calcite-scrim';
 import { CalciteScrim } from "@esri/calcite-components-react";
 import { MapContext } from "./map-context";
 import { useScene } from "../web-scene/scene-context";

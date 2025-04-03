@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import '@esri/calcite-components/dist/components/calcite-panel';
+import '@esri/calcite-components/dist/components/calcite-shell-panel';
 import {
   CalcitePanel,
   CalciteShellPanel,
@@ -25,9 +27,9 @@ import { useSelectionState } from "~/routes/_root.$scene/selection/selection-sto
 import { useAccessorValue } from "~/arcgis/reactive-hooks";
 import { useReferenceElementId } from "../selection/walk-through-context";
 
-type BlockAction = { mode?: 'managed' | 'manual', type: 'open' | 'close', block: keyof SidebarState }
+export type BlockAction = { mode?: 'managed' | 'manual', type: 'open' | 'close', block: keyof SidebarState }
 
-interface BlockState { mode: 'managed' | 'manual', state: 'closed' | 'open' }
+export interface BlockState { mode: 'managed' | 'manual', state: 'closed' | 'open' }
 interface SidebarState {
   modelOrigin: BlockState;
   selection: BlockState;

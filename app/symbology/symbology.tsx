@@ -89,14 +89,15 @@ export async function createOriginMarker(origin: Point, meshHeight: number) {
 
   const cylender = Mesh.createCylinder(origin);
 
-  const transform = cylender.transform?.clone() ?? {};
-  transform.scale = [cylinderSize, cylinderSize, markerHeight];
+  const transform = cylender.transform?.clone();
+  if (transform) transform.scale = [cylinderSize, cylinderSize, markerHeight];
+
   cylender.transform = transform;
 
-  const mesh = meshUtils.merge([box, cylender]);
+  const mesh = meshUtils.merge([box, cylender])!;
 
-  for (const component of mesh.components) {
-    component.name = "origin-point";
+  for (const component of mesh.components ?? []) {
+    component.name = "<origin-point>";
     component.material = material
   }
 

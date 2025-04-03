@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 import { Point } from "@arcgis/core/geometry";
+import '@esri/calcite-components/dist/components/calcite-dropdown-group';
+import '@esri/calcite-components/dist/components/calcite-dropdown-item';
+import '@esri/calcite-components/dist/components/calcite-split-button';
 import { CalciteDropdownGroup, CalciteDropdownItem, CalciteSplitButton } from "@esri/calcite-components-react";
 import { useRef, useMemo, useDeferredValue } from "react";
 import { SketchTooltip } from "~/arcgis/components/sketch/sketch";

@@ -82,6 +82,7 @@ export function useExportSizeQuery({ enabled = false, includeOriginMarker = true
         return blob.size;
       } catch (error) {
         if (error instanceof ToastableError) return null;
+        else throw error;
       }
     },
     enabled: isEnabled,

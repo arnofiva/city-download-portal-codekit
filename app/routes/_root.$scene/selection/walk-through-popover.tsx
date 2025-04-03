@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import '@esri/calcite-components/dist/components/calcite-popover';
 import { CalcitePopover } from "@esri/calcite-components-react";
 import { useEffect, useRef, useState } from "react";
 import { useWalkthrough, useWalkthroughSelector } from "./walk-through-context";

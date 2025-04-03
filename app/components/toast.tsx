@@ -14,6 +14,7 @@
  */
 import Accessor from "@arcgis/core/core/Accessor";
 import { subclass, property } from "@arcgis/core/core/accessorSupport/decorators";
+import '@esri/calcite-components/dist/components/calcite-alert';
 import { CalciteAlert } from "@esri/calcite-components-react";
 import { ComponentProps, createContext, PropsWithChildren, useContext } from "react";
 import { useAccessorValue } from "~/arcgis/reactive-hooks";

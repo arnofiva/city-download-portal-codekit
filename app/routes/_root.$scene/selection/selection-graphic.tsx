@@ -16,14 +16,14 @@ import { memo, useDeferredValue, useMemo } from "react";
 import { Polygon } from "@arcgis/core/geometry";
 import Graphic from "~/arcgis/components/graphic";
 import { ExtrudeSymbol3DLayer, FillSymbol3DLayer, PolygonSymbol3D } from "@arcgis/core/symbols";
-import FeatureFilterHighlights from "./scene-filter-highlights";
 import GraphicsLayer from "~/arcgis/components/graphics-layer";
 import { createOriginSymbol, SymbologyColors } from "~/symbology/symbology";
 import { useSelectionState } from "~/routes/_root.$scene/selection/selection-store";
 import { usePreciseOriginElevationInfo, useSelectionVolumeExtent } from "~/hooks/queries/elevation-query";
 import SolidEdges3D from "@arcgis/core/symbols/edges/SolidEdges3D.js";
 import { useAccessorValue } from "~/arcgis/reactive-hooks";
-import { useHasTooManyFeatures } from "~/hooks/queries/feature-query";
+import { useHasTooManyFeatures, useSelectedFeaturesFromLayerViews } from "~/hooks/queries/feature-query";
+import Highlights from "./highlights";
 
 function InternalSelectionGraphic() {
   const store = useSelectionState();
@@ -31,6 +31,7 @@ function InternalSelectionGraphic() {
   const isUpdatingOrigin = useAccessorValue(() => store.editingState === 'updating-origin');
   const selection = useAccessorValue(() => store.selection)
   const hasTooManyFeatures = useHasTooManyFeatures()
+  const selectedFeaturesQuery = useSelectedFeaturesFromLayerViews();
 
   return (
     <>
@@ -47,7 +48,11 @@ function InternalSelectionGraphic() {
         {isIdle ? <Volume /> : null}
         {!isUpdatingOrigin ? <Origin /> : null}
       </GraphicsLayer>
-      <FeatureFilterHighlights />
+      {selectedFeaturesQuery.data ? <Highlights
+        name="selected-features"
+        data={selectedFeaturesQuery.data}
+        color={hasTooManyFeatures ? SymbologyColors.invalidSelection(1) : SymbologyColors.selection(1)}
+      /> : null}
     </>
   )
 }
