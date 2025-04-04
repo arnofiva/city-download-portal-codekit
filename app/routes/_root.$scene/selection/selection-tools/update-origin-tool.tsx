@@ -44,7 +44,6 @@ export function UpdateOriginTool() {
   return (
     <CreatePointTool
       onStart={() => {
-        console.log(store.editingState);
         previousEditingState.current = store.editingState;
         previousOrigin.current = store.modelOrigin;
         store.editingState = 'updating-origin';
