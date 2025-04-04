@@ -36,6 +36,7 @@ import { PropsWithChildren } from "react";
 
 import { LinksFunction } from "@remix-run/node";
 
+declare const BASE_PATH: string;
 
 export const meta: MetaFunction = () => {
   return [
@@ -73,7 +74,7 @@ if (typeof window !== 'undefined') {
 let hasSetup = false;
 async function setup() {
   if (hasSetup) return;
-  setAssetPath(import.meta.resolve('/'));
+  setAssetPath(import.meta.resolve(BASE_PATH));
   document.body.classList.toggle('setup')
   hasSetup = true;
 }
@@ -132,3 +133,4 @@ export function ErrorBoundary() {
     </>
   );
 }
+

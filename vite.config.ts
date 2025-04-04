@@ -67,5 +67,8 @@ export default defineConfig(({ mode }) => {
         ],
       }),
     ],
+    define: {
+      BASE_PATH: JSON.stringify(base),
+    },
   } satisfies UserConfig;
 });
