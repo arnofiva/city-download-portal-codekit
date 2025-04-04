@@ -19,8 +19,9 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useRouteError
-} from "@remix-run/react";
+  useRouteError,
+  LinksFunction
+} from "react-router";
 import { setAssetPath } from "@esri/calcite-components/dist/components";
 
 import calciteStyles from "@esri/calcite-components/dist/calcite/calcite.css?url";
@@ -33,8 +34,6 @@ import '@esri/calcite-components/dist/components/calcite-alert';
 import '@esri/calcite-components/dist/components/calcite-scrim';
 import { CalciteAction, CalciteAlert, CalciteScrim } from "@esri/calcite-components-react";
 import { PropsWithChildren } from "react";
-
-import { LinksFunction } from "@remix-run/node";
 
 declare const BASE_PATH: string;
 

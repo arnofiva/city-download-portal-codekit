@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { useLocation } from "@remix-run/react";
+import { useLocation } from "react-router";
 
 export default function useIsRoot() {
   const pathname = useLocation().pathname;

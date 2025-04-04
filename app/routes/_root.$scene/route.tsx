@@ -12,9 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { lazy } from "react";
-import { redirect, useLoaderData, useRouteError } from "@remix-run/react";
+import { redirect, useLoaderData, useRouteError } from "react-router";
 import Sidebar from "~/routes/_root.$scene/sidebar/sidebar";
 import invariant from "tiny-invariant";
 import { ViewUI } from "~/arcgis/components/views/scene-view/scene-view-ui";

@@ -16,7 +16,7 @@ import '@esri/calcite-components/dist/components/calcite-card';
 import '@esri/calcite-components/dist/components/calcite-chip';
 import '@esri/calcite-components/dist/components/calcite-dialog';
 import { CalciteCard, CalciteChip, CalciteDialog } from "@esri/calcite-components-react";
-import { Link, useParams, useRouteLoaderData } from "@remix-run/react";
+import { Link, useParams, useRouteLoaderData } from "react-router";
 import useIsRoot from "~/hooks/useIsRoot";
 import type PortalItem from "@arcgis/core/portal/PortalItem";
 import type WebScene from "@arcgis/core/WebScene";

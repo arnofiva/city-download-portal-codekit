@@ -14,7 +14,7 @@
  */
 import '@esri/calcite-components/dist/components/calcite-scrim';
 import { CalciteScrim } from "@esri/calcite-components-react";
-import type { MetaFunction } from "@remix-run/node";
+import type { MetaFunction } from "react-router";
 
 export const meta: MetaFunction = () => [
   { title: "City download portal" },
