@@ -32,7 +32,7 @@ export const SymbologyColors = {
     return new Color([255, 0, 0, alpha])
   },
   measurements(alpha = 1) {
-    return new Color([255, 0, 0, alpha])
+    return new Color([255, 135, 0, alpha])
   }
 } as const;
 

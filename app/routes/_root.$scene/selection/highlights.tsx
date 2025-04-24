@@ -27,9 +27,8 @@ interface HighlightProps {
 function InternalHighlight({ name, color, data }: HighlightProps) {
   const view = useSceneView();
   const highlight = useMemo(
-    () => new HighlightOptions({ name, color, haloOpacity: 0.8, fillOpacity: 0.3 }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [name]
+    () => new HighlightOptions({ name, color, haloOpacity: 1, fillOpacity: 0.5, }),
+    [color, name]
   );
 
   useEffect(() => {

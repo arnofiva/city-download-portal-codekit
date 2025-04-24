@@ -17,7 +17,6 @@ import CoreSceneView from '@arcgis/core/views/SceneView';
 import { SceneViewContext } from "./scene-view-context";
 import { useScene } from "../../maps/web-scene/scene-context";
 import useInstance from "~/hooks/useInstance";
-import { SymbologyColors } from "~/symbology/symbology";
 import { useToast } from "~/components/toast";
 import { getSceneLayers } from "~/hooks/useSceneLayers";
 
@@ -26,12 +25,6 @@ function InternalView({ children }: PropsWithChildren) {
 
   const view = useInstance(() => new CoreSceneView({
     map: scene,
-    highlightOptions: {
-      color: SymbologyColors.selection(),
-      fillOpacity: 0.8,
-      shadowOpacity: 0,
-      haloOpacity: 0
-    },
     popupEnabled: false,
   }));
 
@@ -58,7 +51,8 @@ function InternalView({ children }: PropsWithChildren) {
     })
 
     return () => controller.abort();
-  }, [toast, view])
+  }, [toast, view]);
+
 
   return (
     <SceneViewContext.Provider value={view}>

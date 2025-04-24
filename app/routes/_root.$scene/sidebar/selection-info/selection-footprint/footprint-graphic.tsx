@@ -49,9 +49,10 @@ export function FootprintGraphic({ selection }: FootprintGraphicProps) {
 }
 
 const FootprintSymbol = new SimpleFillSymbol({
-  color: SymbologyColors.selection(),
+  color: SymbologyColors.selection(0.4),
   outline: {
-    width: 0,
+    width: 1,
+    color: SymbologyColors.selection(),
   }
 })
 
