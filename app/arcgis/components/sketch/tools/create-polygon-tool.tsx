@@ -32,7 +32,7 @@ interface PolygonToolProps {
   children: ({ start }: { start: () => void, cancel: () => void, state: CreateRectangleToolManager['state'] }) => ReactNode;
 }
 
-const CreateRectangleTool = forwardRef<CreateRectangleToolManager, PolygonToolProps>(function CreateRectangleTool({
+const CreatePolygonTool = forwardRef<CreateRectangleToolManager, PolygonToolProps>(function CreateRectangleTool({
   children,
   createSymbol,
   onStart,
@@ -108,7 +108,7 @@ class CreateRectangleToolManager extends CreateTool {
       this.manager!.polygonSymbol = this.createSymbol!;
       this.manager!.activeToolId = this.id;
       this.manager!.snappingOptions.enabled = true;
-      this.manager!.create("rectangle", options)
+      this.manager!.create("polygon", options)
     }
   }
 
@@ -127,4 +127,4 @@ class CreateRectangleToolManager extends CreateTool {
   }
 }
 
-export default CreateRectangleTool;
+export default CreatePolygonTool;

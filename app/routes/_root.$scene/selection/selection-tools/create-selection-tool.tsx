@@ -20,7 +20,7 @@ import { SketchTooltip } from "~/arcgis/components/sketch/sketch"
 import { useSceneView } from "~/arcgis/components/views/scene-view/scene-view-context"
 import { useSelectionState } from "~/routes/_root.$scene/selection/selection-store"
 import { useAccessorValue, useWatch } from "~/arcgis/reactive-hooks"
-import CreateRectangleTool from "~/arcgis/components/sketch/tools/create-rectangle-tool"
+import CreatePolygonTool from "~/arcgis/components/sketch/tools/create-polygon-tool"
 import { FillSymbol3DLayer, PolygonSymbol3D } from "@arcgis/core/symbols"
 
 const EmptyPolygon = new PolygonSymbol3D({
@@ -52,7 +52,7 @@ export function CreateSelectionTool() {
 
   return (
     <>
-      <CreateRectangleTool
+      <CreatePolygonTool
         ref={toolRef}
         onStart={async () => {
           store.editingState = 'creating'
@@ -62,42 +62,22 @@ export function CreateSelectionTool() {
           if (polygon) {
             const extent = polygon.extent;
 
-            const extentPolygon = new Polygon({
-              rings: [
-                [
-                  [extent.xmin, extent.ymin],
-                  [extent.xmin, extent.ymax],
-                  [extent.xmax, extent.ymax],
-                  [extent.xmax, extent.ymin],
-                  [extent.xmin, extent.ymin],
-                ]
-              ],
-              spatialReference: extent.spatialReference
-            });
+            if (extent) {
+              const extentPolygon = Polygon.fromExtent(extent);
+              store.modelOrigin = polygon.getPoint(0, 0)!;
 
-            store.modelOrigin = polygon.getPoint(0, 0);
-
-            store.selection = extentPolygon;
+              store.selection = extentPolygon;
+            }
           }
         }}
         onComplete={(polygon) => {
           store.editingState = 'updating-selection'
           const extent = polygon.extent;
 
-          const extentPolygon = new Polygon({
-            rings: [
-              [
-                [extent.xmin, extent.ymin],
-                [extent.xmin, extent.ymax],
-                [extent.xmax, extent.ymax],
-                [extent.xmax, extent.ymin],
-                [extent.xmin, extent.ymin],
-              ]
-            ],
-            spatialReference: extent.spatialReference
-          });
-
-          store.selection = extentPolygon;
+          if (extent) {
+            const extentPolygon = Polygon.fromExtent(extent);
+            store.selection = extentPolygon;
+          }
         }}
         onCancel={() => {
           store.editingState = 'idle'
@@ -129,7 +109,7 @@ export function CreateSelectionTool() {
             ) : null}
           </>
         )}
-      </CreateRectangleTool >
+      </CreatePolygonTool >
     </>
   )
 }
