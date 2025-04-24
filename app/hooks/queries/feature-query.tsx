@@ -17,12 +17,13 @@ import SceneLayer from "@arcgis/core/layers/SceneLayer";
 import SceneLayerView from "@arcgis/core/views/layers/SceneLayerView";
 import { useDeferredValue } from "react";
 import { Polygon } from "@arcgis/core/geometry";
-import * as geometryEngineAsync from "@arcgis/core/geometry/geometryEngineAsync";
 import { useSceneLayerViews } from "../useSceneLayers";
 import { useQuery } from '@tanstack/react-query';
 import { useAccessorValue } from "../../arcgis/reactive-hooks";
 import { useDebouncedValue } from "../useDebouncedValue";
 import { filterMeshGraphicsFromFeatureSet, type MeshGraphic } from "./download/export-query";
+import * as bufferOperator from "@arcgis/core/geometry/operators/bufferOperator.js";
+import * as unionOperator from "@arcgis/core/geometry/operators/unionOperator.js";
 
 /**
  * This function performs a client side query on the layer views, to find features that intersect with the given boundary.
@@ -106,12 +107,12 @@ async function queryFootprints(sceneLayerViews: SceneLayerView[], boundary: Poly
       .filter(Boolean)
       // the footprints are often quite sharp directly from the query,
       // so we add a little bit of a buffer to smooth them out
-      .map(f => geometryEngineAsync.buffer(f, 0.5, 'meters') as Promise<Polygon>)
+      .map(f => bufferOperator.execute(f, 0.2, { unit: 'meters' })!)
     )
     footprints.push(...layerFootprints)
   }
 
-  const fpUnion = await geometryEngineAsync.union(footprints) as Polygon
+  const fpUnion = unionOperator.executeMany(footprints) as Polygon;
 
   if (fpUnion != null) return fpUnion
   else throw new Error('failed to combine footprints');

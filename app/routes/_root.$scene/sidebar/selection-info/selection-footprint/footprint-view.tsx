@@ -24,13 +24,13 @@ import { useSceneView } from "~/arcgis/components/views/scene-view/scene-view-co
 import { useAccessorValue } from "~/arcgis/reactive-hooks";
 import { useSelectionState } from "~/routes/_root.$scene/selection/selection-store";
 import CoreMapView from "@arcgis/core/views/MapView";
-import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
-import * as geometryEngineAsync from "@arcgis/core/geometry/geometryEngineAsync";
 import { Point, Polygon } from "@arcgis/core/geometry";
 import { SymbologyColors } from "~/symbology/symbology";
 import { useMutation } from "@tanstack/react-query";
 import { FootprintGraphic } from "./footprint-graphic";
 import { SelectionPreviewGraphic } from "./selection-preview-graphic";
+import * as areaOperator from "@arcgis/core/geometry/operators/areaOperator.js";
+import * as bufferOperator from "@arcgis/core/geometry/operators/bufferOperator.js";
 
 const Map = lazy(() => import('~/arcgis/components/maps/map/map'));
 const MapView = lazy(() => import('~/arcgis/components/views/map-view/map-view'));
@@ -68,9 +68,8 @@ function useGoToSelection() {
         ]
       ]
 
-      const area = Math.abs(geometryEngine.planarArea(polygon));
-      const buffered = await geometryEngineAsync.buffer(polygon!, Math.sqrt(area) * 0.5) as Polygon;
-
+      const area = Math.abs(areaOperator.execute(polygon));
+      const buffered = bufferOperator.execute(polygon!, Math.sqrt(area) * 0.5);
       return view.goTo({ target: buffered }, { signal, animate: true });
     }
   });

@@ -16,7 +16,6 @@ import CoreLengthDimension from "@arcgis/core/analysis/LengthDimension.js";
 import { useDimensions } from "./dimensions-context";
 import { memo, useEffect } from "react";
 import { Point } from "@arcgis/core/geometry";
-import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
 import useInstance from "~/hooks/useInstance";
 
 interface LengthDimensionProps {
@@ -67,8 +66,8 @@ function InternalLengthDimension({
 
 const LengthDimension = memo(InternalLengthDimension, (prev, next) => {
   return (
-    geometryEngine.equals(prev.endPoint, next.endPoint) &&
-    geometryEngine.equals(prev.startPoint, next.startPoint) &&
+    prev.endPoint.equals(next.endPoint) &&
+    prev.startPoint.equals(next.startPoint) &&
     prev.offset === next.offset &&
     prev.measureType === next.measureType &&
     prev.orientation === next.orientation &&

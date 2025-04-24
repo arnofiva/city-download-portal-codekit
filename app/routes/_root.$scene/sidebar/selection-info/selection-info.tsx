@@ -34,12 +34,12 @@ import LengthDimension from "~/arcgis/components/dimensions-layer/length-dimensi
 import { useSelectionElevationInfo } from "~/hooks/queries/elevation-query";
 import { useSelectionState } from "~/routes/_root.$scene/selection/selection-store";
 import * as intl from "@arcgis/core/intl";
-import * as geAsync from "@arcgis/core/geometry/geometryEngineAsync";
 import { useHasTooManyFeatures, useSelectedFeaturesCount } from "~/hooks/queries/feature-query";
 import { UpdateSelectionTool } from "../../selection/selection-tools/update-selectiont-tool";
 import { useQuery } from "@tanstack/react-query";
 import { useAccessorValue } from "~/arcgis/reactive-hooks";
 import type { BlockAction, BlockState } from '../sidebar';
+
 interface MeasurementsProps {
   state: BlockState['state'];
   dispatch: Dispatch<BlockAction[]>;
@@ -59,11 +59,11 @@ export default function SelectionInfo({ state, dispatch }: MeasurementsProps) {
   const areaQuery = useQuery({
     queryKey: ['selection-info', 'area', deferredSelection?.toJSON()],
     queryFn: async () => {
-      const calculateArea = deferredSelection!.spatialReference.isWGS84 || deferredSelection!.spatialReference.isWebMercator
-        ? geAsync.geodesicArea
-        : geAsync.planarArea;
+      const areaOperator = deferredSelection!.spatialReference.isWGS84 || deferredSelection!.spatialReference.isWebMercator
+        ? await import("@arcgis/core/geometry/operators/geodeticAreaOperator.js")
+        : await import("@arcgis/core/geometry/operators/areaOperator.js");
 
-      const area = await calculateArea(deferredSelection!);
+      const area = await areaOperator.execute(deferredSelection!);
 
       return Math.abs(area);
     },
