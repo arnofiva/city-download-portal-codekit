@@ -1,4 +1,4 @@
-# City Download Portal
+# Web3D Blueprint - City Download Portal
 
 The city download portal lets you extract 3D data from a webscene, and download it as a mesh to work with in other software.
 
