@@ -5,7 +5,7 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig(() => {
-  const base = "/city-download-portal/";
+  const base = "./";
 
   return {
     base,
